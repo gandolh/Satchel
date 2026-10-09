@@ -129,3 +129,10 @@ Accepted and not fixed:
   both are present); Satchel's is equivalent for real browsers.
 - Something on the machine polls `127.0.0.1:8807/api/board`. It is not
   Satchel's.
+
+## [2026-10-09] done | Brief 11: friends on the server
+
+Commit `0a642f2`. Covers people, direct and group chats, migration 2, and the
+owner-only Ideas inbox. The controller added token revocation for accounts
+without `admin`. 339 tests. Brief 13 was amended with the no-access fix this
+brief surfaced: only a 403 from `/api/me` locks the app.

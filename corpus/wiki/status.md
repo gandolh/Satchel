@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Phase 1 built — briefs 01 to 10 done; deploying is the owner's step (README Owner setup). Phase 2 (friends, 11 to 14) next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2: 11 done, 12 in progress, 13 and 14 next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -45,8 +45,8 @@ Phase 1, the Ideas inbox:
 
 Phase 2, friends:
 
-- 11 [Friends on the server](../briefs/todo/11-friends-on-the-server.md).
-  todo. People, direct and group chats; the Ideas inbox becomes owner-only.
+- 11 [Friends on the server](../briefs/done/11-friends-on-the-server.md).
+  done 2026-10-09. People, direct and group chats; the Ideas inbox is owner-only.
 - 12 [Live updates](../briefs/todo/12-live-updates.md). todo. WebSocket at
   `/api/live`, polling as fallback.
 - 13 [Friend chats in the web app](../briefs/todo/13-friend-chats-in-the-web-app.md).

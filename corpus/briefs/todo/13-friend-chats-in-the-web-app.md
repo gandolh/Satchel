@@ -18,18 +18,23 @@ the "Claude has no access to this chat" pill) and the "Seen by" rule in
 web/src/api.ts   (functions for the brief 11 routes)
 web/src/chats/*  web/src/thread/*  web/src/people/*  web/src/router.ts   (one route)
 web/src/settings/ConnectClaude.tsx   (hidden for friends)
+web/src/auth/session.ts  web/src/auth/AuthGate.tsx   (only if needed for the 403 fix below)
 web/src/**/*.test.ts for the above
 ```
 
 ## Files you must NOT touch
 
 `shared/`, `server/`, `cli/`, `corpus/`, `web/src/live.ts`,
-`web/src/ward.ts`, `web/src/auth/`.
+`web/src/ward.ts`.
 
 ## What to do
 
 1. **API client.** Typed functions for `GET /api/people` and
-   `POST /api/conversations`.
+   `POST /api/conversations`. Fix the no-access handling found in brief 11:
+   today any `forbidden` raises the app-wide no-access screen, and the token
+   routes now answer 403 to friends. Only a 403 from `/api/me` (no Satchel
+   grant) means no access; any other 403 is an ordinary `ApiError` that the
+   calling screen shows.
 2. **Chat list.** Every conversation, the inbox pinned first for the owner
    (friends have none: `/api/me` gives `inboxId: null`), the rest by latest
    message. Connect Claude renders nothing when `inboxId` is null.

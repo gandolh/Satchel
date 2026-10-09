@@ -90,3 +90,25 @@ Tests with three accounts A (`admin`), B and C (role `member`):
   has no inbox, and B's `POST /api/claude-tokens` is 403.
 
 `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `0a642f2`, with 339 tests in the suite.
+
+- **Contract and routes.** `routes.listPeople` and `routes.createConversation`
+  (a discriminated union on `kind`); `meResponseSchema.inboxId` is nullable.
+  Migration 2 adds `direct_key`, with a CHECK tying it to `kind` and a
+  unique index.
+- **Roles.** The guard puts `roles` on the request, exports `OWNER_ROLE`,
+  `isOwner` and `requireOwner`, and only owners get `ensureInbox`. The token
+  routes answer 403 "Only Satchel's owner can connect Claude." to friends.
+- **Demotion.** The controller added one rule: an account without `admin`
+  has its Claude tokens revoked on each request, so a demoted owner keeps
+  the inbox rows but loses the tokens.
+
+Found for brief 13: the web app treats any `forbidden` as no-access, so a
+friend opening Settings, where Connect Claude lists tokens, would be locked
+out. Brief 13 now fixes it.
+
+Accepted: an account whose grant is removed stays in `/api/people`, as the
+README says.
