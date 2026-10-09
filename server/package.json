@@ -20,5 +20,23 @@
   "devDependencies": {
     "@types/better-sqlite3": "9.6.0",
     "tsx": "4.23.13"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/ward/testing/testApp.d.ts",
+      "default": "./dist/ward/testing/testApp.js"
+    },
+    "./app": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    },
+    "./store": {
+      "types": "./dist/store.d.ts",
+      "default": "./dist/store.js"
+    }
   }
 }
