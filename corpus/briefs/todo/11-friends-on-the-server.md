@@ -67,9 +67,10 @@ test).
    200 when it already existed.
 6. **README "Inviting a friend".** The owner's steps in production Ward's
    console: create the account (or open Satchel's public registration with a
-   baseline role), then grant the account a role on `satchel`. Any role
-   works; Satchel has no roles of its own. The friend appears in
-   `/api/people` after their first sign-in.
+   baseline role of `member`), then grant the account the `member` role on
+   `satchel`. Never `admin`: that role marks the owner and brings an Ideas
+   inbox and Claude tokens. The friend appears in `/api/people` after their
+   first sign-in.
 
 ## Acceptance
 

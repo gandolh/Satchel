@@ -17,6 +17,7 @@ the "Claude has no access to this chat" pill) and the "Seen by" rule in
 ```
 web/src/api.ts   (functions for the brief 11 routes)
 web/src/chats/*  web/src/thread/*  web/src/people/*  web/src/router.ts   (one route)
+web/src/settings/ConnectClaude.tsx   (hidden for friends)
 web/src/**/*.test.ts for the above
 ```
 
@@ -29,8 +30,9 @@ web/src/**/*.test.ts for the above
 
 1. **API client.** Typed functions for `GET /api/people` and
    `POST /api/conversations`.
-2. **Chat list.** Every conversation, the inbox pinned first (or absent, per
-   brief 11's answer on friends' inboxes), the rest by latest message.
+2. **Chat list.** Every conversation, the inbox pinned first for the owner
+   (friends have none: `/api/me` gives `inboxId: null`), the rest by latest
+   message. Connect Claude renders nothing when `inboxId` is null.
    Direct chats are titled with the other person's name; groups with their
    title and member names as the preview subtitle. Unread badges from
    `unreadCount`.
