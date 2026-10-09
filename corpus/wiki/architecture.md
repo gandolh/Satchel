@@ -86,8 +86,11 @@ guard also makes sure the account has its Ideas inbox.
 One SQLite file, `$DATA_DIR/satchel.db`. In the container `DATA_DIR=/data`,
 bind-mounted from `/srv/satchel-api/data` on the VPS. Schema and the
 append-only triggers: [messages-and-seen.md](messages-and-seen.md) and brief
-03. Updates reach the web app by polling in phase 1 and over a WebSocket at
-`/api/live` in phase 2.
+03. Updates reach the web app over a WebSocket at `/api/live`
+([server/src/live/](../../server/src/live/)). Polling remains the fallback
+while the socket is down. The upgrade must carry Satchel's own `Origin`, passes
+the Ward guard, and closes with code 4001 at the access token's expiry. Events
+go only to a conversation's members, never to `claude`.
 
 ## Ports
 

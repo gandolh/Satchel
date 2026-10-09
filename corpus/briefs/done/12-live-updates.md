@@ -65,3 +65,33 @@ web/src/chats/*  web/src/thread/*   (swap polling for live updates)
 - In a browser with two accounts in two windows: a message appears in the
   other window in under a second; the seen line updates live.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `2879ee2`, with 53 new tests (392 in the suite).
+
+- **Pins.** @fastify/websocket 11.3.1, the newest release over two weeks
+  old. Its `ws` resolved to 8.22.0, under two weeks old; the controller
+  pinned `ws` 8.21.3 as a direct server dependency and deduped, because a
+  root override was ignored for a workspace package's dependency.
+- **Server.** `server/src/live/` holds the hub, the socket lifetime (25 s
+  ping, close with 4001 at the token's `exp`), the publishers and an origin
+  hook. Any upgrade whose `Origin` isn't exactly `publicOrigin` is a 403,
+  which blocks cross-site WebSocket hijacking.
+  - Publishing happens only when something changed: a stored message, a
+    marker that moved, a newly created conversation.
+  - Found and fixed: a refused upgrade used to leave its connection open and
+    hang `app.close()`.
+- **Web.** `web/src/live.ts` provides `useLiveEvents`, `useLiveCatchUp` and
+  `useLiveChats`. Polling runs only while the socket is down.
+- **Browser check** with two throwaway member accounts: a new chat appeared
+  in 33 ms, a message in 57 ms and "Seen" in 25 ms. No HTTP polling ran
+  while live, and the sockets recovered after an API restart.
+
+Open concerns:
+
+- A session revoked in Ward keeps its socket until `exp`, up to 15 minutes
+  (captured as a todo).
+- A half-open socket on a flaky phone network can look live.
+- The socket is never closed on unmount; moving it into `AppShell` would
+  fix that.

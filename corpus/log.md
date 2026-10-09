@@ -136,3 +136,10 @@ Commit `0a642f2`. Covers people, direct and group chats, migration 2, and the
 owner-only Ideas inbox. The controller added token revocation for accounts
 without `admin`. 339 tests. Brief 13 was amended with the no-access fix this
 brief surfaced: only a 403 from `/api/me` locks the app.
+
+## [2026-10-09] done | Brief 12: live updates over WebSocket
+
+Commit `2879ee2`, 392 tests. One socket per tab, with origin-checked
+upgrades and expiry at the token's `exp`; polling stays as the fallback.
+The controller pinned `ws` 8.21.3. The lingering-socket concern is captured
+as [todos/recheck-ward-session-on-socket-ping.md](todos/recheck-ward-session-on-socket-ping.md).
