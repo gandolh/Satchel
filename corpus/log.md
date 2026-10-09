@@ -97,3 +97,35 @@ built and waits on the owner's deploy steps.
 Asked before brief 11, the owner chose owner-only: only accounts with the
 `admin` role on Satchel get an inbox and may create Claude tokens. Recorded
 in [wiki/decisions.md](wiki/decisions.md); brief 11 now implements it.
+
+## [2026-10-09] maintenance | Phase-1 review and fixes
+
+Three read-only finders reviewed `e02aeaf..HEAD`: security (opus), server and
+storage (sonnet), web, CLI and docs (sonnet). None found anything critical.
+They found only Minor issues; the controller promoted two to Important
+(the CLI exit code when the container is down, and a possible sign-in
+redirect loop). Fixed in two lane-disjoint batches:
+
+- `17b1603`, CLI and web:
+  - exit 3 for a stalled body and for 502/503/504;
+  - inline config comments, and the token sent over https only;
+  - no redirect after a refresh that still 401s;
+  - a retry for a failed seen marker;
+  - the README reads the token without echo.
+- `d15dc90`, server:
+  - cross-site writes refused;
+  - tokens revoked when a grant is lost;
+  - compose pins HOST, PORT and DATA_DIR;
+  - startup failure handling;
+  - the rollback test tightened. `app.ts` gained a `publicOrigin` dependency.
+
+276 tests. The rules are in [wiki/architecture.md](wiki/architecture.md) and
+[wiki/claude-access.md](wiki/claude-access.md).
+
+Accepted and not fixed:
+
+- Revoking on a lost grant is lazy.
+- Ward's own same-origin check is stricter (it checks both headers whenever
+  both are present); Satchel's is equivalent for real browsers.
+- Something on the machine polls `127.0.0.1:8807/api/board`. It is not
+  Satchel's.

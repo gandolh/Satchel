@@ -38,6 +38,10 @@ reads a repo `.env`: the inbox isn't tied to any one project.
   `/claude/*` handler takes the conversation from the token.
 - Revocable from the same screen. A revoked or unknown token is a `401`.
 - `last_used_at` is updated on use, so Settings can show "last used 21:40".
+- When an account loses its Satchel grant, its tokens are revoked the next
+  time it makes an `/api` request. Until then they still read that
+  account's own inbox: an accepted risk, since nothing else is exposed.
+- The CLI only sends the token over https, except to a loopback address.
 
 The owner pastes the token into `~/.config/satchel/env`. It never goes in a
 repo, the corpus or a transcript.
@@ -72,8 +76,11 @@ Times print in the machine's local time zone. With nothing unread it prints
 
 ## Exit codes
 
-0 success · 1 usage error · 2 the server rejected the call (prints why) ·
-3 the server isn't reachable within 5 seconds, with exactly one stderr line:
+0 success · 1 usage error · 2 Satchel rejected the call with its own JSON
+error (prints why) · 3 Satchel isn't reachable: a connection failure, the
+5-second timeout (including a stalled body), or a 5xx without Satchel's JSON
+error, which is what Caddy sends when the container is down. Exit 3 prints
+exactly one stderr line:
 `satchel: Satchel isn't reachable at <url>. Tell the owner and carry on
 without it.`
 
