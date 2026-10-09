@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Phase 1 in progress — briefs 01 to 08 done (the server, the satchel CLI and the web shell), 09 in progress, then 10 (go live); the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. Phase 1 built — briefs 01 to 10 done; deploying is the owner's step (README Owner setup). Phase 2 (friends, 11 to 14) next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -12,8 +12,9 @@ revisions; see [overview.md](overview.md)) and recorded in
 [decisions.md](decisions.md). The corpus and all briefs were written the same
 day, and the backlog run started that afternoon. The server signs in through
 Ward and serves every phase-1 route, `satchel unread`/`seen`/`history` work
-against it, and the web app signs in and lists chats. The thread and
-Connect Claude (09) and the deploy (10) remain. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
+against it, and the web app has the inbox thread with seen ticks and Connect
+Claude. The container builds and vps-deploy has the stack. Nothing is
+deployed yet: the steps are in the README's Owner setup. Phase 2 is next. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
 GitHub, cloned into this directory on `main` on 2026-10-09; its only commit
 is GitHub's initial one (`.gitignore`, MIT `LICENSE`, `README.md`).
 
@@ -37,15 +38,15 @@ Phase 1, the Ideas inbox:
   `guide`, `unread`, `seen`, `history`, config lookup, exit 3.
 - 08 [Web shell](../briefs/done/08-web-shell.md). done 2026-10-09. Sign-in and renewal,
   API client, chat list, layout, PWA.
-- 09 [Inbox thread and Connect Claude](../briefs/todo/09-inbox-thread-and-connect-claude.md).
-  todo. Sending, ticks, "Seen", Retry, the token screen.
-- 10 [Go live](../briefs/todo/10-go-live.md). todo. Dockerfile, compose,
+- 09 [Inbox thread and Connect Claude](../briefs/done/09-inbox-thread-and-connect-claude.md).
+  done 2026-10-09. Sending, ticks, "Seen", Retry, the token screen.
+- 10 [Go live](../briefs/done/10-go-live.md). done 2026-10-09, not deployed. Dockerfile, compose,
   vps-deploy stack, the owner's setup steps.
 
 Phase 2, friends:
 
 - 11 [Friends on the server](../briefs/todo/11-friends-on-the-server.md).
-  todo. People, direct and group chats. Needs the friends-inbox answer.
+  todo. People, direct and group chats; the Ideas inbox becomes owner-only.
 - 12 [Live updates](../briefs/todo/12-live-updates.md). todo. WebSocket at
   `/api/live`, polling as fallback.
 - 13 [Friend chats in the web app](../briefs/todo/13-friend-chats-in-the-web-app.md).

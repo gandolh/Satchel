@@ -8,8 +8,8 @@ updated: 2026-10-09
 ## Chats
 
 **Ideas inbox**:
-The owner's conversation with Claude, pinned first in the chat list. One per
-account.
+The owner's conversation with Claude, pinned first in the chat list. Only
+accounts with the `admin` role on Satchel have one.
 _Avoid_: notes, self-chat, saved messages, Claude chat
 
 **Conversation**:

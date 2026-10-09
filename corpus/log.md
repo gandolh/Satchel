@@ -78,3 +78,22 @@ Run in parallel. Commits: 07 `be07955` (CLI and guide) and 08 `ba058e5`
   tree-wide.
 - **The owner said "commit freely".** From brief 07 on, a brief is committed
   as soon as its own gate passes, without waiting for its wave partner.
+
+## [2026-10-09] done | Briefs 09 and 10: inbox thread, Connect Claude, deployable
+
+Commits:
+
+- 09 `9084340`: the thread with sending, retries, ticks and "Seen", plus
+  Connect Claude;
+- 10 `134de77` and vps-deploy `455682e`: Dockerfile, compose, the stack and
+  the owner's setup steps.
+
+255 tests. Brief 10 ran in parallel with 09, since their files were
+disjoint. The controller fixed the README's CLI exit codes. Phase 1 is
+built and waits on the owner's deploy steps.
+
+## [2026-10-09] decision | The Ideas inbox is owner-only
+
+Asked before brief 11, the owner chose owner-only: only accounts with the
+`admin` role on Satchel get an inbox and may create Claude tokens. Recorded
+in [wiki/decisions.md](wiki/decisions.md); brief 11 now implements it.

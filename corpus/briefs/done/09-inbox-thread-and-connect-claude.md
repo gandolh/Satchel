@@ -75,3 +75,27 @@ client lacks something, stop and say what.
   token and see the CLI-style call answer 401. Keep the token out of every
   file and screenshot you save.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `9084340` (255 tests in the suite). The thread's logic is a
+pure reducer in `web/src/thread/model.ts`, with 10 tests;
+`ThreadPlaceholder.tsx` now only re-exports `ThreadScreen`. The live check
+with local Ward passed at 390px and 1280px:
+
+- one tick per message, turning into two ticks and "Seen HH:MM" within
+  about 3.6 seconds of `POST /claude/seen`;
+- an offline send showed "Not sent", and its retry stored exactly one row;
+- the token was shown once, and a revoked token answered 401.
+
+Calls the brief left open:
+
+- The first load pages forward up to 2000 messages; there is no "load
+  older" control.
+- Polling failures show a muted "Can't reach Satchel. Trying again." strip,
+  not Not-sent bubbles.
+- Sender names, the privacy pill and "Seen by" already render for direct
+  and group threads, but only the inbox was tested live.
+
+The clipboard-failure fallback wasn't exercised. Local test data: about
+seven inbox messages and two revoked tokens.

@@ -1,5 +1,5 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; text only; inbox before friends. Read before proposing to change any of these.
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends. Read before proposing to change any of these.
 updated: 2026-10-09
 ---
 
@@ -67,6 +67,15 @@ no parameter can point Claude at a friend chat. The server keeps only a hash;
 the token is shown once in Settings. Rejected: a general API token with
 scopes, which would make "Claude never reads friend chats" depend on scope
 checks in every handler.
+
+## The Ideas inbox is owner-only
+_2026-10-09_. Only an account whose Satchel grant includes the `admin` role
+gets an Ideas inbox and may create Claude tokens. Friends see only their
+chats with people. The owner chose this when asked before brief 11.
+Rejected: an inbox for everyone (friends would see a pinned Claude chat
+nobody reads), and an inbox that appears after Connect Claude (more
+states, for friends nobody expects to use Claude Code). Opening it up later
+is a revisit of this entry.
 
 ## Text only, no tags, no offline outbox
 _2026-10-09_. The owner cut photos, voice, files, project tags and the

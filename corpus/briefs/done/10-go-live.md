@@ -118,3 +118,25 @@ Application code in `shared/`, `server/`, `web/`, `cli/`, and `corpus/`.
 - The README's owner setup is complete enough to follow without this brief.
 - Nothing was deployed, no secret was written, `npm link` was not run, and
   `~/.claude/CLAUDE.md` was not edited.
+
+## Outcome (2026-10-09)
+
+Done. Satchel commit `134de77` holds the Dockerfile, compose file,
+`.dockerignore` and README; vps-deploy commit `455682e` holds the stack,
+the estate entry, `app.ts` with `useWard`, and the synthesised Caddyfile.
+
+- **Container.** The image builds and the container answers `/api/health`
+  on 127.0.0.1:8795 only. Data survived `down`/`up`.
+- **Ward from inside the container** was not exercised; config validation
+  passed.
+- **synth** reports no collisions, and `--graph` shows 8795 claimed only by
+  satchel.
+- **Environment.** The stack sets `SATCHEL_DATA_DIR`, the host path compose
+  reads, plus `SATCHEL_PORT`/`PORT`. `HOST=0.0.0.0` and `DATA_DIR=/data`
+  are baked into the image, so a host path in the env file can't override
+  `/data`.
+- **README fix.** The controller corrected the README's CLI exit codes.
+- **Not added:** a `secrets/satchel.env.example`, since `secrets/` is
+  off-limits to agents.
+- Nothing was deployed, no secret was written, nothing was linked, and
+  `~/.claude/CLAUDE.md` is untouched.

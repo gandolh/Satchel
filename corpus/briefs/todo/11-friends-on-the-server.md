@@ -8,9 +8,9 @@ change: the routes from brief 05 already serve any conversation the caller is
 a member of. This brief adds people, conversation creation and the contract
 for both.
 
-**Before starting**, check [open-questions.md](../../wiki/open-questions.md):
-"Should friends get an Ideas inbox?" must be answered. If it is still open,
-stop and ask the owner. The answer changes step 4.
+The owner answered the open question on 2026-10-09: **the Ideas inbox is
+owner-only** (see "The Ideas inbox is owner-only" in
+[decisions.md](../../wiki/decisions.md)). Step 4 implements it.
 
 Rules: [messages-and-seen.md](../../wiki/messages-and-seen.md). The Claude
 boundary in [decisions.md](../../wiki/decisions.md) must still hold: no
@@ -24,12 +24,17 @@ server/src/db/migrations.ts   (migration 2)
 server/src/store.ts  server/src/store.test.ts   (additions)
 server/src/routes/conversations.ts  server/src/routes/conversations.test.ts
 server/src/routes/claude.test.ts   (one regression test)
+server/src/routes/tokens.ts  server/src/routes/tokens.test.ts   (owner-only)
+server/src/ward/guard.ts  server/src/ward/guard.test.ts   (roles on the request, inbox only for owners)
+server/src/routes/me.ts   (inboxId becomes nullable)
 README.md   ("Inviting a friend" section)
 ```
 
 ## Files you must NOT touch
 
-`web/`, `cli/`, `corpus/`, `server/src/app.ts`, `server/src/ward/`.
+`web/`, `cli/`, `corpus/`, `server/src/app.ts`, and the copied Ward client
+files in `server/src/ward/` (everything there except `guard.ts` and its
+test).
 
 ## What to do
 
@@ -50,10 +55,13 @@ README.md   ("Inviting a friend" section)
    `createGroup(creator, title, members)`. Both add every member with marker
    0. Membership is fixed at creation in phase 2; adding or leaving is
    later.
-4. **Inboxes.** Apply the owner's answer to the open question (for example:
-   `ensureInbox` only for the owner, or hidden until Connect Claude). Update
-   [open-questions.md](../../wiki/open-questions.md) and
-   [decisions.md](../../wiki/decisions.md) through the corpus completion step.
+4. **Owner-only inboxes.** The guard puts the account's Satchel roles on
+   the request (`grants.satchel`). It calls `ensureInbox` only when those
+   roles include `admin`; a friend's account gets no inbox. `GET /api/me`
+   returns `inboxId: null` for a friend (update the shared `meResponseSchema`
+   to allow null). The Claude token routes answer 403 `forbidden` for an
+   account without `admin`, so a friend can't create an inbox through
+   `createClaudeToken`. An owner's existing inbox is untouched.
 5. **Routes** in `conversations.ts`: the two above. Unknown subjects in
    `with` or `members` → 400 `invalid_request`. Direct → 201 when created,
    200 when it already existed.
@@ -65,7 +73,7 @@ README.md   ("Inviting a friend" section)
 
 ## Acceptance
 
-Tests with three accounts A, B, C:
+Tests with three accounts A (`admin`), B and C (role `member`):
 
 - people lists the others, never the caller;
 - A starts a direct chat with B twice and gets the same conversation; B
@@ -76,6 +84,8 @@ Tests with three accounts A, B, C:
   unknown subject) → 400;
 - unread counts and seen markers per member in a group;
 - regression: A's Claude token returns nothing from the direct or group
-  chat on any `/claude/*` route.
+  chat on any `/claude/*` route;
+- B has no inbox: `/api/me` gives `inboxId: null`, B's conversation list
+  has no inbox, and B's `POST /api/claude-tokens` is 403.
 
 `npm run typecheck && npm run lint && npm test` pass.
