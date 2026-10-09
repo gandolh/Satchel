@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { NetworkError, Unavailable } from "../api";
 import { useMe } from "../auth/session";
+import { Link } from "../layout/Link";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { usePolling } from "../polling";
+import { NEW_CHAT } from "../router";
 import { CHAT_LIST_POLL_MS, refreshConversations, useConversations, useLiveChats } from "./conversations";
 import { ChatRow } from "./ChatRow";
 
@@ -27,7 +29,18 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
 
   return (
     <section className="screen">
-      <ScreenHeader title="Chats" level={1} large />
+      <ScreenHeader
+        title="Chats"
+        level={1}
+        large
+        actions={
+          <Link to={NEW_CHAT} className="icon-button icon-button--end" aria-label="New chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 20h8M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+            </svg>
+          </Link>
+        }
+      />
       <div className="screen__body">
         {conversations === null ? (
           error ? (
@@ -43,7 +56,7 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
               </p>
             )}
             {conversations.length === 0 ? (
-              <p className="list-note">No chats yet.</p>
+              <p className="list-note">No chats yet. Start one with the pencil above.</p>
             ) : (
               <ul className="chat-list">
                 {conversations.map((conversation) => (

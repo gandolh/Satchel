@@ -11,7 +11,7 @@ import { Tick } from "../layout/Tick";
 import { isLiveConnected, useLiveCatchUp, useLiveEvents } from "../live";
 import { usePageVisible, usePolling } from "../polling";
 import { Composer } from "./Composer";
-import { buildTimeline, initialThreadState, isRetryable, threadReducer, type PendingMessage } from "./model";
+import { buildTimeline, initialThreadState, seenByLabel, isRetryable, threadReducer, type PendingMessage } from "./model";
 import "./thread.css";
 
 export interface ThreadScreenProps {
@@ -236,7 +236,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
                 {isInbox ? "Write down an idea. Claude reads it next time you ask." : "No messages yet."}
               </li>
             )}
-            {timeline.map((item) => {
+            {timeline.map((item, index) => {
               if (item.kind === "day") {
                 return (
                   <li key={item.key} className="thread__day">
@@ -250,10 +250,13 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
               const { message } = item;
               const own = message.sender === me.subject;
               const claude = message.sender === CLAUDE_MEMBER;
+              // The name goes above the first bubble of a run from one person.
+              const before = timeline[index - 1];
+              const startsRun = !(before?.kind === "message" && before.message.sender === message.sender);
               return (
                 <li key={item.key} className={own ? "row row--mine" : "row"}>
                   <div className={own ? "bubble bubble--mine" : "bubble"}>
-                    {isGroup && !own && <span className="bubble__sender">{senderName(message)}</span>}
+                    {isGroup && !own && startsRun && <span className="bubble__sender">{senderName(message)}</span>}
                     <p className="bubble__text">{message.text}</p>
                     <span className="bubble__meta">
                       {clockTime(new Date(message.sentAt))}
@@ -326,7 +329,7 @@ function SeenLine({
   avatarName: string;
   claude: boolean;
 }) {
-  if (line.kind === "seenBy") return <p className="row__seen">Seen by {line.names.join(", ")}</p>;
+  if (line.kind === "seenBy") return <p className="row__seen">{seenByLabel(line.names)}</p>;
   return (
     <p className="row__seen">
       <Avatar name={avatarName} claude={claude} size="xs" />

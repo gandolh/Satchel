@@ -9,6 +9,7 @@ describe("matchRoute", () => {
     expect(matchRoute("/satchel", BASE)).toEqual({ name: "chats" });
     expect(matchRoute("/satchel/settings", BASE)).toEqual({ name: "settings" });
     expect(matchRoute("/satchel/settings/", BASE)).toEqual({ name: "settings" });
+    expect(matchRoute("/satchel/new", BASE)).toEqual({ name: "new" });
     expect(matchRoute("/satchel/c/abc123", BASE)).toEqual({ name: "thread", id: "abc123" });
     expect(matchRoute("/satchel/c/abc123/", BASE)).toEqual({ name: "thread", id: "abc123" });
   });
@@ -46,6 +47,7 @@ describe("pathFor", () => {
     const routes: Route[] = [
       { name: "chats" },
       { name: "settings" },
+      { name: "new" },
       threadRoute("abc"),
       threadRoute("with/slash and space"),
     ];

@@ -227,3 +227,13 @@ export function buildTimeline(
   }
   return items;
 }
+
+/** How many names "Seen by" lists before it says "+N". */
+export const SEEN_BY_NAMES = 3;
+
+/** "Seen by Maria, Andrei", or "Seen by Maria, Andrei, Ioana +2" past three names. */
+export function seenByLabel(names: readonly string[]): string {
+  const shown = names.slice(0, SEEN_BY_NAMES).join(", ");
+  const more = names.length - SEEN_BY_NAMES;
+  return `Seen by ${shown}${more > 0 ? ` +${more}` : ""}`;
+}

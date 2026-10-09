@@ -7,6 +7,9 @@ import {
   type HttpMethod,
   type MeResponse,
   type MessagesResponse,
+  type CreateConversationRequest,
+  type CreateConversationResponse,
+  type PeopleResponse,
   type RevokeClaudeTokenResponse,
   type SeenRequest,
   type SeenResponse,
@@ -70,6 +73,19 @@ function emit(event: AuthEvent): void {
 
 export function getMe(options?: CallOptions): Promise<MeResponse> {
   return call(routes.me, {}, options);
+}
+
+/** Everyone else who has signed in to Satchel, by name. */
+export function listPeople(options?: CallOptions): Promise<PeopleResponse> {
+  return call(routes.listPeople, {}, options);
+}
+
+/** A direct chat (201 new, 200 the one that already existed; both resolve) or a new group. */
+export function createConversation(
+  body: CreateConversationRequest,
+  options?: CallOptions,
+): Promise<CreateConversationResponse> {
+  return call(routes.createConversation, { body }, options);
 }
 
 export function listConversations(options?: CallOptions): Promise<ConversationsResponse> {
@@ -163,7 +179,7 @@ async function call<T>(route: CallRoute<T>, parts: CallParts, options: CallOptio
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const sentAt = renewalGeneration();
     const response = await send(url, init, options.signal);
-    if (response.status !== 401) return read(route.response, response);
+    if (response.status !== 401) return read(route.response, response, route.path === routes.me.path);
     // A 401 after a successful renewal means renewal can't fix it, and a login
     // redirect could loop forever, so report it instead.
     if (attempt > 0) throw new ApiError(401, "unauthorized", "Satchel can't verify your sign-in right now.");
@@ -185,7 +201,7 @@ async function send(url: string, init: RequestInit, signal: AbortSignal | undefi
   }
 }
 
-async function read<T>(schema: ResponseSchema<T>, response: Response): Promise<T> {
+async function read<T>(schema: ResponseSchema<T>, response: Response, isMe: boolean): Promise<T> {
   const body: unknown = await response.json().catch(() => undefined);
 
   if (response.ok) {
@@ -202,7 +218,10 @@ async function read<T>(schema: ResponseSchema<T>, response: Response): Promise<T
     throw new ApiError(response.status, null, "Satchel isn't answering right now.");
   }
   const { code, message } = failure.data.error;
-  if (code === "forbidden") {
+  // Only `/api/me` answering 403 means "no Satchel grant". Any other 403 is
+  // about that one action (a friend asking for Claude tokens) and the calling
+  // screen shows it; the app keeps working.
+  if (code === "forbidden" && isMe) {
     emit("no-access");
     throw new NoAccess(message);
   }

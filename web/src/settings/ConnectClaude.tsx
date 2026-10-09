@@ -1,6 +1,7 @@
 import type { ClaudeTokenSummary } from "@satchel/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, createClaudeToken, listClaudeTokens, revokeClaudeToken, SignedOut } from "../api";
+import { useMe } from "../auth/session";
 import { clockTime } from "../chats/time";
 import "./connect-claude.css";
 
@@ -24,8 +25,17 @@ function message(error: unknown): string {
   return error instanceof ApiError ? error.message : "Couldn't reach Satchel. Try again.";
 }
 
-/** Settings, Connect Claude: create, list and revoke the token the `satchel` CLI uses. */
+/**
+ * Settings, Connect Claude. Only the owner has an Ideas inbox (`inboxId`) and
+ * may make tokens; for a friend the card isn't there at all.
+ */
 export function ConnectClaude() {
+  const { inboxId } = useMe();
+  return inboxId === null ? null : <ConnectClaudeCard />;
+}
+
+/** Create, list and revoke the token the `satchel` CLI uses. */
+function ConnectClaudeCard() {
   const [tokens, setTokens] = useState<ClaudeTokenSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   createClaudeToken,
+  createConversation,
   getMe,
+  listClaudeTokens,
+  listPeople,
   listConversations,
   listMessages,
   NetworkError,
@@ -171,7 +174,31 @@ describe("renewal on 401", () => {
 });
 
 describe("errors", () => {
-  it("raises NoAccess on a 403 and tells the auth gate", async () => {
+  it("treats a 403 from any other route as an ordinary ApiError, without locking the app", async () => {
+    serve(() => apiError(403, "forbidden", "Only Satchel's owner can connect Claude."));
+    const error = await listClaudeTokens().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).not.toBeInstanceOf(NoAccess);
+    expect((error as ApiError).code).toBe("forbidden");
+    expect((error as ApiError).message).toBe("Only Satchel's owner can connect Claude.");
+    expect(events).toEqual([]);
+  });
+
+  it("posts a direct chat and a group, and lists people", async () => {
+    serve((url) =>
+      url === "/satchel-api/api/people"
+        ? json(200, { people: [{ subject: "s2", displayName: "Maria" }] })
+        : json(201, { conversation: { id: "c1", kind: "direct", title: null, members: [], lastMessage: null, unreadCount: 0 } }),
+    );
+    expect((await listPeople()).people).toEqual([{ subject: "s2", displayName: "Maria" }]);
+    expect((await createConversation({ kind: "direct", with: "s2" })).conversation.id).toBe("c1");
+    const post = calls.at(-1);
+    expect(post?.url).toBe("/satchel-api/api/conversations");
+    expect(post?.init.method).toBe("POST");
+    expect(post?.init.body).toBe(JSON.stringify({ kind: "direct", with: "s2" }));
+  });
+
+  it("raises NoAccess on a 403 from /api/me and tells the auth gate", async () => {
     serve(() => apiError(403, "forbidden", "This Ward account has no access to Satchel."));
     const error = await getMe().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(NoAccess);

@@ -2,20 +2,22 @@ import { useMemo, useSyncExternalStore } from "react";
 import { appBase } from "./base";
 
 /**
- * The router, without a library: three routes on the History API, under the
+ * The router, without a library: four routes on the History API, under the
  * app's base (`import.meta.env.BASE_URL`, `/satchel/` by default).
  *
  *   /satchel/            chats
  *   /satchel/c/:id       thread
  *   /satchel/settings    settings
+ *   /satchel/new         start a chat
  *
  * Anything else is chats; the shell rewrites the address to `/satchel/`.
  */
 
-export type Route = { name: "chats" } | { name: "thread"; id: string } | { name: "settings" };
+export type Route = { name: "chats" } | { name: "thread"; id: string } | { name: "settings" } | { name: "new" };
 
 export const CHATS: Route = { name: "chats" };
 export const SETTINGS: Route = { name: "settings" };
+export const NEW_CHAT: Route = { name: "new" };
 
 export function threadRoute(id: string): Route {
   return { name: "thread", id };
@@ -27,6 +29,7 @@ export function matchRoute(pathname: string, base: string = appBase()): Route {
   if (pathname !== root && !pathname.startsWith(`${root}/`)) return CHATS;
   const rest = pathname.slice(root.length).replace(/^\/+/, "").replace(/\/$/, "");
   if (rest === "settings") return SETTINGS;
+  if (rest === "new") return NEW_CHAT;
   const thread = /^c\/([^/]+)$/.exec(rest);
   if (thread?.[1]) {
     try {
@@ -46,6 +49,8 @@ export function pathFor(route: Route, base: string = appBase()): string {
       return base;
     case "settings":
       return `${base}settings`;
+    case "new":
+      return `${base}new`;
     case "thread":
       return `${base}c/${encodeURIComponent(route.id)}`;
   }

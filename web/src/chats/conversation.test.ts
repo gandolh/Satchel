@@ -61,6 +61,23 @@ describe("conversationTitle and conversationSubtitle", () => {
   });
 });
 
+describe("a friend's chats", () => {
+  const FRIEND = "sub-friend";
+
+  it("titles a direct chat after the other person, whoever started it", () => {
+    const direct = conversation({ members: [member("o", "Cristian"), member(FRIEND, "Maria")] });
+    expect(conversationTitle(direct, FRIEND)).toBe("Cristian");
+    expect(conversationTitle(direct, "o")).toBe("Maria");
+  });
+
+  it("lists a friend's chats by latest message with no inbox to pin", () => {
+    const quiet = conversation({ id: "quiet", lastMessage: message(3, "x") });
+    const busy = conversation({ id: "busy", kind: "group", title: "Hike", lastMessage: message(8, "x") });
+    const empty = conversation({ id: "empty" });
+    expect(sortConversations([empty, quiet, busy]).map((c) => c.id)).toEqual(["busy", "quiet", "empty"]);
+  });
+});
+
 describe("lastMessagePreview", () => {
   it("is null with no messages", () => {
     expect(lastMessagePreview(inbox, ME)).toBeNull();

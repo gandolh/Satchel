@@ -3,7 +3,7 @@ import { Avatar } from "../layout/Avatar";
 import { Link } from "../layout/Link";
 import { Tick } from "../layout/Tick";
 import { threadRoute } from "../router";
-import { conversationTitle, INBOX_SUBTITLE, lastMessagePreview } from "./conversation";
+import { conversationSubtitle, conversationTitle, INBOX_SUBTITLE, lastMessagePreview } from "./conversation";
 import { listTime } from "./time";
 
 export interface ChatRowProps {
@@ -49,7 +49,9 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
               {preview.text}
             </span>
           ) : (
-            <span className="chat-row__preview chat-row__preview--empty">No messages yet</span>
+            <span className="chat-row__preview chat-row__preview--empty">
+              {conversation.kind === "group" ? conversationSubtitle(conversation, me) : "No messages yet"}
+            </span>
           )}
           {unread > 0 && (
             <span className="badge">

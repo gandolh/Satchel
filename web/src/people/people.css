@@ -1,0 +1,98 @@
+.new-chat__form {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field__label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.field__input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--sunk);
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.new-chat__group-toggle {
+  justify-self: start;
+}
+
+.people {
+  margin: 0 calc(-1 * var(--space-4));
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person:hover {
+  background: var(--sunk);
+}
+
+.person__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-title);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+
+.new-chat__error {
+  margin: 0;
+  color: var(--bad);
+}
+
+.new-chat__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.new-chat__actions .muted {
+  flex: 1 0 100%;
+  margin: 0;
+}
+
+/* The compose button at the end of the chat list's header. */
+.icon-button--end {
+  margin-left: auto;
+  margin-right: calc(-1 * var(--space-2));
+}

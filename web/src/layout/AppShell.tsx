@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ChatList } from "../chats/ChatList";
+import { NewChat } from "../people/NewChat";
 import { useMediaQuery, WIDE_QUERY } from "../polling";
 import { navigate, pathFor, usePathname, useRoute } from "../router";
 import { Settings } from "../settings/Settings";
@@ -9,7 +10,7 @@ import { TabBar } from "./TabBar";
 /**
  * The signed-in app. Phone: one view at a time, the tab bar under Chats and
  * Settings, a back arrow in the thread. From 900px: the chat list (with the
- * tab bar) in a 320px column and the thread or Settings beside it.
+ * tab bar) in a 320px column and the thread, Settings or New chat beside it.
  */
 export function AppShell() {
   const route = useRoute();
@@ -26,6 +27,8 @@ export function AppShell() {
       <ThreadScreen key={route.id} conversationId={route.id} />
     ) : route.name === "settings" ? (
       <Settings />
+    ) : route.name === "new" ? (
+      <NewChat />
     ) : null;
   const tab = route.name === "settings" ? "settings" : "chats";
 

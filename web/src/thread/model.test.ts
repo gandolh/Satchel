@@ -7,6 +7,7 @@ import {
   dayLabel,
   initialThreadState,
   isRetryable,
+  seenByLabel,
   textLength,
   threadReducer,
   type ThreadState,
@@ -229,5 +230,18 @@ describe("live events", () => {
       { type: "loaded", conversation: DIRECT, messages: [] },
     );
     expect(marker(state, "friend")).toMatchObject({ seenUpTo: 6, seenAt: T2 });
+  });
+});
+
+describe("seenByLabel", () => {
+  it("lists up to three names", () => {
+    expect(seenByLabel(["Maria"])).toBe("Seen by Maria");
+    expect(seenByLabel(["Maria", "Andrei"])).toBe("Seen by Maria, Andrei");
+    expect(seenByLabel(["Maria", "Andrei", "Ioana"])).toBe("Seen by Maria, Andrei, Ioana");
+  });
+
+  it("counts the rest past three", () => {
+    expect(seenByLabel(["A", "B", "C", "D"])).toBe("Seen by A, B, C +1");
+    expect(seenByLabel(["A", "B", "C", "D", "E"])).toBe("Seen by A, B, C +2");
   });
 });
