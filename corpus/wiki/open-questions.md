@@ -1,5 +1,5 @@
 ---
-summary: Genuinely unresolved questions as of 2026-10-09. iPhone or Android for push, whether Claude should reply in the inbox, whether friends should get an Ideas inbox at all, and the final name. Delete an entry the moment it is answered.
+summary: Genuinely unresolved questions as of 2026-10-09. iPhone or Android for push, whether Claude should reply in the inbox, and whether friends should get an Ideas inbox at all. Delete an entry the moment it is answered.
 updated: 2026-10-09
 ---
 
@@ -24,8 +24,3 @@ owner is the only account. Once friends sign in, each would see a pinned
 "Claude" chat that nobody reads unless they connect their own Claude.
 Options: keep it, hide it until the account opens Connect Claude, or make it
 owner-only. Needs an answer before brief 11 ships.
-
-## The name
-"Satchel" is a placeholder. Renaming touches the CLI name, the paths
-`/satchel` and `/satchel-api`, `~/.config/satchel/env`, the Ward app key and
-the vps-deploy stack, so it is cheapest before brief 10 (go live).

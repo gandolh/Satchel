@@ -31,3 +31,26 @@ The owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) (initial commi
 `LICENSE`, one-line `README.md`) was cloned and its `.git` moved into this
 directory, keeping `corpus/` in place. Brief 01 now extends those files
 instead of checking for a repository.
+
+## [2026-10-09] decision | The name stays Satchel
+
+The owner named the GitHub repository Satchel, so the open question about
+the name is closed. The CLI, paths, Ward app key and stack keep it.
+
+## [2026-10-09] done | Briefs 01 to 04: scaffold, contract, storage, Ward sign-in
+
+The backlog run started with plan-split-dispatch. Commits:
+
+- 01 `1d23546`: workspaces;
+- 02 `e6f15a7`: shared contract, 67 tests;
+- 03 `a83dcc9`: SQLite store with append-only triggers;
+- 04 `d1728de`: Ward guard and `/api/me`, 141 tests in all; wzd_auth
+  `d85aeaa` registers Satchel locally.
+
+The controller added `CLAUDE_DISPLAY_NAME` and an `internal` (500) error
+code to the contract. Client-ID replays now also match on sender
+([wiki/messages-and-seen.md](wiki/messages-and-seen.md)).
+
+Brief 04's live check signed in through the dev proxy and got the owner's
+subject. The-board's server was down, so no ticket moves were made. Outcome
+notes are in each brief.

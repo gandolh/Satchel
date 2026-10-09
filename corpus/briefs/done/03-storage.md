@@ -112,3 +112,19 @@ Tests in `store.test.ts` against `:memory:` with a fixed clock cover:
 - `listConversations` unread counts.
 
 `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `a83dcc9`, with 30 store tests. A client-ID replay must
+match conversation, sender and text, which is stricter than the brief; any
+other reuse is a `ClientIdConflict`.
+
+Additions beyond the brief:
+
+- a `NotAMember` error (answered as 500);
+- `seenUpTo()` and an optional `since` on `listMessages`;
+- `databasePath()`;
+- `migrate()` refuses a database newer than the code.
+
+`openDb` runs the migrations. `listConversations` orders by the last
+message's seq, with empty conversations last.

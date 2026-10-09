@@ -16,8 +16,8 @@ and Messenger do.
 Below the inbox, Satchel is an ordinary chat app: one-to-one and small group
 chats with friends, with the same seen ticks. Claude can never read those.
 
-"Satchel" is a working name: the bag you carry ideas home in. It is also the
-CLI's name.
+"Satchel" is the name: the bag you carry ideas home in. The owner kept it by
+naming the repository Satchel on 2026-10-09. It is also the CLI's name.
 
 ## The cast
 

@@ -99,3 +99,21 @@ shared/src/api.ts  shared/src/seen.ts  shared/src/*.test.ts
   route object parses a sample request and response.
 - No runtime dependency other than zod.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `e6f15a7`, with 67 tests. Calls the brief left open:
+
+- `nextSeenUpTo` is `max(current, min(requested, latestSeq))`. It equals
+  the brief's form whenever the marker is within range, and it never
+  decreases.
+- `tickState` ignores both the sender and `me`. With no other member it
+  returns `sent`.
+- `since` accepts a date or a date-time and is normalised to a UTC
+  `toISOString()` value.
+- Claude's responses and the token list use strict schemas, so a leaked
+  field fails validation. Other responses strip unknown keys.
+- Routes are one `routes` object keyed by name (`routes.sendMessage.body`).
+
+The controller added `CLAUDE_DISPLAY_NAME = "Claude"` and an `internal`
+error code (500), both raised by the implementer.

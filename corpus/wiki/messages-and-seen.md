@@ -34,8 +34,8 @@ Nothing ever changes a stored message. Triggers raise on `UPDATE` and
    retry". Retry sends the same client ID. Nothing is kept across a page
    reload; there is no outbox (see decisions).
 
-A client ID that already exists in a *different* conversation, or with
-different text, is a `409`. That only happens with a bug, and silently
+A client ID that already exists in a *different* conversation, from a
+different sender, or with different text, is a `409`. That only happens with a bug, and silently
 returning the other row would hide it.
 
 ## The seen marker

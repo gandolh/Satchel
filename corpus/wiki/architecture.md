@@ -1,11 +1,12 @@
 ---
-summary: How Satchel is put together, as designed on 2026-10-09 (nothing built yet). Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
+summary: How Satchel is put together. Briefs 01 to 04 are built (2026-10-09); the rest is as designed. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
 updated: 2026-10-09
 ---
 
 # Architecture
 
-Planned by the briefs; verify against the code once they land.
+Built through brief 04 on 2026-10-09; the rest is planned. Verify against the
+code before relying on a detail.
 
 ## Pieces
 
@@ -42,8 +43,13 @@ Two doors, never mixed:
   `/ward-api/introspect` with the `x-ward-app-key` header, cached 30 seconds
   per token. The answer carries `subject`, `username` and `grants`; a session
   without `grants.satchel` is a 403. Ward unreachable, a bad body or a JWKS
-  failure is a 503: fail closed, never "signed out". The code is copied from
-  `../wzd_auth/client/src` as its `integrating.md` instructs.
+  failure is a 503: fail closed, never "signed out". The client is copied
+  byte-identical from `../wzd_auth/client/src` into
+  [server/src/ward/](../../server/src/ward/), as its `integrating.md`
+  instructs; the guard is one root `onRequest` hook in
+  [server/src/ward/guard.ts](../../server/src/ward/guard.ts). Errors leave
+  through [server/src/errors.ts](../../server/src/errors.ts) in the shared
+  shape; anything unexpected is a 500 `internal` with no details.
 - **`/claude/*`**: the Claude token as a bearer header, resolved by hash. No
   cookie is read and no Ward call is made.
 
@@ -86,7 +92,9 @@ proxies `/satchel-api` to the API (prefix stripped) and `/ward` and
 `/ward-api` to the local Ward container, rewriting `Origin` the way atrium's
 `vite.config.ts` does, because Ward's `/refresh` and `/logout` check it. The
 API reads the Ward trio (`WARD_PUBLIC_ORIGIN`, `WARD_API_BASE_PATH`,
-`WARD_APP_KEY`) from the gitignored `.env` that Ward's `seed.mjs` writes.
+`WARD_APP_KEY`, all required) from the gitignored `.env` that Ward's
+`seed.mjs` writes. A relative `DATA_DIR` resolves against the repo root, so
+local data is `data/satchel.db`.
 
 ## Changes in other repos
 

@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Design settled, corpus bootstrapped, 14 briefs written and none built; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. Phase 1 in progress — briefs 01 to 04 done (scaffold, contract, storage, Ward sign-in), 05 and 06 next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -10,7 +10,9 @@ updated: 2026-10-09
 The design was settled in conversation on 2026-10-09 (two artifact
 revisions; see [overview.md](overview.md)) and recorded in
 [decisions.md](decisions.md). The corpus and all briefs were written the same
-day. Nothing is built. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
+day, and the backlog run started that afternoon. The server signs in through
+Ward, stores messages, and answers `/api/me`; the routes, CLI and web app
+come next. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
 GitHub, cloned into this directory on `main` on 2026-10-09; its only commit
 is GitHub's initial one (`.gitignore`, MIT `LICENSE`, `README.md`).
 
@@ -18,13 +20,13 @@ is GitHub's initial one (`.gitignore`, MIT `LICENSE`, `README.md`).
 
 Phase 1, the Ideas inbox:
 
-- 01 [Workspace scaffold](../briefs/todo/01-workspace-scaffold.md). todo.
+- 01 [Workspace scaffold](../briefs/done/01-workspace-scaffold.md). done 2026-10-09.
   Workspaces, pins, placeholders, dev proxy for the API and Ward.
-- 02 [Shared contract](../briefs/todo/02-shared-contract.md). todo. zod
+- 02 [Shared contract](../briefs/done/02-shared-contract.md). done 2026-10-09. zod
   schemas for every phase-1 route, limits, seen rules.
-- 03 [Storage](../briefs/todo/03-storage.md). todo. SQLite schema,
+- 03 [Storage](../briefs/done/03-storage.md). done 2026-10-09. SQLite schema,
   append-only triggers, the store, Claude token hashing.
-- 04 [Ward sign-in on the server](../briefs/todo/04-ward-sign-in.md). todo.
+- 04 [Ward sign-in on the server](../briefs/done/04-ward-sign-in.md). done 2026-10-09.
   Copied Ward client, the guard, `buildApp`, `/api/me`, local Ward entries.
 - 05 [Conversation routes](../briefs/todo/05-conversation-routes.md). todo.
   List, read, send with client IDs, mark seen.

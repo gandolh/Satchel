@@ -87,3 +87,27 @@ In other repos, one entry each:
   `http://localhost:5175/satchel-api/api/me` in the same browser returns the
   owner's subject. Brief 01's Vite config already proxies `/ward`.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `d1728de`, with 44 tests (141 in the suite). The wzd_auth
+entries are in that repo's commit `d85aeaa`. The run was cut off once by a
+usage limit and resumed.
+
+- **Copied client files.** `client.ts` imports `errors`, `cookie`,
+  `session` and `notify`, so all eight reference files were copied
+  byte-identical from wzd_auth `5babcaf`. `fakeWard.ts` needed two type
+  fixes for jose 6.2.10 and `noUncheckedIndexedAccess`.
+- **`WARD_API_BASE_PATH` is required,** as integrating.md asks; it has no
+  default.
+- **Error helpers** (`ApiError`, `sendError`) live in `server/src/errors.ts`
+  to avoid an import cycle. The test harness is
+  `server/src/ward/testing/testApp.ts`.
+- **The guard** is one root `onRequest` hook that judges a matched route by
+  its pattern. An unknown `/api` path is 401 without a session and 404 with
+  one.
+- **Fastify's own 413 and 415** keep their status, with code
+  `invalid_request`.
+- **Live check:** after the seed, signing in through the dev proxy returned
+  the owner's subject from `/satchel-api/api/me`, and Ward's login page
+  shows "Continue to Satchel".

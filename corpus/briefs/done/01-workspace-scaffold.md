@@ -91,3 +91,16 @@ create). Don't write the contract, the store, routes, commands or UI. Briefs
   and `curl http://localhost:5175/satchel-api/api/health` reaches the server.
 - `node cli/dist/index.js --version` prints the version with only `node` on
   PATH.
+
+## Outcome (2026-10-09)
+
+Done in commit `1d23546`. Every pin is the brief's. Type and lint packages
+the brief didn't list came from the-board at its versions:
+`@types/better-sqlite3` 9.6.0, `@types/react` 19.2.18, `@types/react-dom`
+19.2.7, `eslint-plugin-react-hooks` 7.1.1. `concurrently` 10.0.5 carries
+the-board's `shell-quote` 1.11.0 override, and `npm audit` reports 0
+vulnerabilities. GitHub's `.gitignore` already had `!.env.example`.
+
+`shared`, `server` and `cli` build with `tsc -b`; `web` is checked with
+`tsc -p web --noEmit`. The Ward proxy was wired here, but no Ward was
+running; brief 04 tested it against the local container.
