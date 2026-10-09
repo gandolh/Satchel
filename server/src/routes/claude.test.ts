@@ -41,7 +41,9 @@ async function owner(who: { subject: string; username: string }): Promise<Owner>
   const cookie = await t.signIn(who);
   const res = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
   expect(res.statusCode).toBe(200);
-  return { subject: who.subject, cookie, inboxId: meResponseSchema.parse(res.json()).inboxId };
+  const { inboxId } = meResponseSchema.parse(res.json());
+  if (inboxId === null) throw new Error(`${who.username} has no inbox; sign in as an owner`);
+  return { subject: who.subject, cookie, inboxId };
 }
 
 async function createToken({ cookie }: Owner): Promise<{ id: string; token: string }> {
@@ -263,6 +265,86 @@ describe("a Claude token reaches its own inbox and nothing else", () => {
 
     // And B's token sees B's inbox only.
     expect((await unread(tokenB)).messages.map((m) => m.text)).toEqual(["b-secret-1", "b-secret-2"]);
+  });
+});
+
+describe("friend conversations are never reachable with a Claude token", () => {
+  it("A's token returns nothing from A's direct or group chat on any /claude/* route", async () => {
+    const C = { subject: "subject-c", username: "cora" };
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const friendB = await t.signIn({ ...B, grants: { satchel: ["member"] } });
+    const friendC = await t.signIn({ ...C, grants: { satchel: ["member"] } });
+    for (const cookie of [friendB, friendC]) {
+      expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } })).statusCode).toBe(200);
+    }
+
+    const start = async (cookie: string, payload: object) => {
+      const res = await t.app.inject({ method: "POST", url: "/api/conversations", headers: { cookie }, payload });
+      expect(res.statusCode).toBe(201);
+      return (res.json() as { conversation: { id: string } }).conversation.id;
+    };
+    const direct = await start(a.cookie, { kind: "direct", with: B.subject });
+    const group = await start(a.cookie, { kind: "group", title: "group-secret-title", members: [B.subject, C.subject] });
+    const say = (conversationId: string, sender: string, text: string) =>
+      t.store.appendMessage({ conversationId, sender, clientId: randomUUID(), text }).message.seq;
+
+    // The owner and friends write in the friend chats, between and after the owner's inbox messages.
+    const inboxSeqs = [post(a, "inbox-1")];
+    say(direct, A.subject, "friend-secret-direct-from-a");
+    say(direct, B.subject, "friend-secret-direct-from-b");
+    inboxSeqs.push(post(a, "inbox-2"));
+    say(group, A.subject, "friend-secret-group-from-a");
+    say(group, C.subject, "friend-secret-group-from-c");
+    const groupLatest = say(group, B.subject, "friend-secret-group-from-b");
+    const markersBefore = t.db.prepare("SELECT * FROM members WHERE conversation_id IN (?, ?)").all(direct, group);
+
+    const responses: string[] = [];
+    const capture = async (method: "GET" | "POST", url: string, payload?: object) => {
+      const res = await t.app.inject({ method, url, headers: bearer(token), ...(payload ? { payload } : {}) });
+      expect(res.statusCode).toBe(200);
+      responses.push(res.body);
+      return res.json() as unknown;
+    };
+
+    for (const id of [direct, group]) {
+      const steer = `id=${id}&conversationId=${id}`;
+      const u = claudeUnreadResponseSchema.parse(await capture("GET", `/claude/unread?${steer}`));
+      expect(u.messages.map((m) => m.seq)).toEqual(inboxSeqs);
+      const all = claudeMessagesResponseSchema.parse(await capture("GET", `/claude/messages?after=0&${steer}`));
+      expect(all.messages.map((m) => m.text)).toEqual(["inbox-1", "inbox-2"]);
+      const since = claudeMessagesResponseSchema.parse(await capture("GET", `/claude/messages?since=2026-10-01&${steer}`));
+      expect(since.messages.map((m) => m.text)).toEqual(["inbox-1", "inbox-2"]);
+    }
+    // Clamped to the inbox, which ends below the group's latest seq.
+    for (const id of [direct, group]) {
+      const marked = seenResponseSchema.parse(
+        await capture("POST", "/claude/seen", { upTo: groupLatest + 10, conversationId: id, id }),
+      );
+      expect(marked.seenUpTo).toBe(inboxSeqs[1]);
+    }
+    expect(claudeUnreadResponseSchema.parse(await capture("GET", "/claude/unread"))).toEqual({
+      seenUpTo: inboxSeqs[1],
+      messages: [],
+    });
+
+    for (const body of responses) {
+      expect(body).not.toContain("friend-secret");
+      expect(body).not.toContain("group-secret-title");
+      expect(body).not.toContain(direct);
+      expect(body).not.toContain(group);
+      expect(body).not.toContain(B.subject);
+      expect(body).not.toContain(C.subject);
+    }
+    // Claude is not a member of either chat, and no marker in them moved.
+    expect(t.db.prepare("SELECT * FROM members WHERE conversation_id IN (?, ?)").all(direct, group)).toEqual(markersBefore);
+    expect(
+      t.db
+        .prepare<[string, string, string], { n: number }>(
+          "SELECT COUNT(*) AS n FROM members WHERE conversation_id IN (?, ?) AND member = ?",
+        )
+        .get(direct, group, CLAUDE_MEMBER)?.n,
+    ).toBe(0);
   });
 });
 

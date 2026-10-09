@@ -95,3 +95,33 @@ To run the API container locally, copy the Ward values from `.env` to
 `infrastructure/.env` (git-ignored) and run
 `docker compose -f infrastructure/docker-compose.yml up --build -d`; it listens
 on `127.0.0.1:8795` and keeps its data in `./data`.
+
+## Inviting a friend
+
+Friends sign in with Ward, the same as you. Satchel lets in any account with a
+role on `satchel`, and the role decides what the account gets. All of this is
+done by hand in production Ward's console, <https://gandolh.ro/ward/console>.
+
+1. **Give them an account.** Under Accounts, use "New account" with a username
+   and a password, and pass the password on yourself. An account made there
+   has no email address, so it has no reset link.
+
+   Or let them sign up: on Satchel's page under Apps, use "Open
+   registration…" with the baseline role `member`. Anyone who finds the
+   sign-up page then becomes a friend in Satchel, so close registration again
+   once they're in.
+
+2. **Grant `member` on `satchel`.** On the account's page, pick the app
+   `satchel`, type the role `member`, and press "Add role". An account that
+   signed up through Satchel's registration already has it.
+
+   Never grant `admin`. That role marks the owner: an `admin` account gets an
+   Ideas inbox and can create Claude tokens. A `member` gets neither.
+
+3. **They sign in once** at <https://gandolh.ro/satchel/>. After that first
+   sign-in they appear in the people list (`GET /api/people`), and anyone can
+   start a one-to-one chat or a group with them.
+
+Removing their role on `satchel` in Ward locks them out of Satchel from their
+next request. Their account and their chats stay, and they still show in the
+people list.

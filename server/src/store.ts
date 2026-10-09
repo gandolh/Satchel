@@ -10,6 +10,7 @@ import {
   type ConversationSummary,
   type Member,
   type Message,
+  type Person,
   type RevokeClaudeTokenResponse,
 } from "@satchel/shared";
 import type { Clock } from "./clock.js";
@@ -32,6 +33,26 @@ export class NotAMember extends Error {
     super(`${member} is not a member of conversation ${conversationId}.`);
     this.name = "NotAMember";
   }
+}
+
+/** Subjects named for a new conversation that have no account (or are Claude). Routes answer 400. */
+export class UnknownAccount extends Error {
+  constructor(readonly subjects: readonly string[]) {
+    super(`No Satchel account for ${subjects.join(", ")}.`);
+    this.name = "UnknownAccount";
+  }
+}
+
+/** A direct conversation's `direct_key`: the two subjects, sorted, joined with a space. */
+export function directKey(a: string, b: string): string {
+  return [a, b].sort().join(" ");
+}
+
+export interface CreatedDirect {
+  /** As the caller (`a` in `createDirect`) sees it. */
+  conversation: ConversationSummary;
+  /** False when the pair already had a direct conversation and this is it. */
+  created: boolean;
 }
 
 export interface AppendMessageInput {
@@ -137,10 +158,18 @@ export function createStore(db: Db, clock: Clock) {
     title: string | null;
     createdBy: string;
     createdAt: string;
+    directKey: string | null;
   }>(
-    `INSERT INTO conversations (id, kind, title, created_by, created_at)
-     VALUES (@id, @kind, @title, @createdBy, @createdAt)`,
+    `INSERT INTO conversations (id, kind, title, created_by, created_at, direct_key)
+     VALUES (@id, @kind, @title, @createdBy, @createdAt, @directKey)`,
   );
+  const accountStmt = db.prepare<[string], { subject: string }>("SELECT subject FROM accounts WHERE subject = ?");
+  const peopleStmt = db.prepare<[string, string], { subject: string; display_name: string }>(
+    `SELECT subject, display_name FROM accounts
+     WHERE subject <> ? AND subject <> ?
+     ORDER BY display_name COLLATE NOCASE, display_name, subject`,
+  );
+  const directByKeyStmt = db.prepare<[string], { id: string }>("SELECT id FROM conversations WHERE direct_key = ?");
   const insertMemberStmt = db.prepare<[string, string, string]>(
     "INSERT INTO members (conversation_id, member, joined_at) VALUES (?, ?, ?)",
   );
@@ -247,6 +276,32 @@ export function createStore(db: Db, clock: Clock) {
     return next;
   }
 
+  /** Claude is never an account, whatever the accounts table holds. */
+  function missingAccounts(subjects: readonly string[]): string[] {
+    return subjects.filter((subject) => subject === CLAUDE_MEMBER || accountStmt.get(subject) === undefined);
+  }
+
+  /** Inserts the conversation and its members, each with marker 0, in the order given. */
+  function insertConversation(
+    kind: ConversationKind,
+    title: string | null,
+    createdBy: string,
+    key: string | null,
+    members: readonly string[],
+  ): string {
+    const id = randomUUID();
+    const createdAt = now();
+    insertConversationStmt.run({ id, kind, title, createdBy, createdAt, directKey: key });
+    for (const member of members) insertMemberStmt.run(id, member, createdAt);
+    return id;
+  }
+
+  function summaryFor(id: string, subject: string): ConversationSummary {
+    const row = conversationOfStmt.get(id, subject);
+    if (row === undefined) throw new NotAMember(id, subject);
+    return summarize(row, subject);
+  }
+
   function summarize(row: ConversationRow, subject: string): ConversationSummary {
     const members = membersStmt.all(row.id).map(toMember);
     const last = lastMessageStmt.get(row.id);
@@ -264,13 +319,31 @@ export function createStore(db: Db, clock: Clock) {
   const ensureInboxTx = db.transaction((subject: string): string => {
     const existing = findInboxStmt.get(subject);
     if (existing !== undefined) return existing.id;
-    const id = randomUUID();
-    const createdAt = now();
-    insertConversationStmt.run({ id, kind: "inbox", title: null, createdBy: subject, createdAt });
-    insertMemberStmt.run(id, subject, createdAt);
-    insertMemberStmt.run(id, CLAUDE_MEMBER, createdAt);
-    return id;
+    return insertConversation("inbox", null, subject, null, [subject, CLAUDE_MEMBER]);
   });
+
+  const createDirectTx = db.transaction((a: string, b: string): CreatedDirect => {
+    if (a === b) throw new Error("A direct conversation needs two different accounts.");
+    const missing = missingAccounts([b]);
+    if (missing.length > 0) throw new UnknownAccount(missing);
+    const key = directKey(a, b);
+    const existing = directByKeyStmt.get(key);
+    if (existing !== undefined) return { conversation: summaryFor(existing.id, a), created: false };
+    const id = insertConversation("direct", null, a, key, [a, b]);
+    return { conversation: summaryFor(id, a), created: true };
+  });
+
+  const createGroupTx = db.transaction(
+    (creator: string, title: string, members: readonly string[]): ConversationSummary => {
+      if (members.includes(creator) || new Set(members).size !== members.length) {
+        throw new Error("A group's members must be distinct and must not list its creator.");
+      }
+      const missing = missingAccounts(members);
+      if (missing.length > 0) throw new UnknownAccount(missing);
+      const id = insertConversation("group", title, creator, null, [creator, ...members]);
+      return summaryFor(id, creator);
+    },
+  );
 
   // Inbox first, then by last message seq (newest first); conversations with no
   // messages go last, newest created first. Seq rather than sentAt, so equal
@@ -338,6 +411,34 @@ export function createStore(db: Db, clock: Clock) {
     /** The subject's Ideas inbox id, creating it with members `subject` and `claude` if missing. The account must exist. */
     ensureInbox(subject: string): string {
       return ensureInboxTx(subject);
+    },
+
+    /** Every account except `subject` (and never Claude), by display name, case-insensitively. */
+    listPeople(subject: string): Person[] {
+      return peopleStmt
+        .all(subject, CLAUDE_MEMBER)
+        .map((row) => ({ subject: row.subject, displayName: row.display_name }));
+    },
+
+    /**
+     * The direct conversation between `a` (the caller) and `b`, creating it
+     * with both as members at marker 0 if the pair has none. Either order
+     * finds the same one. `b` with no account throws `UnknownAccount`; `a`
+     * equal to `b` is a bug and throws.
+     */
+    createDirect(a: string, b: string): CreatedDirect {
+      return createDirectTx(a, b);
+    },
+
+    /**
+     * A new group titled `title`, with `creator` then `members`, all at marker
+     * 0, as the creator sees it. Membership is fixed from here on. A member
+     * with no account throws `UnknownAccount` and nothing is stored; a
+     * duplicate or the creator in `members` is a bug and throws. The route
+     * enforces the title and member-count limits.
+     */
+    createGroup(creator: string, title: string, members: readonly string[]): ConversationSummary {
+      return createGroupTx(creator, title, members);
     },
 
     /** The subject's conversations: inbox first, then newest last message, then empty ones newest created. */

@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { sendError } from "../errors.js";
+import { ApiError, sendError } from "../errors.js";
 import type { Store } from "../store.js";
 import type { WardClient } from "./client.js";
 import { WardAuthenticationError, WardConfigurationError, WardUnavailableError } from "./errors.js";
-import type { ActiveSession } from "./session.js";
+import { hasGrant, type ActiveSession } from "./session.js";
 
 /**
  * Satchel's Ward guard: the one file of the Ward module that is Satchel's own.
@@ -34,10 +34,19 @@ import type { ActiveSession } from "./session.js";
  * - **503 `unavailable`**: Ward unreachable, a timeout, a 5xx, a body outside
  *   the contract, a key set Ward cannot serve, or Ward refusing this app's
  *   key. Fail closed: never "signed out", never a stale answer.
+ *
+ * A request it lets through carries the account's Satchel roles. Any role
+ * opens Satchel; `admin` marks the owner, the only account with an Ideas
+ * inbox and Claude tokens (decisions.md, "The Ideas inbox is owner-only").
+ * Friends hold `member`. The guard makes the owner's inbox if it is missing
+ * and never makes one for anyone else; an inbox made earlier is left alone.
  */
 
 /** Ward's `apps.slug` for Satchel: the key into an introspection's `grants`. */
 export const SATCHEL_APP_SLUG = "satchel";
+
+/** The Satchel role that marks the owner. Friends are granted `member`, never this. */
+export const OWNER_ROLE = "admin";
 
 /** The signed-in caller, set by the guard on every request it lets through. */
 export interface SignedInAccount {
@@ -45,8 +54,10 @@ export interface SignedInAccount {
   subject: string;
   /** Ward's username, as of this request. Stored as the account's display name. */
   username: string;
-  /** The account's Ideas inbox, made by the guard if it was missing. */
-  inboxId: string;
+  /** The account's roles on Satchel (`grants.satchel`), as of this request; never empty. A set: test with `isOwner`. */
+  roles: readonly string[];
+  /** The owner's Ideas inbox, made by the guard if it was missing. Null for a friend, who has none. */
+  inboxId: string | null;
 }
 
 declare module "fastify" {
@@ -65,6 +76,21 @@ export function signedIn(request: FastifyRequest): SignedInAccount {
     throw new Error("signedIn() was called on a route the Ward guard does not cover");
   }
   return request.account;
+}
+
+/** Whether the account holds the owner's role on Satchel. */
+export function isOwner(account: SignedInAccount): boolean {
+  return account.roles.includes(OWNER_ROLE);
+}
+
+/**
+ * The caller on a route only the owner may use. A friend is a **403
+ * `forbidden`** with `message`; nothing else about the request is looked at.
+ */
+export function requireOwner(request: FastifyRequest, message: string): SignedInAccount {
+  const account = signedIn(request);
+  if (!isOwner(account)) throw new ApiError("forbidden", message);
+  return account;
 }
 
 /**
@@ -160,9 +186,14 @@ export function registerWardGuard(app: FastifyInstance, { ward, store, publicOri
       return sendError(reply, "forbidden", "This Ward account has no access to Satchel. Ask the owner for a grant.");
     }
 
-    // Account first: the inbox's rows reference it.
+    // Account first: the inbox's rows reference it. Only the owner gets an
+    // inbox; a friend's account gets none.
     store.upsertAccount(session.subject, session.username);
-    const inboxId = store.ensureInbox(session.subject);
-    request.account = { subject: session.subject, username: session.username, inboxId };
+    const owner = hasGrant(session.grants, SATCHEL_APP_SLUG, OWNER_ROLE);
+    // Claude tokens are the owner's. An account that lost admin keeps its
+    // inbox rows but not the tokens that read them.
+    if (!owner) store.revokeAllClaudeTokens(session.subject);
+    const inboxId = owner ? store.ensureInbox(session.subject) : null;
+    request.account = { subject: session.subject, username: session.username, roles: [...roles], inboxId };
   });
 }

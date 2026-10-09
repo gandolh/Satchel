@@ -177,6 +177,48 @@ describe("POST /api/claude-tokens/:id/revoke", () => {
   });
 });
 
+describe("owner-only", () => {
+  const C = { subject: "subject-c", username: "cora" };
+  let friend: string;
+
+  beforeEach(async () => {
+    friend = await t.signIn({ ...C, grants: { satchel: ["member"] } });
+  });
+
+  function inboxCount(subject: string): number {
+    return (
+      t.db
+        .prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM conversations WHERE kind = 'inbox' AND created_by = ?")
+        .get(subject)?.n ?? -1
+    );
+  }
+
+  it("a friend gets 403 forbidden on create, and no inbox or token is made", async () => {
+    const res = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: friend } });
+
+    expectError(res, 403, "forbidden");
+    expect(inboxCount(C.subject)).toBe(0);
+    expect(t.store.listClaudeTokens(C.subject)).toEqual([]);
+  });
+
+  it("a friend gets 403 forbidden on list and on revoke, even of the owner's token, which keeps working", async () => {
+    const { id, token } = await create(cookieA);
+
+    expectError(await t.app.inject({ method: "GET", url: "/api/claude-tokens", headers: { cookie: friend } }), 403, "forbidden");
+    expectError(await revoke(friend, id), 403, "forbidden");
+    expectError(await revoke(friend, "no-such-token"), 403, "forbidden");
+
+    expect((await useToken(token)).statusCode).toBe(200);
+    expect((await list(cookieA)).tokens[0]?.revokedAt).toBeNull();
+  });
+
+  it("the owner still creates, lists and revokes", async () => {
+    const { id } = await create(cookieA);
+    expect((await list(cookieA)).tokens.map((summary) => summary.id)).toEqual([id]);
+    expect((await revoke(cookieA, id)).statusCode).toBe(200);
+  });
+});
+
 describe("behind the Ward guard", () => {
   it("every token route is 401 without a Ward session, even with a Claude token", async () => {
     const { id, token } = await create(cookieA);

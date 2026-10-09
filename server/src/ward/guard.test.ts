@@ -8,10 +8,12 @@ import { createStore } from "../store.js";
 import { ACCESS_TOKEN_ALG } from "./claims.js";
 import { createWardClient } from "./client.js";
 import { startFakeWard } from "./testing/fakeWard.js";
+import { OWNER_ROLE, isOwner, signedIn, type SignedInAccount } from "./guard.js";
 import { TEST_APP_KEY, startTestApp, wardCookie, type TestApp } from "./testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };
+const FRIEND = { satchel: ["member"] };
 
 let t: TestApp;
 
@@ -74,6 +76,71 @@ describe("signed in with a Satchel grant", () => {
 
     expect(t.fakeWard.lastAppKey).toBe(TEST_APP_KEY);
     expect(t.fakeWard.introspectCallCount).toBe(1);
+  });
+});
+
+describe("roles and the owner-only inbox", () => {
+  /** A probe route behind the guard that answers with what the guard put on the request. */
+  function probe() {
+    t.app.get("/api/test-account", (request) => signedIn(request));
+  }
+
+  async function account(cookie: string): Promise<SignedInAccount> {
+    const res = await t.app.inject({ method: "GET", url: "/api/test-account", headers: { cookie } });
+    expect(res.statusCode).toBe(200);
+    return res.json<SignedInAccount>();
+  }
+
+  function inboxCount(): number {
+    return t.db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM conversations WHERE kind = 'inbox'").get()?.n ?? -1;
+  }
+
+  it("puts the account's Satchel roles on the request, and only Satchel's", async () => {
+    probe();
+    const owner = await account(await t.signIn({ ...A, grants: { satchel: ["admin"], atrium: ["reader"] } }));
+    const friend = await account(await t.signIn({ ...B, grants: { satchel: ["member"], atrium: ["admin"] } }));
+
+    expect(owner).toMatchObject({ subject: A.subject, username: A.username, roles: ["admin"] });
+    expect(owner.inboxId).toEqual(expect.any(String));
+    expect(friend).toEqual({ subject: B.subject, username: B.username, roles: ["member"], inboxId: null });
+  });
+
+  it("a friend's account gets no inbox: /api/me answers inboxId null and nothing is made", async () => {
+    const res = await me(await t.signIn({ ...B, grants: FRIEND }));
+
+    expect(res.statusCode).toBe(200);
+    expect(meResponseSchema.parse(res.json())).toEqual({ subject: B.subject, displayName: B.username, inboxId: null });
+    expect(displayName(B.subject)).toBe(B.username);
+    expect(t.store.listConversations(B.subject)).toEqual([]);
+    expect(inboxCount()).toBe(0);
+  });
+
+  it("admin alongside other roles is the owner", async () => {
+    probe();
+    const both = await account(await t.signIn({ ...A, grants: { satchel: ["member", OWNER_ROLE] } }));
+    expect(both.roles).toEqual(["member", "admin"]);
+    expect(isOwner(both)).toBe(true);
+    expect(both.inboxId).toBe(t.store.listConversations(A.subject)[0]?.id);
+    expect(isOwner({ ...both, roles: ["member"] })).toBe(false);
+  });
+
+  it("an inbox made while the account held admin is left alone after it drops to member", async () => {
+    const asOwner = meResponseSchema.parse((await me(await t.signIn(A))).json());
+    const asFriend = meResponseSchema.parse((await me(await t.signIn({ ...A, grants: FRIEND }))).json());
+
+    expect(asFriend.inboxId).toBeNull();
+    expect(inboxCount()).toBe(1);
+    expect(t.store.getConversation(asOwner.inboxId ?? "", A.subject)?.kind).toBe("inbox");
+  });
+
+  it("dropping to member revokes the account's Claude tokens", async () => {
+    await me(await t.signIn(A));
+    const { token } = t.store.createClaudeToken(A.subject);
+    expect(t.store.resolveClaudeToken(token)).not.toBeNull();
+
+    await me(await t.signIn({ ...A, grants: FRIEND }));
+
+    expect(t.store.resolveClaudeToken(token)).toBeNull();
   });
 });
 
@@ -194,10 +261,12 @@ describe("403 forbidden", () => {
 describe("cross-origin writes are refused before Ward is asked", () => {
   const FOREIGN = "https://evil.gandolh.ro";
 
-  /** A signed-in caller with their inbox id, and how many introspections that took. */
+  /** A signed-in owner with their inbox id, and how many introspections that took. B has an account to chat with. */
   async function signedInWithInbox() {
+    t.store.upsertAccount(B.subject, B.username);
     const cookie = await t.signIn(A);
     const { inboxId } = meResponseSchema.parse((await me(cookie)).json());
+    if (inboxId === null) throw new Error("the owner has no inbox");
     return { cookie, inboxId, introspections: t.fakeWard.introspectCallCount };
   }
 
@@ -211,6 +280,7 @@ describe("cross-origin writes are refused before Ward is asked", () => {
         payload: { clientId: randomUUID(), text: "hello" },
       },
       { method: "POST" as const, url: `/api/conversations/${inboxId}/seen`, payload: { upTo: 0 } },
+      { method: "POST" as const, url: "/api/conversations", payload: { kind: "direct", with: B.subject } },
     ];
   }
 
@@ -233,6 +303,7 @@ describe("cross-origin writes are refused before Ward is asked", () => {
       expect(t.store.listClaudeTokens(A.subject)).toHaveLength(1);
       expect(t.store.resolveClaudeToken(token)?.tokenId).toBe(tokenId);
       expect(t.store.latestSeq(inboxId)).toBe(0);
+      expect(t.store.listConversations(A.subject)).toHaveLength(1);
     });
   }
 
@@ -259,17 +330,19 @@ describe("cross-origin writes are refused before Ward is asked", () => {
       expect(created.statusCode).toBe(201);
       const { id: tokenId } = created.json<{ id: string }>();
 
-      const [, revoke, send, seen] = writes(inboxId, tokenId);
+      const [, revoke, send, seen, startChat] = writes(inboxId, tokenId);
       for (const [request, status] of [
         [revoke, 200],
         [send, 201],
         [seen, 200],
+        [startChat, 201],
       ] as const) {
         if (!request) throw new Error("missing request");
         const res = await t.app.inject({ ...request, headers: { cookie, ...extra } });
         expect(res.statusCode).toBe(status);
       }
       expect(t.store.latestSeq(inboxId)).toBe(1);
+      expect(t.store.listConversations(A.subject)).toHaveLength(2);
     });
   }
 

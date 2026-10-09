@@ -4,13 +4,17 @@ import {
   CLAUDE_MEMBER,
   ERROR_CODES,
   ERROR_STATUS,
+  GROUP_MEMBERS_MAX,
+  GROUP_TITLE_MAX_LENGTH,
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,
   apiError,
   claudeMessagesQuerySchema,
   claudeTokenSummarySchema,
   claudeUnreadMessageSchema,
+  createConversationRequestSchema,
   errorResponseSchema,
+  meResponseSchema,
   messagesQuerySchema,
   routes,
   sendMessageRequestSchema,
@@ -53,6 +57,30 @@ const samples: Record<RouteName, Sample> = {
     route: "GET /api/conversations",
     auth: "ward",
     response: { conversations: [inbox] },
+  },
+  createConversation: {
+    route: "POST /api/conversations",
+    auth: "ward",
+    body: { kind: "group", title: "Hike on Saturday", members: ["friend-b", "friend-c"] },
+    response: {
+      conversation: {
+        id: "c2",
+        kind: "group",
+        title: "Hike on Saturday",
+        members: [
+          { id: "owner", displayName: "Owner", seenUpTo: 0, seenAt: null },
+          { id: "friend-b", displayName: "Bogdan", seenUpTo: 0, seenAt: null },
+          { id: "friend-c", displayName: "Cora", seenUpTo: 0, seenAt: null },
+        ],
+        lastMessage: null,
+        unreadCount: 0,
+      },
+    },
+  },
+  listPeople: {
+    route: "GET /api/people",
+    auth: "ward",
+    response: { people: [{ subject: "friend-b", displayName: "Bogdan" }] },
   },
   listMessages: {
     route: "GET /api/conversations/:id/messages",
@@ -137,6 +165,57 @@ describe("routes", () => {
 
   it("has a sample for every route", () => {
     expect(Object.keys(samples).sort()).toEqual(Object.keys(routes).sort());
+  });
+});
+
+describe("meResponseSchema", () => {
+  it("allows a null inbox, for a friend", () => {
+    const friend = { subject: "friend-b", displayName: "Bogdan", inboxId: null };
+    expect(meResponseSchema.parse(friend)).toEqual(friend);
+    expect(meResponseSchema.safeParse({ subject: "friend-b", displayName: "Bogdan" }).success).toBe(false);
+  });
+});
+
+describe("createConversationRequestSchema", () => {
+  const parse = (body: unknown) => createConversationRequestSchema.safeParse(body);
+  const members = ["friend-b", "friend-c"];
+
+  it("takes a direct body", () => {
+    expect(parse({ kind: "direct", with: "friend-b" }).data).toEqual({ kind: "direct", with: "friend-b" });
+  });
+
+  it("takes a group body and trims the title", () => {
+    expect(parse({ kind: "group", title: "  Hike  ", members }).data).toEqual({
+      kind: "group",
+      title: "Hike",
+      members,
+    });
+  });
+
+  it("accepts a title of 1 and 80 characters and 2 and 20 members", () => {
+    const twenty = Array.from({ length: GROUP_MEMBERS_MAX }, (_, i) => `friend-${String(i)}`);
+    expect(parse({ kind: "group", title: "x", members }).success).toBe(true);
+    expect(parse({ kind: "group", title: "x".repeat(GROUP_TITLE_MAX_LENGTH), members: twenty }).success).toBe(true);
+  });
+
+  it.each([
+    ["no kind", { with: "friend-b" }],
+    ["an inbox", { kind: "inbox" }],
+    ["a direct body with no one", { kind: "direct" }],
+    ["a direct body with an empty subject", { kind: "direct", with: "" }],
+    ["a group with no title", { kind: "group", members }],
+    ["a group with a blank title", { kind: "group", title: "   ", members }],
+    ["a group title of 81 characters", { kind: "group", title: "x".repeat(GROUP_TITLE_MAX_LENGTH + 1), members }],
+    ["a group with no members", { kind: "group", title: "Hike" }],
+    ["a group with one member", { kind: "group", title: "Hike", members: ["friend-b"] }],
+    [
+      "a group with 21 members",
+      { kind: "group", title: "Hike", members: Array.from({ length: 21 }, (_, i) => `friend-${String(i)}`) },
+    ],
+    ["a group listing a member twice", { kind: "group", title: "Hike", members: ["friend-b", "friend-b"] }],
+    ["a group with an empty subject", { kind: "group", title: "Hike", members: ["friend-b", ""] }],
+  ])("rejects %s", (_label, body) => {
+    expect(parse(body).success).toBe(false);
   });
 });
 

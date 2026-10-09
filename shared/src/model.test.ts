@@ -5,6 +5,7 @@ import {
   memberSchema,
   messageSchema,
   messageTextSchema,
+  personSchema,
 } from "./model.js";
 
 const message = {
@@ -99,5 +100,16 @@ describe("conversationSummarySchema", () => {
       unreadCount: 0,
     };
     expect(conversationSummarySchema.safeParse(summary).success).toBe(false);
+  });
+});
+
+describe("personSchema", () => {
+  it("parses a subject and a display name", () => {
+    const person = { subject: "subject-b", displayName: "bogdan" };
+    expect(personSchema.parse(person)).toEqual(person);
+  });
+
+  it("rejects an empty subject", () => {
+    expect(personSchema.safeParse({ subject: "", displayName: "bogdan" }).success).toBe(false);
   });
 });

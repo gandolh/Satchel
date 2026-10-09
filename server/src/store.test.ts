@@ -15,7 +15,7 @@ import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, migrations } from "./db/migrations.js";
 import { databasePath, openDb, type Db } from "./db/open.js";
-import { ClientIdConflict, NotAMember, createStore, type Store } from "./store.js";
+import { ClientIdConflict, NotAMember, UnknownAccount, createStore, directKey, type Store } from "./store.js";
 
 const A = "subject-a";
 const B = "subject-b";
@@ -47,7 +47,7 @@ function messageCount(): number {
   return db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM messages").get()?.n ?? -1;
 }
 
-/** Phase 2 has no store method for groups yet, so tests build one directly. */
+/** A group built with SQL, without `createGroup`'s checks, so tests can shape members freely. */
 function createGroup(createdBy: string, members: string[]): string {
   const id = randomUUID();
   const at = current.toISOString();
@@ -111,6 +111,34 @@ describe("openDb and migrations", () => {
       .map((row) => row.name);
     expect(tables).toEqual(["one"]);
     fresh.close();
+  });
+
+  it("migration 2 adds direct_key to a version-1 database and keeps its rows", () => {
+    const old = new Database(":memory:");
+    old.pragma("foreign_keys = ON");
+    migrate(old, migrations.slice(0, 1));
+    old.prepare("INSERT INTO accounts VALUES (?, 'Alice', ?, ?)").run(A, T0, T0);
+    old.prepare("INSERT INTO conversations VALUES ('inbox-a', 'inbox', NULL, ?, ?)").run(A, T0);
+
+    migrate(old);
+
+    expect(old.pragma("user_version", { simple: true })).toBe(2);
+    expect(old.prepare("SELECT id, kind, direct_key FROM conversations").all()).toEqual([
+      { id: "inbox-a", kind: "inbox", direct_key: null },
+    ]);
+    old.close();
+  });
+
+  it("only a direct conversation has a direct_key, and a pair has one at most", () => {
+    const insert = (id: string, kind: string, key: string | null) =>
+      db
+        .prepare("INSERT INTO conversations (id, kind, title, created_by, created_at, direct_key) VALUES (?, ?, NULL, ?, ?, ?)")
+        .run(id, kind, A, T0, key);
+    insert("d1", "direct", directKey(A, B));
+    expect(() => insert("d2", "direct", directKey(B, A))).toThrow(/UNIQUE/);
+    expect(() => insert("d3", "direct", null)).toThrow(/CHECK/);
+    expect(() => insert("g1", "group", directKey(A, C))).toThrow(/CHECK/);
+    expect(() => insert("i1", "inbox", directKey(A, C))).toThrow(/CHECK/);
   });
 
   it("refuses a database newer than the code", () => {
@@ -376,6 +404,94 @@ describe("listConversations", () => {
       [CLAUDE_MEMBER, CLAUDE_DISPLAY_NAME],
     ]);
     expect(store.listConversations(A)[0]?.id).toBe(inbox);
+  });
+});
+
+describe("listPeople", () => {
+  it("every other account by display name, ignoring case, never the subject or Claude", () => {
+    store.upsertAccount("subject-d", "adam");
+    store.upsertAccount(CLAUDE_MEMBER, "Not Claude");
+    expect(store.listPeople(A)).toEqual([
+      { subject: "subject-d", displayName: "adam" },
+      { subject: B, displayName: "Bob" },
+      { subject: C, displayName: "Cora" },
+    ]);
+    expect(store.listPeople(B).map((p) => p.subject)).toEqual(["subject-d", A, C]);
+  });
+});
+
+describe("createDirect", () => {
+  it("makes the conversation with both members at marker 0, as the caller sees it", () => {
+    const { conversation, created } = store.createDirect(A, B);
+    expect(created).toBe(true);
+    expect(conversation).toEqual({
+      id: conversation.id,
+      kind: "direct",
+      title: null,
+      members: [
+        { id: A, displayName: "Alice", seenUpTo: 0, seenAt: null },
+        { id: B, displayName: "Bob", seenUpTo: 0, seenAt: null },
+      ],
+      lastMessage: null,
+      unreadCount: 0,
+    });
+    expect(conversationSummarySchema.parse(conversation)).toEqual(conversation);
+    const row = db.prepare<[string], { direct_key: string; created_by: string }>(
+      "SELECT direct_key, created_by FROM conversations WHERE id = ?",
+    );
+    expect(row.get(conversation.id)).toEqual({ direct_key: [A, B].sort().join(" "), created_by: A });
+  });
+
+  it("returns the pair's existing conversation from either side, with created: false", () => {
+    const first = store.createDirect(A, B).conversation;
+    send(first.id, B, "hello");
+    const again = store.createDirect(A, B);
+    const reverse = store.createDirect(B, A);
+
+    expect(again.created).toBe(false);
+    expect(reverse.created).toBe(false);
+    expect(again.conversation.id).toBe(first.id);
+    expect(reverse.conversation.id).toBe(first.id);
+    expect(again.conversation.unreadCount).toBe(1);
+    expect(reverse.conversation.unreadCount).toBe(0);
+    expect(store.createDirect(A, C).conversation.id).not.toBe(first.id);
+  });
+
+  it("throws UnknownAccount for a subject with no account, or Claude, and stores nothing", () => {
+    const count = () => db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM conversations").get()?.n;
+    expect(() => store.createDirect(A, "subject-nobody")).toThrow(UnknownAccount);
+    expect(() => store.createDirect(A, CLAUDE_MEMBER)).toThrow(UnknownAccount);
+    expect(() => store.createDirect(A, A)).toThrow();
+    expect(count()).toBe(0);
+  });
+});
+
+describe("createGroup", () => {
+  it("makes the group with the creator first, every member at marker 0, as the creator sees it", () => {
+    const group = store.createGroup(A, "Hike", [C, B]);
+    expect(group).toEqual({
+      id: group.id,
+      kind: "group",
+      title: "Hike",
+      members: [
+        { id: A, displayName: "Alice", seenUpTo: 0, seenAt: null },
+        { id: C, displayName: "Cora", seenUpTo: 0, seenAt: null },
+        { id: B, displayName: "Bob", seenUpTo: 0, seenAt: null },
+      ],
+      lastMessage: null,
+      unreadCount: 0,
+    });
+    for (const member of [A, B, C]) expect(store.listConversations(member).map((c) => c.id)).toContain(group.id);
+    expect(db.prepare("SELECT direct_key FROM conversations WHERE id = ?").get(group.id)).toEqual({ direct_key: null });
+  });
+
+  it("throws UnknownAccount when a member has no account, and stores nothing", () => {
+    expect(() => store.createGroup(A, "Hike", [B, "subject-nobody"])).toThrow(UnknownAccount);
+    expect(() => store.createGroup(A, "Hike", [B, CLAUDE_MEMBER])).toThrow(UnknownAccount);
+    expect(() => store.createGroup(A, "Hike", [A, B])).toThrow();
+    expect(() => store.createGroup(A, "Hike", [B, B])).toThrow();
+    expect(db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM conversations").get()?.n).toBe(0);
+    expect(db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM members").get()?.n).toBe(0);
   });
 });
 

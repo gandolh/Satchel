@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { PAGE_LIMIT_DEFAULT, PAGE_LIMIT_MAX } from "./limits.js";
-import { conversationSummarySchema, messageSchema, messageTextSchema } from "./model.js";
+import { conversationSummarySchema, messageSchema, messageTextSchema, personSchema } from "./model.js";
 
 /**
  * The API contract: every route's request and response as zod schemas, plus
@@ -58,7 +58,9 @@ export type ErrorCode = z.infer<typeof errorCodeSchema>;
 
 /**
  * - `unauthorized`: no Ward session, or an unknown or revoked Claude token.
- * - `forbidden`: a valid Ward session without a Satchel grant.
+ * - `forbidden`: a valid Ward session without a Satchel grant, a write sent
+ *   from another origin, or a friend on a route only the owner may use (the
+ *   Claude token routes).
  * - `not_found`: also a conversation the caller isn't a member of, never
  *   `forbidden`, so its existence doesn't leak.
  * - `unavailable`: Ward is unreachable.
@@ -93,7 +95,8 @@ export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export const meResponseSchema = z.object({
   subject: id,
   displayName: z.string(),
-  inboxId: id,
+  /** The owner's Ideas inbox. Null for a friend: only an account with the `admin` role on Satchel has one. */
+  inboxId: id.nullable(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
@@ -103,6 +106,62 @@ export const conversationsResponseSchema = z.object({
   conversations: z.array(conversationSummarySchema),
 });
 export type ConversationsResponse = z.infer<typeof conversationsResponseSchema>;
+
+// --- GET /api/people ---------------------------------------------------------------
+
+/** Every account except the caller, ordered by display name. */
+export const peopleResponseSchema = z.object({ people: z.array(personSchema) });
+export type PeopleResponse = z.infer<typeof peopleResponseSchema>;
+
+// --- POST /api/conversations ----------------------------------------------------------
+
+export const GROUP_TITLE_MAX_LENGTH = 80;
+/** A group's other members, not counting the one who creates it. */
+export const GROUP_MEMBERS_MIN = 2;
+export const GROUP_MEMBERS_MAX = 20;
+
+const requiredSubject = (message: string) => z.string({ error: message }).min(1, message);
+
+export const createDirectRequestSchema = z.object({
+  kind: z.literal("direct"),
+  /** The other member's subject. Not the caller's own. */
+  with: requiredSubject("Say who the chat is with."),
+});
+
+// The title is trimmed before the length checks; a title of only spaces is no title.
+export const createGroupRequestSchema = z.object({
+  kind: z.literal("group"),
+  title: z
+    .string({ error: "A group needs a title." })
+    .trim()
+    .min(1, "A group needs a title.")
+    .max(GROUP_TITLE_MAX_LENGTH, `A group title can be at most ${GROUP_TITLE_MAX_LENGTH} characters.`),
+  /** The other members' subjects: no duplicates, and not the caller, who is added anyway. */
+  members: z
+    .array(requiredSubject("Each member must be a subject."), { error: "A group needs a list of members." })
+    .min(GROUP_MEMBERS_MIN, `A group needs at least ${GROUP_MEMBERS_MIN} other members.`)
+    .max(GROUP_MEMBERS_MAX, `A group can have at most ${GROUP_MEMBERS_MAX} other members.`)
+    .refine((members) => new Set(members).size === members.length, "Each member can be listed only once."),
+});
+
+/**
+ * The server also answers 400 when `with` or a member is the caller, or is
+ * not an account that has signed in to Satchel. Membership is fixed once the
+ * conversation exists.
+ */
+export const createConversationRequestSchema = z.discriminatedUnion(
+  "kind",
+  [createDirectRequestSchema, createGroupRequestSchema],
+  { error: 'kind must be "direct" or "group".' },
+);
+export type CreateConversationRequest = z.infer<typeof createConversationRequestSchema>;
+
+/**
+ * Direct: 201 when created; 200 when the two already had one, which is
+ * returned instead of a second. Group: always 201, a new conversation.
+ */
+export const createConversationResponseSchema = z.object({ conversation: conversationSummarySchema });
+export type CreateConversationResponse = z.infer<typeof createConversationResponseSchema>;
 
 // --- GET /api/conversations/:id/messages ------------------------------------------
 
@@ -228,6 +287,19 @@ export const routes = {
     path: "/api/conversations",
     auth: "ward",
     response: conversationsResponseSchema,
+  },
+  createConversation: {
+    method: "POST",
+    path: "/api/conversations",
+    auth: "ward",
+    body: createConversationRequestSchema,
+    response: createConversationResponseSchema,
+  },
+  listPeople: {
+    method: "GET",
+    path: "/api/people",
+    auth: "ward",
+    response: peopleResponseSchema,
   },
   listMessages: {
     method: "GET",

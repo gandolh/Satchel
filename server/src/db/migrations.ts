@@ -59,6 +59,14 @@ export const migrations: readonly string[] = [
     revoked_at       TEXT
   );
   `,
+  // 2 (brief 11): one direct conversation per pair. The key is the two
+  // subjects sorted and joined with a space; only direct conversations have
+  // one. ALTER TABLE can't add a UNIQUE column, so the index carries it.
+  `
+  ALTER TABLE conversations ADD COLUMN direct_key TEXT
+    CHECK ((kind = 'direct') = (direct_key IS NOT NULL));
+  CREATE UNIQUE INDEX conversations_one_direct_per_pair ON conversations(direct_key);
+  `,
 ];
 
 /** Brings the schema up to `list.length`, tracked in `PRAGMA user_version`. */

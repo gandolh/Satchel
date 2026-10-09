@@ -32,13 +32,24 @@ export type Message = z.infer<typeof messageSchema>;
 export const conversationSummarySchema = z.object({
   id: z.string().min(1),
   kind: conversationKindSchema,
-  /** Null for the Ideas inbox; the UI titles it "Claude". */
+  /**
+   * A group's title. Null for the Ideas inbox, which the UI titles "Claude",
+   * and for a direct conversation, which it titles by the other member's name.
+   */
   title: z.string().nullable(),
   members: z.array(memberSchema),
   lastMessage: messageSchema.nullable(),
   unreadCount: z.number().int().nonnegative(),
 });
 export type ConversationSummary = z.infer<typeof conversationSummarySchema>;
+
+/** Someone the caller can start a conversation with: an account that has signed in to Satchel. */
+export const personSchema = z.object({
+  /** A Ward subject. */
+  subject: z.string().min(1),
+  displayName: z.string(),
+});
+export type Person = z.infer<typeof personSchema>;
 
 // Line endings are normalised before the checks, so a pasted "\r\n" counts as
 // one character. The text is never trimmed: what was typed is what is stored.
