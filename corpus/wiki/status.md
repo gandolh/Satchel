@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2: 11 and 12 done, 13 in progress, 14 next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2: 11 to 13 done, 14 (push) in progress; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -49,8 +49,8 @@ Phase 2, friends:
   done 2026-10-09. People, direct and group chats; the Ideas inbox is owner-only.
 - 12 [Live updates](../briefs/done/12-live-updates.md). done 2026-10-09. WebSocket at
   `/api/live`, polling as fallback.
-- 13 [Friend chats in the web app](../briefs/todo/13-friend-chats-in-the-web-app.md).
-  todo. New chat, groups, "Seen by", unread badges.
+- 13 [Friend chats in the web app](../briefs/done/13-friend-chats-in-the-web-app.md).
+  done 2026-10-09. New chat, groups, "Seen by", unread badges.
 - 14 [Push notifications](../briefs/todo/14-push-notifications.md). todo.
   VAPID, subscriptions, the Notifications switch.
 

@@ -143,3 +143,9 @@ Commit `2879ee2`, 392 tests. One socket per tab, with origin-checked
 upgrades and expiry at the token's `exp`; polling stays as the fallback.
 The controller pinned `ws` 8.21.3. The lingering-socket concern is captured
 as [todos/recheck-ward-session-on-socket-ping.md](todos/recheck-ward-session-on-socket-ping.md).
+
+## [2026-10-09] done | Brief 13: friend chats in the web app
+
+Commit `e388001`, 400 tests. Adds New chat, group threads and the no-access
+fix. The controller moved New chat into `AppShell`'s main pane. Follow-up
+captured: [todos/hide-ungranted-accounts-from-people.md](todos/hide-ungranted-accounts-from-people.md).

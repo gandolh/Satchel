@@ -62,3 +62,26 @@ web/src/**/*.test.ts for the above
   group of three, exchange messages, and watch unread badges and "Seen by"
   update live; at 390px and 1280px, light and dark.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `e388001`, with 400 tests in the suite.
+
+- **New chat** (`web/src/people/`): a searchable people list, a direct chat
+  reused per pair, and a group mode.
+- **Threads.** Group threads show the sender above each run, and "Seen by"
+  lists up to three names, then "+N".
+- **No-access fix.** Only a 403 from `/api/me` means no access now, so a
+  friend opening Settings stays in the app. Connect Claude hides when
+  `inboxId` is null.
+- **Placement.** The implementer mounted New chat from the chat list
+  because `AppShell` was outside its lane; the controller moved it into
+  `AppShell`'s main pane so it opens beside the list on wide screens.
+
+The live check used four throwaway accounts (three friends, one admin), and
+all 25 checks passed: live unread badges, "Seen by" updating, a friend's
+Settings without Connect Claude, and the admin's inbox pinned first.
+
+Local test data: eight disabled throwaway accounts and their conversations.
+`/api/people` doesn't hide disabled accounts; that's a server-side
+follow-up.
