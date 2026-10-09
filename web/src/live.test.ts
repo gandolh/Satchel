@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   RECONNECT_MAX_MS,
   RECONNECT_MIN_MS,
+  STALE_AFTER_AWAY_MS,
   createLiveClient,
   liveUrl,
   parseLiveFrame,
   reconnectDelay,
+  shouldResync,
   type LiveClient,
   type LiveSocketLike,
 } from "./live";
@@ -88,7 +90,7 @@ let sockets: FakeSocket[];
 let renewSince: ReturnType<typeof vi.fn<(since: number) => Promise<boolean>>>;
 let generation: number;
 let hidden: boolean;
-let wake: (() => void) | undefined;
+let wake: ((awayMs?: number) => void) | undefined;
 let client: LiveClient;
 
 function latest(): FakeSocket {
@@ -334,6 +336,36 @@ describe("reconnecting", () => {
     expect(sockets).toHaveLength(2);
   });
 
+  it("replaces a live socket after a long time away, and catches up", async () => {
+    let runs = 0;
+    client.onConnect(() => {
+      runs += 1;
+    });
+    client.start();
+    latest().open();
+    await settle();
+    expect(client.status()).toBe("live");
+    const first = latest();
+
+    wake?.(STALE_AFTER_AWAY_MS + 1);
+    expect(first.closedWith).toBe(1000);
+    expect(sockets).toHaveLength(2);
+    latest().open();
+    await settle();
+    expect(client.status()).toBe("live");
+    expect(runs).toBe(2);
+  });
+
+  it("keeps a live socket across a quick tab switch", async () => {
+    client.start();
+    latest().open();
+    await settle();
+    wake?.(1000);
+    wake?.();
+    expect(sockets).toHaveLength(1);
+    expect(client.status()).toBe("live");
+  });
+
   it("stop closes the socket and stops reconnecting; start is idempotent", async () => {
     client.start();
     client.start();
@@ -359,5 +391,17 @@ describe("helpers", () => {
     expect(parseLiveFrame("{")).toBeNull();
     expect(parseLiveFrame(new ArrayBuffer(4))).toBeNull();
     expect(parseLiveFrame(JSON.stringify({ type: "seen", conversationId: "c1" }))).toBeNull();
+  });
+});
+
+describe("shouldResync", () => {
+  it("only for a live or syncing socket that was away past the threshold", () => {
+    expect(shouldResync("live", STALE_AFTER_AWAY_MS + 1)).toBe(true);
+    expect(shouldResync("syncing", STALE_AFTER_AWAY_MS + 1)).toBe(true);
+    expect(shouldResync("live", STALE_AFTER_AWAY_MS)).toBe(false);
+    expect(shouldResync("live", 0)).toBe(false);
+    expect(shouldResync("waiting", 60_000)).toBe(false);
+    expect(shouldResync("connecting", 60_000)).toBe(false);
+    expect(shouldResync("off", 60_000)).toBe(false);
   });
 });

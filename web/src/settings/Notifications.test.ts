@@ -27,6 +27,14 @@ describe("NotificationsCard", () => {
     expect(html).not.toContain('role="switch"');
   });
 
+  it("offers a retry, not 'unsupported', when the check itself failed", () => {
+    const html = render({ kind: "check-failed" });
+    expect(html).toContain("Couldn&#x27;t check notifications. Try again.");
+    expect(html).toContain("Retry");
+    expect(html).not.toContain("can&#x27;t show notifications");
+    expect(html).not.toContain('role="switch"');
+  });
+
   it("says so when the server has push off, or the browser can't", () => {
     expect(render({ kind: "server-off" })).toContain("aren&#x27;t set up on this Satchel server");
     expect(render({ kind: "unsupported" })).toContain("can&#x27;t show notifications");

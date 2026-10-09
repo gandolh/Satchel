@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { onAuthEvent } from "../api";
+import { rebindPushSubscription } from "../push/account";
 import { goToWardLogin, signOut, startRenewal } from "../ward";
 import { checkSession, MeContext, type GateState } from "./session";
 
@@ -33,6 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const signedIn = state.kind === "signed-in";
   useEffect(() => {
     if (!signedIn) return;
+    void rebindPushSubscription();
     return startRenewal();
   }, [signedIn]);
 

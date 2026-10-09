@@ -1,4 +1,4 @@
-import { GROUP_MEMBERS_MIN, GROUP_TITLE_MAX_LENGTH, type Person } from "@satchel/shared";
+import { GROUP_MEMBERS_MAX, GROUP_MEMBERS_MIN, GROUP_TITLE_MAX_LENGTH, type Person } from "@satchel/shared";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, createConversation, listPeople, NetworkError, SignedOut } from "../api";
 import { refreshConversations } from "../chats/conversations";
@@ -54,17 +54,24 @@ export function NewChat() {
     }
   };
 
+  const atMax = picked.length >= GROUP_MEMBERS_MAX;
+  const canCreate =
+    group && picked.length >= GROUP_MEMBERS_MIN && picked.length <= GROUP_MEMBERS_MAX && title.trim() !== "" && !busy;
+
   const toggle = (subject: string) =>
-    setPicked((current) => (current.includes(subject) ? current.filter((s) => s !== subject) : [...current, subject]));
+    setPicked((current) => {
+      if (current.includes(subject)) return current.filter((s) => s !== subject);
+      return current.length >= GROUP_MEMBERS_MAX ? current : [...current, subject];
+    });
 
   const submitGroup = (event: FormEvent) => {
     event.preventDefault();
-    if (busy) return;
+    // Enter in the search box of a plain New chat lands here too.
+    if (!canCreate) return;
     void open({ kind: "group", title: title.trim(), members: picked });
   };
 
   const visible = people ? filterPeople(people, query) : [];
-  const canCreate = picked.length >= GROUP_MEMBERS_MIN && title.trim() !== "" && !busy;
 
   return (
     <section className="screen new-chat">
@@ -134,7 +141,12 @@ export function NewChat() {
                       <label className="person">
                         <Avatar name={person.displayName} />
                         <span className="person__name">{person.displayName}</span>
-                        <input type="checkbox" checked={checked} onChange={() => toggle(person.subject)} />
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={!checked && atMax}
+                          onChange={() => toggle(person.subject)}
+                        />
                       </label>
                     ) : (
                       <button
@@ -162,7 +174,7 @@ export function NewChat() {
                 <p className="muted" role="status">
                   {picked.length === 0
                     ? `Pick at least ${GROUP_MEMBERS_MIN} people.`
-                    : `${picked.length} picked${picked.length < GROUP_MEMBERS_MIN ? `, pick at least ${GROUP_MEMBERS_MIN}` : ""}.`}
+                    : `${picked.length} picked${picked.length < GROUP_MEMBERS_MIN ? `, pick at least ${GROUP_MEMBERS_MIN}` : ""}${atMax ? `. That's the most a group can have (${GROUP_MEMBERS_MAX}).` : "."}`}
                 </p>
                 <button type="button" className="button button--quiet" onClick={() => (setGroup(false), setPicked([]))}>
                   Cancel

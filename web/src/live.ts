@@ -65,8 +65,11 @@ export interface LiveClientDeps {
   /** `ward.ts`: renew unless a renewal happened since `since`. `true` renewed, `false` the session is over; throws when Ward is down. */
   renewSince(since: number): Promise<boolean>;
   renewalGeneration(): number;
-  /** Calls back when the page is shown again or the device comes back online. Returns an unsubscribe function. */
-  onWake(callback: () => void): () => void;
+  /**
+   * Calls back when the page is shown again or the device comes back online,
+   * with how long it was hidden or offline, in ms. Returns an unsubscribe function.
+   */
+  onWake(callback: (awayMs?: number) => void): () => void;
   isHidden(): boolean;
   /** For the backoff's jitter. */
   random(): number;
@@ -117,6 +120,18 @@ export function reconnectDelay(attempt: number, random: number): number {
   const base = RECONNECT_MIN_MS * 2 ** Math.min(attempt, 10);
   const jittered = base * (0.8 + 0.4 * random);
   return Math.round(Math.min(RECONNECT_MAX_MS, Math.max(RECONNECT_MIN_MS, jittered)));
+}
+
+/** Away at least this long and a "live" socket can't be trusted: it may have died without a close. */
+export const STALE_AFTER_AWAY_MS = 5000;
+
+/**
+ * Whether waking should replace the socket: it looks live or syncing, but the
+ * page was away long enough that the connection may be dead without a close.
+ * A quick tab switch keeps it.
+ */
+export function shouldResync(status: LiveStatus, awayMs: number): boolean {
+  return (status === "live" || status === "syncing") && awayMs > STALE_AFTER_AWAY_MS;
 }
 
 export function createLiveClient(deps: LiveClientDeps): LiveClient {
@@ -269,8 +284,20 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
     start() {
       if (status !== "off") return;
       setStatus("waiting");
-      stopWaking = deps.onWake(() => {
-        if (status === "waiting") connect();
+      stopWaking = deps.onWake((awayMs = 0) => {
+        if (status === "waiting") {
+          connect();
+        } else if (shouldResync(status, awayMs)) {
+          // Reconnecting catches up on everything missed while away.
+          const ws = socket;
+          socket = null;
+          buffered = [];
+          clearTimeout(timer);
+          timer = undefined;
+          setStatus("waiting");
+          ws?.close(1000, "woke after a while away");
+          connect();
+        }
       });
       connect();
     },
@@ -319,14 +346,26 @@ export const live: LiveClient = createLiveClient({
   renewSince,
   renewalGeneration,
   onWake(callback) {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") callback();
+    let awaySince: number | null = null;
+    const leave = () => {
+      awaySince ??= Date.now();
     };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("online", callback);
+    const wake = () => {
+      const away = awaySince === null ? 0 : Date.now() - awaySince;
+      if (document.visibilityState === "visible") awaySince = null;
+      callback(away);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") wake();
+      else leave();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("offline", leave);
+    window.addEventListener("online", wake);
     return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("online", callback);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("offline", leave);
+      window.removeEventListener("online", wake);
     };
   },
   isHidden: () => document.visibilityState === "hidden",

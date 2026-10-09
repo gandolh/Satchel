@@ -1,5 +1,6 @@
 import { appBase } from "./base";
 import { Unavailable } from "./errors";
+import { forgetPushSubscription } from "./push/account";
 
 /**
  * Ward, from the browser. Satchel has no login screen: Ward serves the estate's
@@ -141,6 +142,9 @@ export function startRenewal(onSignedOut: () => void = () => goToWardLogin()): (
 
 /** End the Ward session (every app's, it is one session) and go to the login page. */
 export async function signOut(): Promise<void> {
+  // First, while the session still authorises it: a shared browser must stop
+  // showing this account's previews. Never holds sign-out up for long.
+  await forgetPushSubscription().catch(() => undefined);
   try {
     await fetch(WARD_LOGOUT_PATH, { method: "POST", credentials: "same-origin" });
   } catch {

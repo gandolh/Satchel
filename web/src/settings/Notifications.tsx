@@ -19,6 +19,8 @@ export type NotificationsView =
   | { kind: "ios-update" }
   | { kind: "unsupported" }
   | { kind: "server-off" }
+  /** Couldn't check (a network error, say); worth another try. */
+  | { kind: "check-failed" }
   | { kind: "ready"; on: boolean; permission: NotificationPermission; publicKey: string; ios: boolean };
 
 export const IOS_HOME_SCREEN_MESSAGE =
@@ -47,10 +49,11 @@ export interface NotificationsCardProps {
   /** A quieter line, e.g. the permission prompt was dismissed. */
   note?: string | null;
   onToggle?: (on: boolean) => void;
+  onRetry?: () => void;
 }
 
 /** The card itself, without the browser: `Notifications` feeds it. */
-export function NotificationsCard({ view, busy = false, error = null, note = null, onToggle }: NotificationsCardProps) {
+export function NotificationsCard({ view, busy = false, error = null, note = null, onToggle, onRetry }: NotificationsCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
   const hintId = `${id}-hint`;
@@ -65,6 +68,14 @@ export function NotificationsCard({ view, busy = false, error = null, note = nul
         <p className="notify-hint">Notifications need iOS 16.4 or later. Update the iPhone, then turn this on here.</p>
       )}
       {view.kind === "unsupported" && <p className="muted">This browser can't show notifications from Satchel.</p>}
+      {view.kind === "check-failed" && (
+        <>
+          <p className="muted">Couldn't check notifications. Try again.</p>
+          <button type="button" className="button button--quiet" onClick={onRetry}>
+            Retry
+          </button>
+        </>
+      )}
       {view.kind === "server-off" && <p className="muted">Notifications aren't set up on this Satchel server yet.</p>}
       {view.kind === "ready" && (
         <>
@@ -141,6 +152,8 @@ export function Notifications() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let live = true;
     const check = () => {
@@ -149,10 +162,8 @@ export function Notifications() {
           if (live) setView(next);
         },
         (e: unknown) => {
-          if (live && !(e instanceof SignedOut)) {
-            setView({ kind: "unsupported" });
-            setError(errorMessage(e, true));
-          }
+          // A failed re-check leaves a working switch as it was.
+          if (live && !(e instanceof SignedOut)) setView((current) => (current.kind === "ready" ? current : { kind: "check-failed" }));
         },
       );
     };
@@ -166,9 +177,20 @@ export function Notifications() {
       live = false;
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [attempt]);
 
-  if (view.kind !== "ready") return <NotificationsCard view={view} error={error} />;
+  if (view.kind !== "ready") {
+    return (
+      <NotificationsCard
+        view={view}
+        error={error}
+        onRetry={() => {
+          setView({ kind: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
+  }
 
   const turnOn = async () => {
     // First thing in the click, before any other await: browsers only show
