@@ -54,3 +54,15 @@ code to the contract. Client-ID replays now also match on sender
 Brief 04's live check signed in through the dev proxy and got the owner's
 subject. The-board's server was down, so no ticket moves were made. Outcome
 notes are in each brief.
+
+## [2026-10-09] done | Briefs 05 and 06: conversation and Claude routes
+
+Run in parallel. Commits: 05 `91721cf` (list, read, idempotent send, mark
+seen) and 06 `66e4655` (the `/claude/*` routes behind the bearer token,
+plus token create, list and revoke). 186 tests. The server side of phase 1
+is complete.
+
+Before wave 6, the controller installed vite-plugin-pwa 1.3.0, workbox-window,
+the fontsource families, and the CLI's dev link to the server (`992a2f2`), so
+briefs 07 and 08 don't race on the lockfile. vite-plugin-pwa 2.0.0 was
+skipped as under two weeks old.

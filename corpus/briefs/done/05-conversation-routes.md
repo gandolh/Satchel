@@ -63,3 +63,9 @@ accounts A and B, and cover:
 - after A sends, A's own marker equals the new seq and A's unread count is 0.
 
 `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `91721cf`, with 16 tests, inside the two owned files. Every
+acceptance case is covered, plus `limit=501` → 400, a nonexistent
+conversation → 404, and stored text normalised from `\r\n` to `\n`.

@@ -75,3 +75,21 @@ and cover:
 - the test logger's output contains no token string.
 
 `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `66e4655`, with 32 tests (186 in the suite).
+
+Calls beyond the brief's text:
+
+- `POST /api/claude-tokens` answers 201.
+- Every 401 from `/claude/*` sends `WWW-Authenticate: Bearer`.
+- An unknown `/claude/<path>` is a 404, so a CLI with the wrong base URL
+  sees "There is no such route." instead of a token error.
+- A conversation id in Claude's query or body is ignored, and a test proves
+  it.
+- A second token doesn't revoke the first. Revoking twice returns the
+  original `revokedAt`.
+
+The no-token-in-logs tests first check that the log isn't empty, and a
+deliberately leaky handler fails seven tests, so the tests do bite.
