@@ -1,0 +1,8 @@
+# Directories the briefs will create. lint.sh skips them until they exist;
+# remove a line when its directory lands (brief 01 does this for the first four).
+shared
+server
+web
+cli
+infrastructure
+data
