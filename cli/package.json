@@ -12,5 +12,8 @@
   },
   "dependencies": {
     "@satchel/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@satchel/server": "0.1.0"
   }
 }
