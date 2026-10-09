@@ -1,0 +1,24 @@
+{
+  "name": "@satchel/server",
+  "version": "0.1.0",
+  "description": "The Satchel API (Fastify + SQLite).",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@satchel/shared": "0.1.0",
+    "better-sqlite3": "13.0.3",
+    "fastify": "5.12.5",
+    "jose": "6.2.10",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "tsx": "4.23.13"
+  }
+}

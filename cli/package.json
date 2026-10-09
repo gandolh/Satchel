@@ -1,0 +1,16 @@
+{
+  "name": "@satchel/cli",
+  "version": "0.1.0",
+  "description": "The satchel command: how Claude reads and writes its Ideas inbox.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "satchel": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@satchel/shared": "0.1.0"
+  }
+}

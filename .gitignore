@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Satchel
+dev-dist/
+data/
+*.local
+infrastructure/.env

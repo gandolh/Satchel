@@ -1,0 +1,21 @@
+{
+  "name": "@satchel/shared",
+  "version": "0.1.0",
+  "description": "Schemas, limits and the seen rules shared by the server, the web app and the CLI.",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "zod": "4.5.4"
+  }
+}
