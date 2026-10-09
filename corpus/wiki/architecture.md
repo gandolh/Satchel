@@ -1,11 +1,12 @@
 ---
-summary: How Satchel is put together. Phase 1 (briefs 01 to 10) is built (2026-10-09); phase 2 is as designed. Workspaces, request paths, the Ward guard with its cross-site and lost-grant rules, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
+summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs). Workspaces, request paths, the Ward guard with its cross-site and lost-grant rules, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
 updated: 2026-10-09
 ---
 
 # Architecture
 
-Phase 1 was built through brief 10 on 2026-10-09; phase 2 is planned. Verify against the
+Built on 2026-10-09 by briefs 01 to 14 and two review rounds. Verify against
+the code before relying on a detail. Verify against the
 code before relying on a detail.
 
 ## Pieces
@@ -66,10 +67,15 @@ Two more guard rules came out of the phase-1 review (2026-10-09):
   `SameSite=Lax`. Requests with neither header pass, which covers tests and
   non-browser clients. The dev proxy rewrites `Origin` for `/satchel-api`
   the same way it does for Ward.
-- **A lost grant revokes tokens.** A live session whose grants no longer
-  include `satchel` gets a 403, and that account's Claude tokens are
-  revoked. This is lazy: it happens on the person's next `/api` request,
-  not the moment the grant is removed in Ward.
+- **A lost grant locks the account out.** A live session whose grants no
+  longer include `satchel` gets a 403. The account is then marked inactive
+  (`accounts.active`, migration 4), its Claude tokens are revoked, its push
+  subscriptions are deleted, and it is hidden from the people list and
+  refused for new chats. Pushes skip inactive accounts. Signing in with a
+  grant again reactivates it. This is lazy: it happens on the person's next
+  request, not the moment the grant is removed in Ward.
+- **An account without `admin`** loses its Claude tokens on every request,
+  so a demoted owner keeps the inbox rows but not the tokens.
 
 The browser renews the 15-minute access token with `POST /ward-api/refresh`
 (same origin) on a 401, retries once, and sends the owner to
@@ -90,7 +96,9 @@ append-only triggers: [messages-and-seen.md](messages-and-seen.md) and brief
 ([server/src/live/](../../server/src/live/)). Polling remains the fallback
 while the socket is down. The upgrade must carry Satchel's own `Origin`, passes
 the Ward guard, and closes with code 4001 at the access token's expiry. Events
-go only to a conversation's members, never to `claude`.
+go only to a conversation's members, never to `claude`. An account may hold
+ten sockets; an eleventh closes the oldest with 4002, and that tab then waits
+to be shown again instead of reconnecting.
 
 ## Push
 

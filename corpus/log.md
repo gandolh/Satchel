@@ -156,3 +156,42 @@ Satchel `35c53ea` and vps-deploy `fe6d6f3`, 497 tests. The controller
 declared the workbox packages that `sw.ts` imports. A live round-trip
 through Chrome's push service passed. All 14 briefs are done; a final
 review of phase 2 is running.
+
+## [2026-10-09] maintenance | Phase-2 review and fixes; the run is complete
+
+Three finders reviewed `329d461..HEAD` (security on opus, server and web on
+sonnet). They found nothing critical. Four findings were Important: a removed
+friend kept getting push previews; a shared browser kept the previous
+account's pushes; a socket that died during sleep looked live; and the new
+socket cap could evict tabs in a loop. Fixed in:
+
+- `3f89992`, web:
+  - reconnect after five seconds away;
+  - sign-out unsubscribes, and sign-in re-binds;
+  - Enter in New chat no longer submits an empty group;
+  - a retryable error for the notifications check.
+- `8329a2c`, server:
+  - lost-grant lockout with `accounts.active` (migration 4);
+  - push subscriptions deleted and inactive accounts skipped;
+  - at most ten sockets per account (close code 4002, and the client
+    doesn't auto-reconnect after it);
+  - trailing-dot push hosts refused;
+  - the subscription cap on rebind;
+  - `VAPID_SUBJECT` validation.
+
+538 tests. The lockout resolved
+`todos/hide-ungranted-accounts-from-people.md`, which was removed.
+
+Accepted and not fixed:
+
+- The lockout and socket expiry only happen at the person's next request
+  (the socket re-check stays a todo).
+- A Ward-disabled account is a 401, not a 403, so it stays listed.
+- Safari may penalise pushes suppressed while a chat is focused.
+
+Outside this run, commit `63fcf74` rewrote the README as a landing page and
+moved the setup steps into `docs/` (`owner-setup.md`, `getting-started.md`,
+`architecture.md`).
+
+All 14 briefs are done. Nothing is deployed; the owner's steps are in
+`docs/owner-setup.md`.

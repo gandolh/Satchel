@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2 built too (11 to 14); a final review of phase 2 is running. Nothing is deployed; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. All 14 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. 538 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -7,18 +7,24 @@ updated: 2026-10-09
 
 ## Where things stand
 
-The design was settled in conversation on 2026-10-09 (two artifact
-revisions; see [overview.md](overview.md)) and recorded in
-[decisions.md](decisions.md). The corpus and all briefs were written the same
-day, and the backlog run started that afternoon. The server signs in through
-Ward and serves every phase-1 route, `satchel unread`/`seen`/`history` work
-against it, and the web app has the inbox thread with seen ticks and Connect
-Claude. Phase 2 adds friends (direct and group chats), live updates over a
-WebSocket, and push notifications. The container builds and vps-deploy has
-the stack. Nothing is deployed yet: the steps are in the README's Owner
-setup, Inviting a friend and Push notifications sections. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
-GitHub, cloned into this directory on `main` on 2026-10-09; its only commit
-is GitHub's initial one (`.gitignore`, MIT `LICENSE`, `README.md`).
+All 14 briefs are built, reviewed and committed (2026-10-09), and nothing is
+deployed. The server signs in through Ward and serves the Ideas inbox, the
+Claude routes and friend chats. Live updates come over a WebSocket and push
+notifications over Web Push. The `satchel` CLI reads the inbox. The web app is
+an installable PWA. The container builds, and vps-deploy has the stack.
+
+Each phase got a three-finder review followed by fix rounds; see `log.md`.
+The test suite is at 538 tests.
+
+What's left is the owner's: the steps in
+[docs/owner-setup.md](../../docs/owner-setup.md) (register the app in
+production Ward, store the keys, deploy, link the CLI, add the CLAUDE.md
+line, and invite friends with the `member` role). Open follow-ups live in
+`todos/` and [open-questions.md](open-questions.md).
+
+The repository is the owner's
+[gandolh/Satchel](https://github.com/gandolh/Satchel). Commits are local on
+`main`; the owner pushes.
 
 ## Briefs
 
