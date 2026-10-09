@@ -24,8 +24,10 @@ any messenger. The mockups are in the design artifact linked from
 - **Settings.** Signed-in name, Sign out, Connect Claude (phase 1), and
   Notifications (phase 2).
 
-Phone first: the thread and the list are full-screen views on a phone. From
-900px up, the list sits left (320px) and the thread fills the rest.
+Phone first: the thread and the list are full-screen views on a phone, with
+a bottom tab bar (Chats, Settings) that hides inside a thread. From 900px up,
+the list sits left (320px) and the thread or Settings fills the rest; there
+is no back arrow and no tab bar.
 
 ## Message states
 
@@ -53,6 +55,7 @@ Light values first, dark in brackets. Neutrals lean slightly green.
 --line      #D3DCD8  (#2A3631)    borders, dividers
 --accent    #2A45C4  (#8DA0FF)    my bubbles, links, badges, Send
 --accent-ink #FFFFFF (#0E1412)    text on accent
+--accent-soft #E6EAFB (#1D2547)   the pinned inbox row, soft highlights
 --ok        #1D7650  (#62C796)    Claude's avatar
 --bad       #B3261E  (#FF8A80)    not-sent state
 ```

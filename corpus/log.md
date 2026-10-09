@@ -66,3 +66,15 @@ Before wave 6, the controller installed vite-plugin-pwa 1.3.0, workbox-window,
 the fontsource families, and the CLI's dev link to the server (`992a2f2`), so
 briefs 07 and 08 don't race on the lockfile. vite-plugin-pwa 2.0.0 was
 skipped as under two weeks old.
+
+## [2026-10-09] done | Briefs 07 and 08: the satchel CLI and the web shell
+
+Run in parallel. Commits: 07 `be07955` (CLI and guide) and 08 `ba058e5`
+(sign-in and renewal, router, layout, chat list, PWA). 245 tests.
+
+- **Live checks.** Brief 08's browser checks ran against local Ward: sign-in,
+  renewal, sign-out, no-access, installability.
+- **Duplicate zod.** Brief 08 surfaced two zod copies; `3519545` pins 4.5.4
+  tree-wide.
+- **The owner said "commit freely".** From brief 07 on, a brief is committed
+  as soon as its own gate passes, without waiting for its wave partner.

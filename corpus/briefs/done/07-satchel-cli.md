@@ -82,3 +82,20 @@ cli/src/commands/*.ts  cli/src/*.test.ts  cli/package.json
 - No test output or snapshot contains a token.
 - `node cli/dist/index.js guide` prints the guide from another directory.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `be07955` (199 tests in the suite). The tests run `main()` in
+process against the real app from `@satchel/server/testing` on a random
+port, with `HOME` pointed at a temp dir. Every run asserts the token never
+appears in stdout or stderr.
+
+- **The guide** is read at run time from `cli/src/guide.md`, as in
+  the-board, not copied into `dist/`. `npm link` links the whole package
+  folder, so the file is always there.
+- **Server exports.** `server/package.json` gained an `exports` map
+  (`.`, `./testing`, `./app`, `./store`) so tests can import the harness
+  without starting the server.
+- **Output.** Continuation lines are indented under the message text. A
+  5xx or a body that doesn't parse prints the "Is the CLI out of date?" line
+  (exit 2).

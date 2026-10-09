@@ -42,6 +42,9 @@ reads a repo `.env`: the inbox isn't tied to any one project.
 The owner pastes the token into `~/.config/satchel/env`. It never goes in a
 repo, the corpus or a transcript.
 
+The guide's text is [cli/src/guide.md](../../cli/src/guide.md), read at
+run time; `npm link` links the whole package, so it ships with the CLI.
+
 ## Commands
 
 | Command | Calls | Prints |

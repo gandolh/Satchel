@@ -89,3 +89,27 @@ placeholder) and `web/src/settings/ConnectClaude.tsx` to brief 09.
 - `npm run build` produces a manifest and service worker; Lighthouse or
   Chrome's Application panel reports the app as installable.
 - `npm run typecheck && npm run lint && npm test` pass.
+
+## Outcome (2026-10-09)
+
+Done in commit `ba058e5`, with 46 web tests (245 in the suite). The live
+browser checks ran against local Ward with headless Chrome at 390px and
+1280px, light and dark: sign-in, renewal after the session cookie was
+deleted (one refresh for two 401s), sign-out, and a throwaway no-grant
+account getting the no-access screen. The built app is installable, and
+its service worker never served an API or Ward response.
+
+- **Tab bar.** Phones get a bottom Chats/Settings tab bar, taken from the
+  design mockup. The back arrow appears only in the thread.
+- **Refresh failures.** A refresh answering 5xx shows Unavailable instead
+  of redirecting, because the login page is Ward's too and a redirect would
+  loop.
+- **Service worker.** `registerType: "prompt"`: a new version applies when
+  the page is next hidden, so nobody is reloaded mid-typing.
+- **Preview.** `vite preview` runs on port 4175 with the dev proxy.
+- **Tokens.** `--accent-soft` was added from the mockup.
+- **zod.** Two zod copies made importing zod from web unsafe, so `api.ts`
+  avoids it. The controller then pinned zod 4.5.4 tree-wide (`3519545`).
+
+Local test data left behind: one message in the owner's local inbox and a
+disabled throwaway Ward account, `satchel-nogrant-e7a243`.

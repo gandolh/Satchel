@@ -1,11 +1,11 @@
 ---
-summary: How Satchel is put together. Briefs 01 to 04 are built (2026-10-09); the rest is as designed. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
+summary: How Satchel is put together. Briefs 01 to 08 are built (2026-10-09); the rest is as designed. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
 updated: 2026-10-09
 ---
 
 # Architecture
 
-Built through brief 04 on 2026-10-09; the rest is planned. Verify against the
+Built through brief 08 on 2026-10-09; the rest is planned. Verify against the
 code before relying on a detail.
 
 ## Pieces
@@ -80,6 +80,7 @@ append-only triggers: [messages-and-seen.md](messages-and-seen.md) and brief
 |---|---|---|
 | local | API (`npm run dev`) | 8807 |
 | local | Vite dev server, serving `/satchel/` | 5175 |
+| local | `vite preview` of the built app, same proxy | 4175 |
 | local | Ward container | 8792 |
 | VPS | container, published on loopback only | 8795 |
 
