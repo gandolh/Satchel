@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2: 11 to 13 done, 14 (push) in progress; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2 built too (11 to 14); a final review of phase 2 is running. Nothing is deployed; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-09
 ---
 
@@ -13,8 +13,10 @@ revisions; see [overview.md](overview.md)) and recorded in
 day, and the backlog run started that afternoon. The server signs in through
 Ward and serves every phase-1 route, `satchel unread`/`seen`/`history` work
 against it, and the web app has the inbox thread with seen ticks and Connect
-Claude. The container builds and vps-deploy has the stack. Nothing is
-deployed yet: the steps are in the README's Owner setup. Phase 2 is next. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
+Claude. Phase 2 adds friends (direct and group chats), live updates over a
+WebSocket, and push notifications. The container builds and vps-deploy has
+the stack. Nothing is deployed yet: the steps are in the README's Owner
+setup, Inviting a friend and Push notifications sections. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on
 GitHub, cloned into this directory on `main` on 2026-10-09; its only commit
 is GitHub's initial one (`.gitignore`, MIT `LICENSE`, `README.md`).
 
@@ -51,7 +53,7 @@ Phase 2, friends:
   `/api/live`, polling as fallback.
 - 13 [Friend chats in the web app](../briefs/done/13-friend-chats-in-the-web-app.md).
   done 2026-10-09. New chat, groups, "Seen by", unread badges.
-- 14 [Push notifications](../briefs/todo/14-push-notifications.md). todo.
+- 14 [Push notifications](../briefs/done/14-push-notifications.md). done 2026-10-09.
   VAPID, subscriptions, the Notifications switch.
 
 ## Order

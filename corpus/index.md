@@ -18,7 +18,7 @@ Start here. Triage on the summary lines and open at most 2-3 pages.
 - [wiki/messages-and-seen.md](wiki/messages-and-seen.md) - How messages are numbered, stored and marked seen. The server seq and why gaps are normal, client IDs and safe retries, the forward-only seen marker, how unread counts, ticks, "Seen" lines and group "Seen by" are derived from it, and the race the two-call read protects against.
 - [wiki/open-questions.md](wiki/open-questions.md) - Genuinely unresolved questions as of 2026-10-09. iPhone or Android for push, and whether Claude should reply in the inbox. Delete an entry the moment it is answered.
 - [wiki/overview.md](wiki/overview.md) - What Satchel is in a paragraph. A small text messenger for the owner and a few friends whose pinned first chat, the Ideas inbox, is with Claude, who reads it at home through a CLI. Who uses it, what it deliberately leaves out, and where the design came from.
-- [wiki/status.md](wiki/status.md) - Snapshot as of 2026-10-09. Phase 1 built — briefs 01 to 10 done; deploying is the owner's step (README Owner setup). Phase 2 (friends, 11 to 14) next; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
+- [wiki/status.md](wiki/status.md) - Snapshot as of 2026-10-09. Phase 1 built and reviewed (01 to 10); deploying is the owner's step (README Owner setup). Phase 2 built too (11 to 14); a final review of phase 2 is running. Nothing is deployed; the repo is gandolh/Satchel. One line per brief, and the waves they run in (phase 1 Ideas inbox, phase 2 friends).
 
 <!-- END CATALOG -->
 

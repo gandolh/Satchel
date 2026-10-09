@@ -74,3 +74,38 @@ web/vite.config.ts   (only if the service worker strategy must change)
   send a message from a second account, see one notification; click it and
   land in that chat.
 - `npm run typecheck && npm run lint && npm test` pass. No key in the repo.
+
+## Outcome (2026-10-09)
+
+Done. Satchel commit `35c53ea` and vps-deploy commit `fe6d6f3`, with 97 new
+tests (497 in the suite). The run was interrupted by a session end and
+resumed.
+
+- **Pins.** web-push 3.6.7, the latest release (2024). The controller
+  declared `workbox-precaching` and `workbox-routing` 7.4.1 in the web
+  package, since the service worker imports them directly.
+- **Storage.** Migration 3 adds `push_subs`: an endpoint upserted on save
+  moves to the account saving it, and an account keeps at most ten.
+- **Config.** VAPID settings are checked as a real pair, and push is off
+  unless all three are set.
+- **Endpoints** must be public https push services: no IP addresses,
+  localhost, single-label or internal names.
+- **Sending** happens after the reply and only for newly stored messages,
+  to every member except the sender and Claude. 404 and 410 delete the
+  subscription.
+- **Service worker.** The worker moved to injectManifest, keeping the same
+  19 precache entries and no runtime caching. A push is suppressed while
+  the chat is focused.
+- **Settings.** Notifications sits above Connect Claude, because everyone
+  sees it.
+- **Live round-trip** in headless Chrome through FCM: subscribe, one
+  notification with the tab closed, suppression while focused, replacement
+  by tag, unsubscribe. Not tested live: `notificationclick` and iOS.
+
+Concerns:
+
+- Safari may penalise pushes suppressed while focused.
+- A shared browser keeps the previous account's pushes until someone opens
+  Settings.
+- After a VAPID key change, old rows stay until their devices turn
+  notifications back on.

@@ -21,8 +21,8 @@ any messenger. The mockups are in the design artifact linked from
   others on the left on the surface colour, with the sender's name in groups.
   Composer at the bottom: a text field that grows to five lines and a Send
   button. Enter sends on desktop; Shift+Enter is a new line.
-- **Settings.** Signed-in name, Sign out, Connect Claude (phase 1), and
-  Notifications (phase 2).
+- **Settings.** Signed-in name and Sign out, then Notifications (everyone),
+  then Connect Claude (the owner only).
 
 Phone first: the thread and the list are full-screen views on a phone, with
 a bottom tab bar (Chats, Settings) that hides inside a thread. From 900px up,

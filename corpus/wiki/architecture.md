@@ -92,6 +92,17 @@ while the socket is down. The upgrade must carry Satchel's own `Origin`, passes
 the Ward guard, and closes with code 4001 at the access token's expiry. Events
 go only to a conversation's members, never to `claude`.
 
+## Push
+
+Web Push signed with a VAPID pair (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+`VAPID_SUBJECT`, from `.env` locally and `../vps-deploy/secrets/satchel.env`
+in production). Without all three, the server starts with push off. Each
+device's subscription is stored in `push_subs`. Every newly stored message
+is pushed to the other members' devices after the reply, never to Claude,
+never for the inbox. The service worker
+([web/src/sw.ts](../../web/src/sw.ts)) shows one notification per chat and
+skips it while that chat is focused. Code: [server/src/push/](../../server/src/push/).
+
 ## Ports
 
 | Where | What | Port |

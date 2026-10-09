@@ -149,3 +149,10 @@ as [todos/recheck-ward-session-on-socket-ping.md](todos/recheck-ward-session-on-
 Commit `e388001`, 400 tests. Adds New chat, group threads and the no-access
 fix. The controller moved New chat into `AppShell`'s main pane. Follow-up
 captured: [todos/hide-ungranted-accounts-from-people.md](todos/hide-ungranted-accounts-from-people.md).
+
+## [2026-10-09] done | Brief 14: push notifications; every brief is built
+
+Satchel `35c53ea` and vps-deploy `fe6d6f3`, 497 tests. The controller
+declared the workbox packages that `sw.ts` imports. A live round-trip
+through Chrome's push service passed. All 14 briefs are done; a final
+review of phase 2 is running.
