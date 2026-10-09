@@ -2,7 +2,7 @@ import { isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
 import { systemClock } from "./clock.js";
-import { ConfigError, loadConfig, type Config } from "./config.js";
+import { ConfigError, loadConfig, pushOffMessage, type Config } from "./config.js";
 import { databasePath, openDb } from "./db/open.js";
 import { createStore } from "./store.js";
 import { createWardClient } from "./ward/client.js";
@@ -36,7 +36,21 @@ const ward = createWardClient({
   appKey: config.ward.appKey,
 });
 
-const app = buildApp({ store, ward, publicOrigin: config.ward.publicOrigin, clock: systemClock });
+const app = buildApp({
+  store,
+  ward,
+  publicOrigin: config.ward.publicOrigin,
+  clock: systemClock,
+  ...(config.push.enabled ? { push: { vapid: config.push.vapid } } : {}),
+});
+// Once, at startup. A warning when one key of the pair is there without the
+// other (or without a subject): that looks like a mistake. VAPID_SUBJECT alone
+// is the normal "no keys yet" deploy, since vps-deploy fills it by default.
+if (!config.push.enabled) {
+  const { missing } = config.push;
+  const someKey = !(missing.includes("VAPID_PUBLIC_KEY") && missing.includes("VAPID_PRIVATE_KEY"));
+  app.log[someKey ? "warn" : "info"](pushOffMessage(missing));
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {

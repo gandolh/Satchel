@@ -18,8 +18,10 @@ import { signedIn } from "../ward/guard.js";
  * Live events (brief 12) go out after the store call succeeded and only when
  * something changed: a stored message (not a repeated client ID), a marker
  * that moved, a conversation that was created (not an existing direct one).
+ * A stored message also goes out as Web Push (brief 14) to the other members'
+ * devices, after the reply; a push failure never touches the response.
  */
-export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live }) => {
+export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {
   const notFound = () => new ApiError("not_found", "No such conversation");
 
   /** Runs a store call that names other subjects; one with no account is a 400. */
@@ -90,7 +92,10 @@ export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { s
       clientId,
       text,
     });
-    if (created) live.messageStored(message);
+    if (created) {
+      live.messageStored(message);
+      push.messageStored(message);
+    }
     reply.code(created ? 201 : 200);
     return routes.sendMessage.response.parse({ message });
   });

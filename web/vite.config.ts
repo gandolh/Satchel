@@ -58,6 +58,13 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
+        // Our own worker, src/sw.ts, so it can show pushes (brief 14). It
+        // precaches the app shell exactly as the generated one did; workbox
+        // only injects the file list. The navigation fallback and the
+        // API/Ward denylist live in sw.ts now.
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
         // A new worker waits; main.tsx applies it once the page is hidden.
         registerType: "prompt",
         // main.tsx registers through `virtual:pwa-register`.
@@ -85,18 +92,11 @@ export default defineConfig(({ mode }) => {
             { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
         },
-        workbox: {
+        injectManifest: {
           // The app shell only: HTML, JS, CSS, icons, and the woff2 fonts (the
           // .woff fallbacks are built but never needed by a browser that runs
-          // a service worker).
+          // a service worker). Nothing is cached at runtime: not the API, not Ward.
           globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
-          navigateFallback: `${base}index.html`,
-          // Never answer for the API or Ward. Neither is under the worker's
-          // scope (`base`), and with no runtimeCaching their responses are
-          // never stored; the denylist keeps it so if the scope ever widens.
-          navigateFallbackDenylist: [/^\/satchel-api(\/|$)/, /^\/ward(-api)?(\/|$)/],
-          runtimeCaching: [],
-          cleanupOutdatedCaches: true,
         },
       }),
     ],

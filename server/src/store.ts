@@ -72,6 +72,21 @@ export interface ListMessagesOptions {
   since?: string;
 }
 
+/** At most this many push subscriptions per account; saving one more drops the oldest. */
+export const PUSH_SUBSCRIPTIONS_PER_ACCOUNT = 10;
+
+/** A browser's push subscription, as the store keeps it. */
+export interface PushSubscriptionInput {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export interface StoredPushSubscription extends PushSubscriptionInput {
+  createdAt: string;
+  lastSuccessAt: string | null;
+}
+
 export interface CreatedClaudeToken {
   id: string;
   token: string;
@@ -112,6 +127,14 @@ interface TokenRow {
   created_at: string;
   last_used_at: string | null;
   revoked_at: string | null;
+}
+
+interface PushSubRow {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+  last_success_at: string | null;
 }
 
 const MESSAGE_COLUMNS = "seq, conversation_id, sender, client_id, text, sent_at";
@@ -259,6 +282,28 @@ export function createStore(db: Db, clock: Clock) {
     "UPDATE agent_tokens SET revoked_at = ? WHERE owner_subject = ? AND revoked_at IS NULL",
   );
 
+  const pushSubOwnerStmt = db.prepare<[string], { subject: string }>("SELECT subject FROM push_subs WHERE endpoint = ?");
+  const insertPushSubStmt = db.prepare<{ endpoint: string; subject: string; p256dh: string; auth: string; now: string }>(
+    `INSERT INTO push_subs (endpoint, subject, p256dh, auth, created_at)
+     VALUES (@endpoint, @subject, @p256dh, @auth, @now)`,
+  );
+  const rebindPushSubStmt = db.prepare<{ endpoint: string; subject: string; p256dh: string; auth: string }>(
+    "UPDATE push_subs SET subject = @subject, p256dh = @p256dh, auth = @auth WHERE endpoint = @endpoint",
+  );
+  // A new row always takes the highest rowid, so rowid order is save order.
+  const trimPushSubsStmt = db.prepare<[string, string, number]>(
+    `DELETE FROM push_subs WHERE subject = ? AND rowid NOT IN (
+       SELECT rowid FROM push_subs WHERE subject = ? ORDER BY rowid DESC LIMIT ?
+     )`,
+  );
+  const listPushSubsStmt = db.prepare<[string], PushSubRow>(
+    `SELECT endpoint, p256dh, auth, created_at, last_success_at FROM push_subs
+     WHERE subject = ? ORDER BY rowid`,
+  );
+  const deleteOwnPushSubStmt = db.prepare<[string, string]>("DELETE FROM push_subs WHERE endpoint = ? AND subject = ?");
+  const deletePushSubStmt = db.prepare<[string]>("DELETE FROM push_subs WHERE endpoint = ?");
+  const pushDeliveredStmt = db.prepare<[string, string]>("UPDATE push_subs SET last_success_at = ? WHERE endpoint = ?");
+
   function markerOf(conversationId: string, member: string): number {
     const row = markerStmt.get(conversationId, member);
     if (row === undefined) throw new NotAMember(conversationId, member);
@@ -402,6 +447,20 @@ export function createStore(db: Db, clock: Clock) {
     return { id, token, createdAt };
   });
 
+  const savePushSubscriptionTx = db.transaction(
+    (subject: string, sub: PushSubscriptionInput): { created: boolean } => {
+      const params = { subject, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
+      if (pushSubOwnerStmt.get(sub.endpoint) !== undefined) {
+        rebindPushSubStmt.run(params);
+        return { created: false };
+      }
+      insertPushSubStmt.run({ ...params, now: now() });
+      // The cap keeps the newest, so the one just saved always stays.
+      trimPushSubsStmt.run(subject, subject, PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
+      return { created: true };
+    },
+  );
+
   return {
     /** Inserts the account, or updates its display name and `last_seen_at`. Call before anything that names the subject. */
     upsertAccount(subject: string, displayName: string): void {
@@ -518,6 +577,44 @@ export function createStore(db: Db, clock: Clock) {
     revokeClaudeToken(ownerSubject: string, id: string): RevokeClaudeTokenResponse | null {
       const row = revokeTokenStmt.get(now(), id, ownerSubject);
       return row === undefined ? null : { id: row.id, revokedAt: row.revoked_at };
+    },
+
+    /**
+     * Saves a browser's push subscription for `subject` (an account), keyed by
+     * endpoint. An endpoint already stored is bound to `subject` and gets the
+     * new keys, whoever had it: the browser is the authority on its own
+     * subscription, and a browser that switched accounts must stop pushing to
+     * the old one. A new one beyond `PUSH_SUBSCRIPTIONS_PER_ACCOUNT` drops the
+     * account's oldest.
+     */
+    savePushSubscription(subject: string, subscription: PushSubscriptionInput): { created: boolean } {
+      return savePushSubscriptionTx(subject, subscription);
+    },
+
+    /** Deletes the endpoint only if `subject` holds it. True when a row went. */
+    deletePushSubscription(subject: string, endpoint: string): boolean {
+      return deleteOwnPushSubStmt.run(endpoint, subject).changes > 0;
+    },
+
+    /** The subject's push subscriptions, oldest first. */
+    listPushSubscriptions(subject: string): StoredPushSubscription[] {
+      return listPushSubsStmt.all(subject).map((row) => ({
+        endpoint: row.endpoint,
+        p256dh: row.p256dh,
+        auth: row.auth,
+        createdAt: row.created_at,
+        lastSuccessAt: row.last_success_at,
+      }));
+    },
+
+    /** The push service said the endpoint is gone (404 or 410): delete it, whoever held it. */
+    forgetPushEndpoint(endpoint: string): void {
+      deletePushSubStmt.run(endpoint);
+    },
+
+    /** A push to the endpoint was accepted: record when. */
+    markPushDelivered(endpoint: string): void {
+      pushDeliveredStmt.run(now(), endpoint);
     },
 
     /**

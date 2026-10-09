@@ -1,4 +1,18 @@
+import { createECDH } from "node:crypto";
 import { z } from "zod";
+
+/** The server's Web Push identity (brief 14), from `npx web-push generate-vapid-keys`. */
+export interface VapidKeys {
+  /** base64url, a 65-byte P-256 point. Browsers subscribe with it. */
+  publicKey: string;
+  /** base64url, 32 bytes. Signs every push; never leaves the server. */
+  privateKey: string;
+  /** `mailto:` or `https:`: who push services contact about this sender. */
+  subject: string;
+}
+
+/** Push is on only when all three VAPID settings are present. */
+export type PushSettings = { enabled: true; vapid: VapidKeys } | { enabled: false; missing: string[] };
 
 /** The server's settings, read once at startup from the environment (and the repo's `.env`). */
 export interface Config {
@@ -14,6 +28,8 @@ export interface Config {
     /** Server-side secret, sent as `x-ward-app-key` on every introspection. */
     appKey: string;
   };
+  /** Off, naming what is missing, unless VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT are all set. */
+  push: PushSettings;
 }
 
 /** The environment cannot run the server. The message names every key at fault. */
@@ -25,6 +41,11 @@ export class ConfigError extends Error {
 }
 
 const WARD_KEYS = ["WARD_PUBLIC_ORIGIN", "WARD_API_BASE_PATH", "WARD_APP_KEY"] as const;
+export const VAPID_KEYS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const;
+
+/** base64url without padding that decodes to exactly `bytes` bytes. Messages never echo the value. */
+const base64urlOf = (bytes: number) => (value: string) =>
+  /^[A-Za-z0-9_-]+$/.test(value) && Buffer.from(value, "base64url").length === bytes;
 
 /** An empty value (`KEY=` copied from `.env.example`) counts as not set. */
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -51,7 +72,33 @@ const envSchema = z.object({
     }),
   ),
   WARD_APP_KEY: required(z.string().min(1)),
+  VAPID_PUBLIC_KEY: optional(
+    z.string().refine(base64urlOf(65), {
+      message: "VAPID_PUBLIC_KEY must be the publicKey from `npx web-push generate-vapid-keys` (87 base64url characters).",
+    }),
+  ),
+  VAPID_PRIVATE_KEY: optional(
+    z.string().refine(base64urlOf(32), {
+      message: "VAPID_PRIVATE_KEY must be the privateKey from `npx web-push generate-vapid-keys` (43 base64url characters).",
+    }),
+  ),
+  VAPID_SUBJECT: optional(
+    z.string().refine((value) => URL.canParse(value) && ["mailto:", "https:"].includes(new URL(value).protocol), {
+      message: "VAPID_SUBJECT must be a mailto: or https: URL, such as mailto:johndoe@example.com.",
+    }),
+  ),
 });
+
+/** Whether the private key's public half is `publicKey`. A mismatched pair fails every push. */
+function isVapidPair(publicKey: string, privateKey: string): boolean {
+  const ecdh = createECDH("prime256v1");
+  try {
+    ecdh.setPrivateKey(Buffer.from(privateKey, "base64url"));
+  } catch {
+    return false;
+  }
+  return ecdh.getPublicKey().equals(Buffer.from(publicKey, "base64url"));
+}
 
 function describe(issue: z.core.$ZodIssue): string {
   const key = String(issue.path[0] ?? "");
@@ -72,6 +119,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new ConfigError(parsed.error.issues.map(describe).join("\n"));
   }
   const values = parsed.data;
+  const { VAPID_PUBLIC_KEY: publicKey, VAPID_PRIVATE_KEY: privateKey, VAPID_SUBJECT: subject } = values;
+  let push: PushSettings;
+  if (publicKey !== undefined && privateKey !== undefined && subject !== undefined) {
+    if (!isVapidPair(publicKey, privateKey)) {
+      throw new ConfigError(
+        "VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are not one pair. Copy both from the same `npx web-push generate-vapid-keys` run.",
+      );
+    }
+    push = { enabled: true, vapid: { publicKey, privateKey, subject } };
+  } else {
+    push = { enabled: false, missing: VAPID_KEYS.filter((key) => values[key] === undefined) };
+  }
   return {
     host: values.HOST,
     port: values.PORT,
@@ -81,5 +140,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       apiBasePath: values.WARD_API_BASE_PATH,
       appKey: values.WARD_APP_KEY,
     },
+    push,
   };
+}
+
+/** The one line the server logs at startup when push is off. */
+export function pushOffMessage(missing: readonly string[]): string {
+  const some = missing.length < VAPID_KEYS.length;
+  return (
+    `Push notifications are off: ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} not set` +
+    `${some ? " (all three VAPID settings are needed)" : ""}. See "Push notifications" in the README.`
+  );
 }

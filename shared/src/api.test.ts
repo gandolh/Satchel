@@ -13,10 +13,13 @@ import {
   claudeTokenSummarySchema,
   claudeUnreadMessageSchema,
   createConversationRequestSchema,
+  deletePushSubscriptionRequestSchema,
   errorResponseSchema,
+  isPushEndpoint,
   meResponseSchema,
   messagesQuerySchema,
   routes,
+  savePushSubscriptionRequestSchema,
   sendMessageRequestSchema,
   type Route,
   type RouteName,
@@ -25,6 +28,9 @@ import {
 const at = "2026-10-09T08:12:00.000Z";
 const clientId = "6f1c9d2e-8a4b-4c3d-9e2f-1a2b3c4d5e6f";
 const message = { seq: 41, conversationId: "c1", sender: "owner", clientId, text: "idea", sentAt: at };
+// Shaped like a browser's PushSubscription.toJSON(); not a real subscription.
+const pushEndpoint = "https://fcm.googleapis.com/fcm/send/not-a-real-endpoint";
+const pushKeys = { p256dh: `B${"A".repeat(86)}`, auth: "A".repeat(22) };
 const inbox = {
   id: "c1",
   kind: "inbox",
@@ -124,6 +130,23 @@ const samples: Record<RouteName, Sample> = {
     params: { id: "t1" },
     response: { id: "t1", revokedAt: at },
   },
+  pushKey: {
+    route: "GET /api/push/key",
+    auth: "ward",
+    response: { publicKey: `B${"A".repeat(86)}` },
+  },
+  savePushSubscription: {
+    route: "POST /api/push/subscriptions",
+    auth: "ward",
+    body: { endpoint: pushEndpoint, expirationTime: null, keys: pushKeys },
+    response: { ok: true },
+  },
+  deletePushSubscription: {
+    route: "DELETE /api/push/subscriptions",
+    auth: "ward",
+    body: { endpoint: pushEndpoint },
+    response: { ok: true },
+  },
   claudeUnread: {
     route: "GET /claude/unread",
     auth: "claude",
@@ -214,6 +237,52 @@ describe("createConversationRequestSchema", () => {
     ],
     ["a group listing a member twice", { kind: "group", title: "Hike", members: ["friend-b", "friend-b"] }],
     ["a group with an empty subject", { kind: "group", title: "Hike", members: ["friend-b", ""] }],
+  ])("rejects %s", (_label, body) => {
+    expect(parse(body).success).toBe(false);
+  });
+});
+
+describe("push subscriptions", () => {
+  const parse = (body: unknown) => savePushSubscriptionRequestSchema.safeParse(body);
+
+  it("takes the browser's subscription JSON and drops fields it doesn't know", () => {
+    const body = { endpoint: pushEndpoint, expirationTime: 1767225600000, keys: pushKeys, extra: 1 };
+    expect(parse(body).data).toEqual({ endpoint: pushEndpoint, expirationTime: 1767225600000, keys: pushKeys });
+    expect(parse({ endpoint: pushEndpoint, keys: { ...pushKeys, auth: `${"A".repeat(22)}==` } }).success).toBe(true);
+  });
+
+  it.each([
+    ["Chrome's", "https://fcm.googleapis.com/fcm/send/abc:def"],
+    ["Firefox's", "https://updates.push.services.mozilla.com/wpush/v2/gAAAA"],
+    ["Safari's", "https://web.push.apple.com/QGx"],
+    ["Edge's", "https://wns2-par02p.notify.windows.com/w/?token=abc"],
+  ])("accepts %s push service", (_label, endpoint) => {
+    expect(isPushEndpoint(endpoint)).toBe(true);
+  });
+
+  it.each([
+    ["plain http", "http://fcm.googleapis.com/fcm/send/abc"],
+    ["not a URL", "fcm.googleapis.com/fcm/send/abc"],
+    ["credentials", "https://user:pw@fcm.googleapis.com/fcm/send/abc"],
+    ["an IPv4 address", "https://10.0.0.5/push"],
+    ["a numeric host that parses as an IP", "https://2130706433/push"],
+    ["an IPv6 address", "https://[::1]/push"],
+    ["localhost", "https://localhost:8795/api/health"],
+    ["a single-label host", "https://satchel-api/api/health"],
+    ["a .internal name", "https://metadata.google.internal/computeMetadata"],
+    ["an over-long URL", `https://fcm.googleapis.com/${"a".repeat(2048)}`],
+  ])("refuses %s as an endpoint", (_label, endpoint) => {
+    expect(isPushEndpoint(endpoint)).toBe(false);
+    expect(parse({ endpoint, keys: pushKeys }).success).toBe(false);
+    expect(deletePushSubscriptionRequestSchema.safeParse({ endpoint }).success).toBe(false);
+  });
+
+  it.each([
+    ["no keys", { endpoint: pushEndpoint }],
+    ["a short p256dh", { endpoint: pushEndpoint, keys: { ...pushKeys, p256dh: "BAAA" } }],
+    ["a p256dh that isn't base64url", { endpoint: pushEndpoint, keys: { ...pushKeys, p256dh: `B${"+".repeat(86)}` } }],
+    ["a short auth", { endpoint: pushEndpoint, keys: { ...pushKeys, auth: "AAAA" } }],
+    ["no endpoint", { keys: pushKeys }],
   ])("rejects %s", (_label, body) => {
     expect(parse(body).success).toBe(false);
   });
@@ -325,5 +394,6 @@ describe("inferred types", () => {
       string | undefined
     >();
     expectTypeOf(routes.sendMessage.method).toEqualTypeOf<"POST">();
+    expectTypeOf(routes.deletePushSubscription.method).toEqualTypeOf<"DELETE">();
   });
 });

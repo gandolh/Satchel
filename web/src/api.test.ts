@@ -3,7 +3,9 @@ import {
   ApiError,
   createClaudeToken,
   createConversation,
+  deletePushSubscription,
   getMe,
+  getPushKey,
   listClaudeTokens,
   listPeople,
   listConversations,
@@ -12,6 +14,7 @@ import {
   NoAccess,
   onAuthEvent,
   revokeClaudeToken,
+  savePushSubscription,
   sendMessage,
   SignedOut,
   Unavailable,
@@ -301,6 +304,31 @@ describe("requests", () => {
       "/satchel-api/api/conversations/c1/messages?after=5",
       "/satchel-api/api/conversations/c1/messages",
     ]);
+  });
+
+  it("gets the push key, saves a subscription and deletes one by endpoint", async () => {
+    const endpoint = "https://fcm.googleapis.com/fcm/send/not-real";
+    const keys = { p256dh: `B${"A".repeat(86)}`, auth: "A".repeat(22) };
+    serve((url) => (url.endsWith("/key") ? json(200, { publicKey: "BPUB" }) : json(201, { ok: true })));
+
+    await expect(getPushKey()).resolves.toEqual({ publicKey: "BPUB" });
+    await expect(savePushSubscription({ endpoint, expirationTime: null, keys })).resolves.toEqual({ ok: true });
+    await expect(deletePushSubscription(endpoint)).resolves.toEqual({ ok: true });
+
+    expect(calls.map((call) => `${String(call.init.method)} ${call.url}`)).toEqual([
+      "GET /satchel-api/api/push/key",
+      "POST /satchel-api/api/push/subscriptions",
+      "DELETE /satchel-api/api/push/subscriptions",
+    ]);
+    expect(JSON.parse(String(calls[1]?.init.body))).toEqual({ endpoint, expirationTime: null, keys });
+    expect(JSON.parse(String(calls[2]?.init.body))).toEqual({ endpoint });
+    expect((calls[2]?.init.headers as Record<string, string>)["content-type"]).toBe("application/json");
+  });
+
+  it("reports push being off as a not_found ApiError", async () => {
+    serve(() => apiError(404, "not_found", "Push notifications are off on this server."));
+    await expect(getPushKey()).rejects.toMatchObject({ status: 404, code: "not_found" });
+    await expect(getPushKey()).rejects.toBeInstanceOf(ApiError);
   });
 
   it("refuses to build a path without its id", () => {

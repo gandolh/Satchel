@@ -3,6 +3,7 @@ import { SignOutButton } from "../auth/AuthGate";
 import { useMe } from "../auth/session";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
+import { Notifications } from "./Notifications";
 
 /**
  * The Connect Claude slot. Brief 09 adds `./ConnectClaude.tsx` exporting
@@ -14,7 +15,7 @@ import { ScreenHeader } from "../layout/ScreenHeader";
 const slot = import.meta.glob<{ ConnectClaude?: ComponentType }>("./ConnectClaude.tsx", { eager: true });
 const ConnectClaude = Object.values(slot)[0]?.ConnectClaude;
 
-/** Settings: who is signed in, Sign out, and Connect Claude. */
+/** Settings: who is signed in, Sign out, Notifications, and Connect Claude (the owner only). */
 export function Settings() {
   const me = useMe();
   return (
@@ -37,6 +38,7 @@ export function Settings() {
               <SignOutButton />
             </div>
           </section>
+          <Notifications />
           {ConnectClaude && <ConnectClaude />}
         </div>
       </div>

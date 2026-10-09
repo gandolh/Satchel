@@ -10,7 +10,10 @@ import {
   type CreateConversationRequest,
   type CreateConversationResponse,
   type PeopleResponse,
+  type PushKeyResponse,
+  type PushOkResponse,
   type RevokeClaudeTokenResponse,
+  type SavePushSubscriptionRequest,
   type SeenRequest,
   type SeenResponse,
   type SendMessageRequest,
@@ -22,7 +25,7 @@ import { goToWardLogin, renewalGeneration, renewSince } from "./ward";
 export { ApiError, NetworkError, NoAccess, SignedOut, Unavailable } from "./errors";
 
 /**
- * The typed API client: one function per phase-1 route in `shared`'s
+ * The typed API client: one function per web-app route in `shared`'s
  * `routes`, responses parsed with the shared schemas so the app can't drift
  * from the server.
  *
@@ -130,6 +133,21 @@ export function createClaudeToken(options?: CallOptions): Promise<CreateClaudeTo
 
 export function revokeClaudeToken(tokenId: string, options?: CallOptions): Promise<RevokeClaudeTokenResponse> {
   return call(routes.revokeClaudeToken, { id: tokenId }, options);
+}
+
+/** The server's VAPID public key. An `ApiError` with code `not_found` means push is off on this server. */
+export function getPushKey(options?: CallOptions): Promise<PushKeyResponse> {
+  return call(routes.pushKey, {}, options);
+}
+
+/** Store this browser's push subscription (`PushSubscription.toJSON()`) for the signed-in account. */
+export function savePushSubscription(body: SavePushSubscriptionRequest, options?: CallOptions): Promise<PushOkResponse> {
+  return call(routes.savePushSubscription, { body }, options);
+}
+
+/** Forget this browser's push subscription. Succeeds for an endpoint the server doesn't have. */
+export function deletePushSubscription(endpoint: string, options?: CallOptions): Promise<PushOkResponse> {
+  return call(routes.deletePushSubscription, { body: { endpoint } }, options);
 }
 
 // --- Plumbing -----------------------------------------------------------------

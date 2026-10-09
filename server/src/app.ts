@@ -2,15 +2,19 @@ import fastifyWebsocket from "@fastify/websocket";
 import { routes } from "@satchel/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import type { Clock } from "./clock.js";
+import type { VapidKeys } from "./config.js";
 import { registerErrorHandling } from "./errors.js";
 import { createHub } from "./live/hub.js";
 import { registerUpgradeChecks } from "./live/origin.js";
 import { createLivePublisher, type LivePublisher } from "./live/publish.js";
 import { LIVE_MAX_PAYLOAD_BYTES } from "./live/socket.js";
+import { createPushNotifier, pushOff, type PushNotifier } from "./push/notifier.js";
+import { webPushSender, type SendPush } from "./push/sender.js";
 import { claudeRoutes } from "./routes/claude.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { liveRoutes } from "./routes/live.js";
 import { meRoutes } from "./routes/me.js";
+import { pushRoutes } from "./routes/push.js";
 import { tokenRoutes } from "./routes/tokens.js";
 import type { Store } from "./store.js";
 import type { WardClient } from "./ward/client.js";
@@ -39,6 +43,13 @@ export interface LogOptions {
   stream?: { write(line: string): void };
 }
 
+/** Web Push (brief 14). Absent means push is off. */
+export interface PushOptions {
+  vapid: VapidKeys;
+  /** Default: web-push with `vapid`. Tests pass a stub. */
+  send?: SendPush;
+}
+
 export interface AppDeps {
   store: Store;
   /** The Ward client. `index.ts` builds the real one from config; tests point one at `fakeWard`. */
@@ -46,6 +57,8 @@ export interface AppDeps {
   /** The app's origin as the browser sees it (`WARD_PUBLIC_ORIGIN`). The guard refuses writes from any other. */
   publicOrigin: string;
   clock: Clock;
+  /** Web Push. Default: off (`GET /api/push/key` is a 404 and nothing is sent). `index.ts` passes it when VAPID is configured. */
+  push?: PushOptions;
   /** Default: on, except when `NODE_ENV=test`. Redaction applies either way. */
   logger?: boolean | LogOptions;
 }
@@ -56,6 +69,8 @@ export interface RouteDeps {
   clock: Clock;
   /** Sends live events to open sockets after a store call succeeded (`live/publish.ts`). Never throws. */
   live: LivePublisher;
+  /** Sends Web Push for a stored message, after the reply (`push/notifier.ts`). Never throws. */
+  push: PushNotifier;
 }
 
 function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"] {
@@ -82,9 +97,12 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *   `Origin`; that check is a root hook ahead of the guard
  *   (`live/origin.ts`). The hub knows who has a socket open; route plugins
  *   publish through `RouteDeps.live`.
+ * - Web Push (brief 14): `RouteDeps.push` notifies the other members' devices
+ *   of a stored message, after the reply; off unless `push` is passed. Closing
+ *   the app waits for pushes already started.
  * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).
  */
-export function buildApp({ store, ward, publicOrigin, clock, logger }: AppDeps): FastifyInstance {
+export function buildApp({ store, ward, publicOrigin, clock, push: pushOptions, logger }: AppDeps): FastifyInstance {
   const app = Fastify({ logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
 
   // A POST with `Content-Type: application/json` and no body is a body of
@@ -111,10 +129,22 @@ export function buildApp({ store, ward, publicOrigin, clock, logger }: AppDeps):
   void app.register(fastifyWebsocket, { options: { maxPayload: LIVE_MAX_PAYLOAD_BYTES } });
 
   const hub = createHub(app.log);
-  const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }) };
+  const push = pushOptions
+    ? createPushNotifier({
+        store,
+        publicKey: pushOptions.vapid.publicKey,
+        send: pushOptions.send ?? webPushSender(pushOptions.vapid),
+        log: app.log,
+      })
+    : pushOff;
+  app.addHook("onClose", async () => {
+    await push.whenIdle();
+  });
+  const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }), push };
   void app.register(meRoutes, deps);
   void app.register(conversationRoutes, deps);
   void app.register(tokenRoutes, deps);
+  void app.register(pushRoutes, deps);
   void app.register(claudeRoutes, deps);
   void app.register(liveRoutes, { hub, ward, clock });
 

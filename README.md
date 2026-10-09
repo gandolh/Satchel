@@ -96,6 +96,57 @@ To run the API container locally, copy the Ward values from `.env` to
 `docker compose -f infrastructure/docker-compose.yml up --build -d`; it listens
 on `127.0.0.1:8795` and keeps its data in `./data`.
 
+## Push notifications
+
+Satchel can notify a phone or computer when someone else writes to you, with
+the app closed. The server signs every push with a VAPID key pair. Without
+the pair it starts with push off and says so once in its log; everything else
+works as before.
+
+1. **Make a pair,** once, on your machine:
+
+   ```
+   npx web-push generate-vapid-keys
+   ```
+
+   It prints a public key and a private key. The private key is a secret:
+   keep it out of the repo, out of chats and out of shell history.
+
+2. **Local development.** Add three lines to the repo's `.env` (git-ignored):
+
+   ```
+   VAPID_PUBLIC_KEY=<public key>
+   VAPID_PRIVATE_KEY=<private key>
+   VAPID_SUBJECT=mailto:johndoe@example.com
+   ```
+
+   `npm run dev` runs no service worker, so try push on the built app:
+   `npm run build`, then `npm run dev -w @satchel/server` and
+   `npm run preview -w @satchel/web`, and open
+   <http://localhost:4175/satchel/>. For the local container, copy the same
+   lines into `infrastructure/.env`.
+
+3. **Production.** Add `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to
+   `~/projects/vps-deploy/secrets/satchel.env`, next to `WARD_APP_KEY`.
+   `VAPID_SUBJECT` defaults to `mailto:johndoe@example.com` there; set it too
+   if you want a different contact. Then redeploy:
+
+   ```
+   cd ~/projects/vps-deploy && node cli.ts satchel all
+   ```
+
+   `all` runs `server` (restarts the API with the keys) and `deploy` (ships
+   the web app with its new service worker); you can run the two separately.
+
+4. **Turn it on, per device:** Settings, Notifications. On an iPhone, web
+   push works only in the Home Screen app (iOS 16.4 or later): open
+   <https://gandolh.ro/satchel/> in Safari, Share → Add to Home Screen, open
+   Satchel from the Home Screen icon, and turn Notifications on there.
+   Android and desktop browsers need no such step.
+
+Keep the pair. If you ever replace it, every device shows Notifications as off
+and has to turn it on again.
+
 ## Inviting a friend
 
 Friends sign in with Ward, the same as you. Satchel lets in any account with a

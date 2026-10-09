@@ -62,7 +62,8 @@ export type ErrorCode = z.infer<typeof errorCodeSchema>;
  *   from another origin, or a friend on a route only the owner may use (the
  *   Claude token routes).
  * - `not_found`: also a conversation the caller isn't a member of, never
- *   `forbidden`, so its existence doesn't leak.
+ *   `forbidden`, so its existence doesn't leak. Also `GET /api/push/key` and
+ *   `POST /api/push/subscriptions` when the server has push turned off.
  * - `unavailable`: Ward is unreachable.
  * - `internal`: an unexpected server error; the message never carries details.
  */
@@ -310,6 +311,89 @@ export type LiveMessageEvent = z.infer<typeof liveMessageEventSchema>;
 export type LiveSeenEvent = z.infer<typeof liveSeenEventSchema>;
 export type LiveConversationEvent = z.infer<typeof liveConversationEventSchema>;
 
+// --- Push notifications (brief 14) -----------------------------------------------------
+// One subscription per browser (its endpoint), bound to the account that saved
+// it last. The server pushes `PushPayload` to every member of a conversation
+// except the sender (and Claude) when a message is stored.
+
+/** Longest endpoint the server stores. Real push services use well under 1 KB. */
+export const PUSH_ENDPOINT_MAX_LENGTH = 2048;
+/** A notification's body is the message's first this-many characters (code points). */
+export const PUSH_BODY_MAX_LENGTH = 120;
+
+const IPV4_HOST = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * Whether `value` could be a push service's endpoint: an https URL with no
+ * credentials on a public DNS name. IP literals, `localhost` and single-label
+ * hosts (a Docker service name) are refused, so a member can't point the
+ * server's pushes at something on its own network.
+ */
+export function isPushEndpoint(value: string): boolean {
+  if (value.length > PUSH_ENDPOINT_MAX_LENGTH || !URL.canParse(value)) return false;
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.username !== "" || url.password !== "") return false;
+  const host = url.hostname.toLowerCase();
+  if (host.startsWith("[") || IPV4_HOST.test(host) || !host.includes(".")) return false;
+  return host !== "localhost" && !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal");
+}
+
+const pushEndpointSchema = z
+  .string({ error: "A push subscription needs an endpoint." })
+  .refine(isPushEndpoint, "A push subscription's endpoint must be a push service's https URL.");
+
+// The browser's keys, base64url (some browsers pad). p256dh is a 65-byte P-256
+// point (87 characters), auth 16 bytes (22 characters) or more.
+const base64url = /^[A-Za-z0-9_-]+={0,2}$/;
+const pushKeysSchema = z.object(
+  {
+    p256dh: z
+      .string()
+      .regex(base64url, "keys.p256dh must be base64url.")
+      .refine((value) => value.replace(/=+$/, "").length === 87, "keys.p256dh must be a 65-byte P-256 key."),
+    auth: z
+      .string()
+      .regex(base64url, "keys.auth must be base64url.")
+      .refine((value) => value.replace(/=+$/, "").length >= 22 && value.length <= 64, "keys.auth must be 16 bytes or more."),
+  },
+  { error: "A push subscription needs keys.p256dh and keys.auth." },
+);
+
+/** `GET /api/push/key`: the server's VAPID public key, for `pushManager.subscribe`. 404 when push is off. */
+export const pushKeyResponseSchema = z.object({ publicKey: z.string().min(1) });
+export type PushKeyResponse = z.infer<typeof pushKeyResponseSchema>;
+
+/**
+ * `POST /api/push/subscriptions`: the browser's `PushSubscription.toJSON()`.
+ * `expirationTime` is accepted and ignored. Saving an endpoint that is already
+ * stored binds it to the caller and replaces its keys.
+ */
+export const savePushSubscriptionRequestSchema = z.object({
+  endpoint: pushEndpointSchema,
+  expirationTime: z.number().nullable().optional(),
+  keys: pushKeysSchema,
+});
+export type SavePushSubscriptionRequest = z.infer<typeof savePushSubscriptionRequestSchema>;
+
+/** `DELETE /api/push/subscriptions`: only the caller's own; an endpoint they don't have is still a success. */
+export const deletePushSubscriptionRequestSchema = z.object({ endpoint: pushEndpointSchema });
+export type DeletePushSubscriptionRequest = z.infer<typeof deletePushSubscriptionRequestSchema>;
+
+export const pushOkResponseSchema = z.object({ ok: z.literal(true) });
+export type PushOkResponse = z.infer<typeof pushOkResponseSchema>;
+
+/**
+ * What a push carries, as JSON. `title` is the sender's name in a direct chat
+ * and "Sender in Group title" in a group; `body` is the message's first
+ * `PUSH_BODY_MAX_LENGTH` characters. The service worker shows it with
+ * `tag: conversationId`, so a newer message replaces the chat's notification.
+ */
+export interface PushPayload {
+  conversationId: string;
+  title: string;
+  body: string;
+}
+
 // --- The routes ---------------------------------------------------------------------
 
 export const routes = {
@@ -386,6 +470,26 @@ export const routes = {
     auth: "ward",
     params: claudeTokenParamsSchema,
     response: revokeClaudeTokenResponseSchema,
+  },
+  pushKey: {
+    method: "GET",
+    path: "/api/push/key",
+    auth: "ward",
+    response: pushKeyResponseSchema,
+  },
+  savePushSubscription: {
+    method: "POST",
+    path: "/api/push/subscriptions",
+    auth: "ward",
+    body: savePushSubscriptionRequestSchema,
+    response: pushOkResponseSchema,
+  },
+  deletePushSubscription: {
+    method: "DELETE",
+    path: "/api/push/subscriptions",
+    auth: "ward",
+    body: deletePushSubscriptionRequestSchema,
+    response: pushOkResponseSchema,
   },
   claudeUnread: {
     method: "GET",

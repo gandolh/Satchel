@@ -15,7 +15,15 @@ import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, migrations } from "./db/migrations.js";
 import { databasePath, openDb, type Db } from "./db/open.js";
-import { ClientIdConflict, NotAMember, UnknownAccount, createStore, directKey, type Store } from "./store.js";
+import {
+  ClientIdConflict,
+  NotAMember,
+  PUSH_SUBSCRIPTIONS_PER_ACCOUNT,
+  UnknownAccount,
+  createStore,
+  directKey,
+  type Store,
+} from "./store.js";
 
 const A = "subject-a";
 const B = "subject-b";
@@ -122,7 +130,7 @@ describe("openDb and migrations", () => {
 
     migrate(old);
 
-    expect(old.pragma("user_version", { simple: true })).toBe(2);
+    expect(old.pragma("user_version", { simple: true })).toBe(migrations.length);
     expect(old.prepare("SELECT id, kind, direct_key FROM conversations").all()).toEqual([
       { id: "inbox-a", kind: "inbox", direct_key: null },
     ]);
@@ -602,5 +610,79 @@ describe("Claude tokens", () => {
     expect(tokens.map((t) => t.id)).toEqual([second.id, first.id]);
     expect(claudeTokensResponseSchema.parse({ tokens })).toEqual({ tokens });
     expect(JSON.stringify(tokens)).not.toContain(first.token);
+  });
+});
+
+describe("push subscriptions", () => {
+  const sub = (n: number, keys = "k") => ({
+    endpoint: `https://fcm.googleapis.com/fcm/send/device-${String(n)}`,
+    p256dh: `p256dh-${keys}`,
+    auth: `auth-${keys}`,
+  });
+  const endpoints = (subject: string) => store.listPushSubscriptions(subject).map((s) => s.endpoint);
+
+  it("saves, lists oldest first, and deletes an account's subscriptions", () => {
+    expect(store.savePushSubscription(A, sub(1))).toEqual({ created: true });
+    advance();
+    store.savePushSubscription(A, sub(2));
+    store.savePushSubscription(B, sub(3));
+    expect(store.listPushSubscriptions(A)).toEqual([
+      { ...sub(1), createdAt: T0, lastSuccessAt: null },
+      { ...sub(2), createdAt: current.toISOString(), lastSuccessAt: null },
+    ]);
+    expect(endpoints(B)).toEqual([sub(3).endpoint]);
+
+    expect(store.deletePushSubscription(A, sub(1).endpoint)).toBe(true);
+    expect(store.deletePushSubscription(A, sub(1).endpoint)).toBe(false);
+    expect(endpoints(A)).toEqual([sub(2).endpoint]);
+  });
+
+  it("upserts by endpoint: the same browser again replaces its keys and keeps created_at", () => {
+    store.savePushSubscription(A, sub(1, "old"));
+    advance();
+    expect(store.savePushSubscription(A, sub(1, "new"))).toEqual({ created: false });
+    expect(store.listPushSubscriptions(A)).toEqual([{ ...sub(1, "new"), createdAt: T0, lastSuccessAt: null }]);
+  });
+
+  it("an endpoint saved by another account moves to that account", () => {
+    store.savePushSubscription(A, sub(1));
+    store.savePushSubscription(B, sub(1, "b"));
+    expect(endpoints(A)).toEqual([]);
+    expect(store.listPushSubscriptions(B)).toMatchObject([sub(1, "b")]);
+  });
+
+  it("deleting someone else's endpoint changes nothing", () => {
+    store.savePushSubscription(A, sub(1));
+    expect(store.deletePushSubscription(B, sub(1).endpoint)).toBe(false);
+    expect(endpoints(A)).toEqual([sub(1).endpoint]);
+  });
+
+  it("forgetPushEndpoint deletes whoever held it; markPushDelivered stamps last_success_at", () => {
+    store.savePushSubscription(A, sub(1));
+    store.savePushSubscription(A, sub(2));
+    const at = advance();
+    store.markPushDelivered(sub(2).endpoint);
+    store.forgetPushEndpoint(sub(1).endpoint);
+    expect(store.listPushSubscriptions(A)).toEqual([{ ...sub(2), createdAt: T0, lastSuccessAt: at }]);
+  });
+
+  it(`keeps at most ${String(PUSH_SUBSCRIPTIONS_PER_ACCOUNT)} per account, dropping the oldest`, () => {
+    for (let n = 1; n <= PUSH_SUBSCRIPTIONS_PER_ACCOUNT + 2; n += 1) store.savePushSubscription(A, sub(n));
+    store.savePushSubscription(B, sub(99));
+    const kept = endpoints(A);
+    expect(kept).toHaveLength(PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
+    expect(kept[0]).toBe(sub(3).endpoint);
+    expect(kept.at(-1)).toBe(sub(PUSH_SUBSCRIPTIONS_PER_ACCOUNT + 2).endpoint);
+    expect(endpoints(B)).toEqual([sub(99).endpoint]);
+  });
+
+  it("needs an account, and an endpoint is stored once", () => {
+    expect(() => store.savePushSubscription("subject-stranger", sub(1))).toThrow(/FOREIGN KEY/);
+    store.savePushSubscription(A, sub(1));
+    expect(() =>
+      db
+        .prepare("INSERT INTO push_subs (endpoint, subject, p256dh, auth, created_at) VALUES (?, ?, 'p', 'a', ?)")
+        .run(sub(1).endpoint, B, T0),
+    ).toThrow(/UNIQUE/);
   });
 });

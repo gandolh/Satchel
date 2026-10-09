@@ -67,6 +67,19 @@ export const migrations: readonly string[] = [
     CHECK ((kind = 'direct') = (direct_key IS NOT NULL));
   CREATE UNIQUE INDEX conversations_one_direct_per_pair ON conversations(direct_key);
   `,
+  // 3 (brief 14): Web Push subscriptions, one per browser. The endpoint is the
+  // browser's; it belongs to whichever account saved it last.
+  `
+  CREATE TABLE push_subs (
+    endpoint         TEXT NOT NULL UNIQUE,
+    subject          TEXT NOT NULL REFERENCES accounts(subject),
+    p256dh           TEXT NOT NULL,
+    auth             TEXT NOT NULL,
+    created_at       TEXT NOT NULL,
+    last_success_at  TEXT
+  );
+  CREATE INDEX push_subs_by_subject ON push_subs(subject);
+  `,
 ];
 
 /** Brings the schema up to `list.length`, tracked in `PRAGMA user_version`. */
