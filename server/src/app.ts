@@ -37,6 +37,8 @@ export interface AppDeps {
   store: Store;
   /** The Ward client. `index.ts` builds the real one from config; tests point one at `fakeWard`. */
   ward: WardClient;
+  /** The app's origin as the browser sees it (`WARD_PUBLIC_ORIGIN`). The guard refuses writes from any other. */
+  publicOrigin: string;
   clock: Clock;
   /** Default: on, except when `NODE_ENV=test`. Redaction applies either way. */
   logger?: boolean | LogOptions;
@@ -69,7 +71,7 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *   in without editing this file.
  * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).
  */
-export function buildApp({ store, ward, clock, logger }: AppDeps): FastifyInstance {
+export function buildApp({ store, ward, publicOrigin, clock, logger }: AppDeps): FastifyInstance {
   const app = Fastify({ logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
 
   // A POST with `Content-Type: application/json` and no body is a body of
@@ -87,7 +89,7 @@ export function buildApp({ store, ward, clock, logger }: AppDeps): FastifyInstan
   });
 
   registerErrorHandling(app);
-  registerWardGuard(app, { ward, store });
+  registerWardGuard(app, { ward, store, publicOrigin });
 
   app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
 

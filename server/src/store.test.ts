@@ -286,8 +286,14 @@ describe("markSeen", () => {
     expect(() => store.markSeen(inbox, B, 1)).toThrow(NotAMember);
     expect(() => store.unreadFor(inbox, B)).toThrow(NotAMember);
     expect(() => store.seenUpTo(inbox, B)).toThrow(NotAMember);
-    expect(() => send(inbox, B, "intruder")).toThrow(NotAMember);
+    const intruderClientId = randomUUID();
+    expect(() => send(inbox, B, "intruder", intruderClientId)).toThrow(NotAMember);
+    // The insert ran before the membership check threw; the transaction rolled it back.
     expect(messageCount()).toBe(1);
+    expect(store.latestSeq(inbox)).toBe(1);
+    expect(store.listMessages(inbox).map((m) => m.text)).toEqual(["private"]);
+    // The client ID was never stored, so it is still free for a new message.
+    expect(send(inbox, A, "retry", intruderClientId).created).toBe(true);
   });
 });
 
@@ -442,6 +448,34 @@ describe("Claude tokens", () => {
     expect(store.revokeClaudeToken(A, randomUUID())).toBeNull();
     expect(store.resolveClaudeToken(token)?.tokenId).toBe(id);
     expect(store.listClaudeTokens(A)[0]?.revokedAt).toBeNull();
+  });
+
+  it("revokeAllClaudeTokens revokes every live token of one owner and returns the count", () => {
+    const first = store.createClaudeToken(A);
+    const second = store.createClaudeToken(A);
+    const earlier = store.createClaudeToken(A);
+    const earlierRevokedAt = advance();
+    store.revokeClaudeToken(A, earlier.id);
+    const other = store.createClaudeToken(B);
+
+    const revokedAt = advance();
+    expect(store.revokeAllClaudeTokens(A)).toBe(2);
+    expect(store.resolveClaudeToken(first.token)).toBeNull();
+    expect(store.resolveClaudeToken(second.token)).toBeNull();
+    const byId = new Map(store.listClaudeTokens(A).map((t) => [t.id, t.revokedAt]));
+    expect(byId.get(first.id)).toBe(revokedAt);
+    expect(byId.get(second.id)).toBe(revokedAt);
+    expect(byId.get(earlier.id)).toBe(earlierRevokedAt);
+
+    expect(store.resolveClaudeToken(other.token)?.tokenId).toBe(other.id);
+    expect(store.revokeAllClaudeTokens(A)).toBe(0);
+  });
+
+  it("revokeAllClaudeTokens for a subject with no account changes nothing and creates no row", () => {
+    const accounts = () => db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM accounts").get()?.n ?? -1;
+    const before = accounts();
+    expect(store.revokeAllClaudeTokens("subject-stranger")).toBe(0);
+    expect(accounts()).toBe(before);
   });
 
   it("lists only the owner's tokens, newest first, in the strict shared shape", () => {

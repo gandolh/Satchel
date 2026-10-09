@@ -23,6 +23,15 @@ services:
       - "127.0.0.1:${SATCHEL_PORT:-8795}:${SATCHEL_PORT:-8795}"
     env_file:
       - .env
+    # These beat env_file. A dev .env copied here (HOST=127.0.0.1, PORT=8807,
+    # DATA_DIR=./data) would otherwise override the image's ENV and leave the
+    # server unreachable from the published port, or writing outside /data.
+    # PORT follows SATCHEL_PORT so the publish line, the healthcheck and the
+    # listening port always agree.
+    environment:
+      HOST: 0.0.0.0
+      PORT: "${SATCHEL_PORT:-8795}"
+      DATA_DIR: /data
     volumes:
       # The message database. Bind-mounted from the host so it survives deploys
       # and "back up Satchel" means one path. Defaults to a local dir so a dev

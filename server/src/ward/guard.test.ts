@@ -11,6 +11,7 @@ import { startFakeWard } from "./testing/fakeWard.js";
 import { TEST_APP_KEY, startTestApp, wardCookie, type TestApp } from "./testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
+const B = { subject: "subject-b", username: "bogdan" };
 
 let t: TestApp;
 
@@ -170,6 +171,130 @@ describe("403 forbidden", () => {
   it("a Satchel grant with no roles", async () => {
     expectError(await me(await t.signIn({ ...A, grants: { satchel: [] } })), 403, "forbidden");
   });
+
+  it("revokes the subject's Claude tokens once the grant is gone", async () => {
+    const withGrant = await t.signIn(A);
+    const created = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: withGrant } });
+    expect(created.statusCode).toBe(201);
+    const { token } = created.json<{ token: string }>();
+    t.store.upsertAccount(B.subject, B.username);
+    const other = t.store.createClaudeToken(B.subject);
+    expect(t.store.resolveClaudeToken(token)).not.toBeNull();
+
+    // A fresh session (a fresh token, so no cached introspection) whose grants lost satchel.
+    const withoutGrant = await t.signIn({ ...A, grants: { atrium: ["admin"] } });
+    expectError(await me(withoutGrant), 403, "forbidden");
+
+    expect(t.store.resolveClaudeToken(token)).toBeNull();
+    expect(t.store.listClaudeTokens(A.subject).every((row) => row.revokedAt !== null)).toBe(true);
+    expect(t.store.resolveClaudeToken(other.token)).not.toBeNull();
+  });
+});
+
+describe("cross-origin writes are refused before Ward is asked", () => {
+  const FOREIGN = "https://evil.gandolh.ro";
+
+  /** A signed-in caller with their inbox id, and how many introspections that took. */
+  async function signedInWithInbox() {
+    const cookie = await t.signIn(A);
+    const { inboxId } = meResponseSchema.parse((await me(cookie)).json());
+    return { cookie, inboxId, introspections: t.fakeWard.introspectCallCount };
+  }
+
+  function writes(inboxId: string, tokenId: string) {
+    return [
+      { method: "POST" as const, url: "/api/claude-tokens" },
+      { method: "POST" as const, url: `/api/claude-tokens/${tokenId}/revoke` },
+      {
+        method: "POST" as const,
+        url: `/api/conversations/${inboxId}/messages`,
+        payload: { clientId: randomUUID(), text: "hello" },
+      },
+      { method: "POST" as const, url: `/api/conversations/${inboxId}/seen`, payload: { upTo: 0 } },
+    ];
+  }
+
+  for (const [label, headers] of [
+    ["an Origin that is not the app's", { origin: FOREIGN }],
+    ["Origin: null", { origin: "null" }],
+    ["Sec-Fetch-Site: cross-site and no Origin", { "sec-fetch-site": "cross-site" }],
+    ["Sec-Fetch-Site: same-site and no Origin", { "sec-fetch-site": "same-site" }],
+  ] as const) {
+    it(`403 on every write with ${label}, with no introspection and nothing changed`, async () => {
+      const { cookie, inboxId, introspections } = await signedInWithInbox();
+      const { id: tokenId, token } = t.store.createClaudeToken(A.subject);
+
+      for (const request of writes(inboxId, tokenId)) {
+        const res = await t.app.inject({ ...request, headers: { cookie, ...headers } });
+        expectError(res, 403, "forbidden");
+      }
+
+      expect(t.fakeWard.introspectCallCount).toBe(introspections);
+      expect(t.store.listClaudeTokens(A.subject)).toHaveLength(1);
+      expect(t.store.resolveClaudeToken(token)?.tokenId).toBe(tokenId);
+      expect(t.store.latestSeq(inboxId)).toBe(0);
+    });
+  }
+
+  it("refuses a cross-origin write even with no cookie, before the 401", async () => {
+    const res = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { origin: FOREIGN } });
+    expectError(res, 403, "forbidden");
+    expect(t.fakeWard.introspectCallCount).toBe(0);
+  });
+
+  for (const [label, headers] of [
+    ["the app's own Origin", (origin: string) => ({ origin })],
+    ["Sec-Fetch-Site: same-origin and no Origin", () => ({ "sec-fetch-site": "same-origin" })],
+    ["neither header (a non-browser client)", () => ({})],
+    [
+      "the app's own Origin and Sec-Fetch-Site: same-origin",
+      (origin: string) => ({ origin, "sec-fetch-site": "same-origin" }),
+    ],
+  ] as const) {
+    it(`lets every write through with ${label}`, async () => {
+      const { cookie, inboxId } = await signedInWithInbox();
+      const extra = headers(t.origin);
+
+      const created = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie, ...extra } });
+      expect(created.statusCode).toBe(201);
+      const { id: tokenId } = created.json<{ id: string }>();
+
+      const [, revoke, send, seen] = writes(inboxId, tokenId);
+      for (const [request, status] of [
+        [revoke, 200],
+        [send, 201],
+        [seen, 200],
+      ] as const) {
+        if (!request) throw new Error("missing request");
+        const res = await t.app.inject({ ...request, headers: { cookie, ...extra } });
+        expect(res.statusCode).toBe(status);
+      }
+      expect(t.store.latestSeq(inboxId)).toBe(1);
+    });
+  }
+
+  it("lets a GET through with a foreign Origin or Sec-Fetch-Site: cross-site", async () => {
+    const cookie = await t.signIn(A);
+    for (const headers of [{ origin: FOREIGN }, { "sec-fetch-site": "cross-site" }]) {
+      const res = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie, ...headers } });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
+  it("does not apply to /api/health or /claude/*", async () => {
+    const health = await t.app.inject({ method: "GET", url: "/api/health", headers: { origin: FOREIGN } });
+    expect(health.statusCode).toBe(200);
+
+    await signedInWithInbox();
+    const { token } = t.store.createClaudeToken(A.subject);
+    const res = await t.app.inject({
+      method: "POST",
+      url: "/claude/seen",
+      headers: { authorization: `Bearer ${token}`, origin: FOREIGN },
+      payload: { upTo: 0 },
+    });
+    expect(res.statusCode).toBe(200);
+  });
 });
 
 describe("503 unavailable, never 401", () => {
@@ -203,7 +328,13 @@ describe("503 unavailable, never 401", () => {
     };
     const ward = createWardClient({ publicOrigin: fake.origin, apiBasePath: "", appKey: TEST_APP_KEY, fetch: odd });
     const db = openDb(":memory:");
-    const app = buildApp({ store: createStore(db, () => new Date()), ward, clock: () => new Date(), logger: false });
+    const app = buildApp({
+      store: createStore(db, () => new Date()),
+      ward,
+      publicOrigin: fake.origin,
+      clock: () => new Date(),
+      logger: false,
+    });
     try {
       fake.setSession("family_odd", { active: true, ...A, grants: { satchel: ["admin"] } });
       const token = await fake.mintToken({ subject: A.subject, sessionId: "family_odd" });

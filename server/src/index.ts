@@ -36,15 +36,28 @@ const ward = createWardClient({
   appKey: config.ward.appKey,
 });
 
-const app = buildApp({ store, ward, clock: systemClock });
+const app = buildApp({ store, ward, publicOrigin: config.ward.publicOrigin, clock: systemClock });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
-    void app.close().finally(() => {
-      db.close();
-      process.exit(0);
-    });
+    app.close().then(
+      () => {
+        db.close();
+        process.exit(0);
+      },
+      (err: unknown) => {
+        app.log.error({ err }, `shutdown on ${signal} failed`);
+        db.close();
+        process.exit(1);
+      },
+    );
   });
 }
 
-await app.listen({ host: config.host, port: config.port });
+try {
+  await app.listen({ host: config.host, port: config.port });
+} catch (err) {
+  app.log.error({ err }, `Satchel cannot listen on ${config.host}:${config.port}`);
+  db.close();
+  process.exit(1);
+}

@@ -226,6 +226,9 @@ export function createStore(db: Db, clock: Clock) {
      WHERE id = ? AND owner_subject = ?
      RETURNING id, revoked_at`,
   );
+  const revokeAllTokensStmt = db.prepare<[string, string]>(
+    "UPDATE agent_tokens SET revoked_at = ? WHERE owner_subject = ? AND revoked_at IS NULL",
+  );
 
   function markerOf(conversationId: string, member: string): number {
     const row = markerStmt.get(conversationId, member);
@@ -414,6 +417,15 @@ export function createStore(db: Db, clock: Clock) {
     revokeClaudeToken(ownerSubject: string, id: string): RevokeClaudeTokenResponse | null {
       const row = revokeTokenStmt.get(now(), id, ownerSubject);
       return row === undefined ? null : { id: row.id, revokedAt: row.revoked_at };
+    },
+
+    /**
+     * Revokes every live token the subject owns; returns how many. Already
+     * revoked ones keep their `revoked_at`. A subject with no account is a
+     * no-op: nothing is created.
+     */
+    revokeAllClaudeTokens(ownerSubject: string): number {
+      return revokeAllTokensStmt.run(now(), ownerSubject).changes;
     },
   };
 }

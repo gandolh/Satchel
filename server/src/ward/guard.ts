@@ -14,13 +14,23 @@ import type { ActiveSession } from "./session.js";
  * holds a Satchel grant. `/claude/*` never runs this: those routes take a
  * Claude token instead, and no cookie is read for them.
  *
- * Three outcomes, three statuses, never collapsed:
+ * Before any of that, an unsafe request (anything but GET, HEAD and OPTIONS)
+ * that a browser sent from another origin is a **403 `forbidden`**, with no
+ * call to Ward. The session cookie is `SameSite=Lax` on a shared origin, so a
+ * same-site page (another app on a subdomain) could otherwise post a
+ * body-less form to `/api/claude-tokens` with the owner's cookie attached. See
+ * `crossOriginWrite`.
+ *
+ * Then three outcomes, three statuses, never collapsed:
  *
  * - **401 `unauthorized`**: no cookie, a token that does not verify (EdDSA
  *   only, `iss`, `aud`, expiry), or a session Ward says is not live. Signing
  *   in fixes it.
  * - **403 `forbidden`**: a live session with no `satchel` grant. Holding a
- *   Ward account confers nothing; signing in again changes nothing.
+ *   Ward account confers nothing; signing in again changes nothing. Every
+ *   live Claude token the subject made is revoked then. Satchel only learns
+ *   of a lost grant here, so the tokens go at the subject's next request,
+ *   not the moment the grant is removed in Ward.
  * - **503 `unavailable`**: Ward unreachable, a timeout, a 5xx, a body outside
  *   the contract, a key set Ward cannot serve, or Ward refusing this app's
  *   key. Fail closed: never "signed out", never a stale answer.
@@ -71,16 +81,51 @@ export function needsWardSession(request: FastifyRequest): boolean {
   return path.startsWith("/api/") && path !== "/api/health";
 }
 
+/** Methods that change nothing, so a cross-origin one is harmless. */
+const SAFE_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Whether this is a write a browser sent from a page on another origin.
+ *
+ * Only for an unsafe method (not GET, HEAD or OPTIONS):
+ *
+ * - an `Origin` header that is not exactly `publicOrigin` (the string `null`
+ *   included), or
+ * - no `Origin`, and a `Sec-Fetch-Site` header that is not `same-origin`.
+ *
+ * A request with neither header was not sent by a current browser (the CLI,
+ * a script, the tests), so no page can have made it ride on the owner's
+ * cookie, and it passes. Ward's own `/refresh` and `/logout` check lets
+ * header-less requests through for the same reason. `publicOrigin` is the deploy's one shared origin
+ * (`WARD_PUBLIC_ORIGIN`); in local dev the Vite proxy rewrites a same-origin
+ * page's `Origin` to it, as Caddy's single origin makes it true in the deploy.
+ */
+export function crossOriginWrite(request: FastifyRequest, publicOrigin: string): boolean {
+  if (SAFE_METHODS.has(request.method)) return false;
+  const origin = request.headers.origin;
+  if (origin !== undefined) return origin !== publicOrigin;
+  const fetchSite = request.headers["sec-fetch-site"];
+  return fetchSite !== undefined && fetchSite !== "same-origin";
+}
+
 export interface WardGuardDeps {
   ward: WardClient;
   store: Store;
+  /** The app's own origin as the browser sees it: `WARD_PUBLIC_ORIGIN`. Writes from any other are refused. */
+  publicOrigin: string;
 }
 
-export function registerWardGuard(app: FastifyInstance, { ward, store }: WardGuardDeps): void {
+export function registerWardGuard(app: FastifyInstance, { ward, store, publicOrigin }: WardGuardDeps): void {
   app.decorateRequest("account", null);
 
   app.addHook("onRequest", async (request, reply) => {
     if (!needsWardSession(request)) return;
+
+    // First, before Ward is asked anything and before any handler runs.
+    if (crossOriginWrite(request, publicOrigin)) {
+      request.log.warn({ method: request.method, url: request.url }, "cross-origin write refused");
+      return sendError(reply, "forbidden", "Satchel only accepts changes from its own pages.");
+    }
 
     let session: ActiveSession;
     try {
@@ -108,7 +153,10 @@ export function registerWardGuard(app: FastifyInstance, { ward, store }: WardGua
     // Any role at all opens Satchel. `grants` is the whole estate's; only ours counts.
     const roles = session.grants[SATCHEL_APP_SLUG];
     if (!Array.isArray(roles) || roles.length === 0) {
-      request.log.warn({ subject: session.subject }, "live ward session with no satchel grant");
+      // A grant taken away takes the subject's Claude tokens with it. Revoking
+      // never creates an account row: a stranger has no tokens to revoke.
+      const revokedTokens = store.revokeAllClaudeTokens(session.subject);
+      request.log.warn({ subject: session.subject, revokedTokens }, "live ward session with no satchel grant");
       return sendError(reply, "forbidden", "This Ward account has no access to Satchel. Ask the owner for a grant.");
     }
 

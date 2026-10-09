@@ -31,6 +31,8 @@ export interface SignInOptions {
 
 export interface TestApp {
   app: FastifyInstance;
+  /** The app's own origin (the fake Ward's): send it as `Origin` for a same-origin browser request. */
+  origin: string;
   store: Store;
   db: Db;
   fakeWard: FakeWard;
@@ -73,10 +75,12 @@ export async function startTestApp(options: TestAppOptions = {}): Promise<TestAp
   const logger: LogOptions | false = options.captureLogs
     ? { level: "info", stream: { write: (line) => void logs.push(line) } }
     : false;
-  const app = buildApp({ store, ward, clock, logger });
+  // The fake's origin is both Ward's and the app's, as in the deploy's one shared origin.
+  const app = buildApp({ store, ward, publicOrigin: fakeWard.origin, clock, logger });
 
   return {
     app,
+    origin: fakeWard.origin,
     store,
     db,
     fakeWard,
