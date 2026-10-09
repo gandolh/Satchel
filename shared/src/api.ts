@@ -279,6 +279,13 @@ export const LIVE_PATH = "/api/live";
 /** The server closes a socket with this code when the access token it opened with expires. Renew, then reconnect. */
 export const LIVE_CLOSE_SESSION_EXPIRED = 4001;
 
+/**
+ * The server closes an account's oldest socket with this code when the
+ * account opens one more than it may keep open at once. Another tab took this
+ * one's place: don't reconnect on your own, or the tabs push each other out.
+ */
+export const LIVE_CLOSE_TOO_MANY_SOCKETS = 4002;
+
 /** A stored message, sent to every member, the sender's own sockets included. */
 export const liveMessageEventSchema = z.object({
   type: z.literal("message"),
@@ -327,13 +334,15 @@ const IPV4_HOST = /^\d{1,3}(\.\d{1,3}){3}$/;
  * Whether `value` could be a push service's endpoint: an https URL with no
  * credentials on a public DNS name. IP literals, `localhost` and single-label
  * hosts (a Docker service name) are refused, so a member can't point the
- * server's pushes at something on its own network.
+ * server's pushes at something on its own network. Trailing dots are dropped
+ * before the name is judged: `localhost.` and `ward.` resolve like
+ * `localhost` and `ward`.
  */
 export function isPushEndpoint(value: string): boolean {
   if (value.length > PUSH_ENDPOINT_MAX_LENGTH || !URL.canParse(value)) return false;
   const url = new URL(value);
   if (url.protocol !== "https:" || url.username !== "" || url.password !== "") return false;
-  const host = url.hostname.toLowerCase();
+  const host = url.hostname.toLowerCase().replace(/\.+$/, "");
   if (host.startsWith("[") || IPV4_HOST.test(host) || !host.includes(".")) return false;
   return host !== "localhost" && !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal");
 }

@@ -27,10 +27,14 @@ import { hasGrant, type ActiveSession } from "./session.js";
  *   only, `iss`, `aud`, expiry), or a session Ward says is not live. Signing
  *   in fixes it.
  * - **403 `forbidden`**: a live session with no `satchel` grant. Holding a
- *   Ward account confers nothing; signing in again changes nothing. Every
- *   live Claude token the subject made is revoked then. Satchel only learns
- *   of a lost grant here, so the tokens go at the subject's next request,
- *   not the moment the grant is removed in Ward.
+ *   Ward account confers nothing; signing in again changes nothing. The
+ *   subject's account (if it has one) is locked out then: marked inactive,
+ *   so it leaves the people list, can't be added to new conversations and
+ *   gets no pushes; every live Claude token it made is revoked; every push
+ *   subscription it saved is deleted. Its conversations and messages stay.
+ *   Satchel only learns of a lost grant here, so all of that happens at the
+ *   subject's next request, not the moment the grant is removed in Ward. The
+ *   next request that does carry a grant makes the account active again.
  * - **503 `unavailable`**: Ward unreachable, a timeout, a 5xx, a body outside
  *   the contract, a key set Ward cannot serve, or Ward refusing this app's
  *   key. Fail closed: never "signed out", never a stale answer.
@@ -179,15 +183,17 @@ export function registerWardGuard(app: FastifyInstance, { ward, store, publicOri
     // Any role at all opens Satchel. `grants` is the whole estate's; only ours counts.
     const roles = session.grants[SATCHEL_APP_SLUG];
     if (!Array.isArray(roles) || roles.length === 0) {
-      // A grant taken away takes the subject's Claude tokens with it. Revoking
-      // never creates an account row: a stranger has no tokens to revoke.
-      const revokedTokens = store.revokeAllClaudeTokens(session.subject);
-      request.log.warn({ subject: session.subject, revokedTokens }, "live ward session with no satchel grant");
+      // A grant taken away takes the account out of the people list and
+      // takes its Claude tokens and push subscriptions with it. This never
+      // creates an account row: a stranger has nothing to take away.
+      const lockedOut = store.lockOutAccount(session.subject);
+      request.log.warn({ subject: session.subject, ...lockedOut }, "live ward session with no satchel grant");
       return sendError(reply, "forbidden", "This Ward account has no access to Satchel. Ask the owner for a grant.");
     }
 
-    // Account first: the inbox's rows reference it. Only the owner gets an
-    // inbox; a friend's account gets none.
+    // Account first: the inbox's rows reference it. This also makes an
+    // account that was locked out active again. Only the owner gets an inbox;
+    // a friend's account gets none.
     store.upsertAccount(session.subject, session.username);
     const owner = hasGrant(session.grants, SATCHEL_APP_SLUG, OWNER_ROLE);
     // Claude tokens are the owner's. An account that lost admin keeps its

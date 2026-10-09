@@ -1,10 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { CLAUDE_MEMBER, LIVE_CLOSE_SESSION_EXPIRED, liveEventSchema, type LiveEvent, type Message } from "@satchel/shared";
+import {
+  CLAUDE_MEMBER,
+  LIVE_CLOSE_SESSION_EXPIRED,
+  LIVE_CLOSE_TOO_MANY_SOCKETS,
+  liveEventSchema,
+  type LiveEvent,
+  type Message,
+} from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, type Db } from "../db/open.js";
 import { createStore, type Store } from "../store.js";
-import { SOCKET_OPEN, createHub, type Hub } from "./hub.js";
+import { LIVE_SOCKETS_PER_SUBJECT, SOCKET_OPEN, createHub, type Hub } from "./hub.js";
 import { createLivePublisher } from "./publish.js";
 import { LIVE_PING_MS, serveLiveSocket, type LiveConnection } from "./socket.js";
 
@@ -14,6 +21,7 @@ class FakeSocket extends EventEmitter implements LiveConnection {
   sent: LiveEvent[] = [];
   pings = 0;
   closedWith: number | undefined;
+  closedReason: string | undefined;
   terminated = false;
   failing = false;
 
@@ -24,8 +32,9 @@ class FakeSocket extends EventEmitter implements LiveConnection {
   ping(): void {
     this.pings += 1;
   }
-  close(code?: number): void {
+  close(code?: number, reason?: string): void {
     this.closedWith = code;
+    this.closedReason = reason;
     this.readyState = 3;
     this.emit("close");
   }
@@ -101,6 +110,60 @@ describe("the hub", () => {
     expect(hub.socketCount("a")).toBe(0);
     expect(hub.publish(event, ["a"])).toEqual(["a"]);
     expect(a1.sent).toEqual([]);
+  });
+
+  it(`keeps at most ${String(LIVE_SOCKETS_PER_SUBJECT)} sockets per subject, closing the oldest with 4002`, () => {
+    const mine = Array.from({ length: LIVE_SOCKETS_PER_SUBJECT }, () => new FakeSocket());
+    for (const socket of mine) hub.add("a", socket);
+    const theirs = new FakeSocket();
+    hub.add("b", theirs);
+    expect(mine.every((socket) => socket.closedWith === undefined)).toBe(true);
+
+    const newest = new FakeSocket();
+    hub.add("a", newest);
+
+    expect(LIVE_CLOSE_TOO_MANY_SOCKETS).toBe(4002);
+    expect(mine[0]?.closedWith).toBe(LIVE_CLOSE_TOO_MANY_SOCKETS);
+    expect(mine[0]?.closedReason).toBe("too many open sockets");
+    expect(mine.slice(1).every((socket) => socket.closedWith === undefined)).toBe(true);
+    expect(theirs.closedWith).toBeUndefined();
+    expect(hub.socketCount("a")).toBe(LIVE_SOCKETS_PER_SUBJECT);
+    hub.publish(event, ["a"]);
+    expect(newest.sent).toEqual([event]);
+    expect(mine[0]?.sent).toEqual([]);
+
+    // The next one pushes out the next oldest.
+    hub.add("a", new FakeSocket());
+    expect(mine[1]?.closedWith).toBe(LIVE_CLOSE_TOO_MANY_SOCKETS);
+    expect(hub.socketCount("a")).toBe(LIVE_SOCKETS_PER_SUBJECT);
+  });
+
+  it("drops the oldest from the hub at once, before its close event, and logs a close that throws", () => {
+    // Like ws: close() starts the handshake; the socket stays open until the event.
+    const slow = Object.assign(new FakeSocket(), {
+      close(code?: number) {
+        slow.closedWith = code;
+      },
+    });
+    const broken = Object.assign(new FakeSocket(), {
+      close() {
+        throw new Error("socket broke");
+      },
+    });
+    hub.add("a", slow);
+    hub.add("a", broken);
+    for (let n = 2; n < LIVE_SOCKETS_PER_SUBJECT; n += 1) hub.add("a", new FakeSocket());
+
+    hub.add("a", new FakeSocket());
+    hub.add("a", new FakeSocket());
+
+    expect(slow.closedWith).toBe(LIVE_CLOSE_TOO_MANY_SOCKETS);
+    expect(slow.readyState).toBe(SOCKET_OPEN);
+    expect(hub.socketCount("a")).toBe(LIVE_SOCKETS_PER_SUBJECT);
+    hub.publish(event, ["a"]);
+    expect(slow.sent).toEqual([]);
+    expect(broken.sent).toEqual([]);
+    expect(warn).toHaveBeenCalledOnce();
   });
 
   it("refuses an event outside the contract", () => {

@@ -1,4 +1,10 @@
-import { LIVE_CLOSE_SESSION_EXPIRED, type ConversationSummary, type LiveEvent, type Message } from "@satchel/shared";
+import {
+  LIVE_CLOSE_SESSION_EXPIRED,
+  LIVE_CLOSE_TOO_MANY_SOCKETS,
+  type ConversationSummary,
+  type LiveEvent,
+  type Message,
+} from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   RECONNECT_MAX_MS,
@@ -354,6 +360,21 @@ describe("reconnecting", () => {
     await settle();
     expect(client.status()).toBe("live");
     expect(runs).toBe(2);
+  });
+
+  it("on 4002 (too many sockets) it polls and waits to be shown again instead of reconnecting", async () => {
+    client.start();
+    latest().open();
+    await settle();
+    latest().drop(LIVE_CLOSE_TOO_MANY_SOCKETS);
+    await settle();
+    expect(client.status()).toBe("waiting");
+    expect(client.connected()).toBe(false);
+    await vi.advanceTimersByTimeAsync(RECONNECT_MAX_MS * 2);
+    expect(sockets).toHaveLength(1);
+
+    wake?.();
+    expect(sockets).toHaveLength(2);
   });
 
   it("keeps a live socket across a quick tab switch", async () => {

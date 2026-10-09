@@ -2,7 +2,7 @@ import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
 import { ApiError } from "../errors.js";
-import { UnknownAccount } from "../store.js";
+import { InactiveAccount, UnknownAccount } from "../store.js";
 import { signedIn } from "../ward/guard.js";
 
 /**
@@ -24,13 +24,19 @@ import { signedIn } from "../ward/guard.js";
 export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {
   const notFound = () => new ApiError("not_found", "No such conversation");
 
-  /** Runs a store call that names other subjects; one with no account is a 400. */
+  /**
+   * Runs a store call that names other subjects. One with no account, or one
+   * whose account lost its Satchel grant, is a 400.
+   */
   function withKnownPeople<T>(create: () => T): T {
     try {
       return create();
     } catch (error) {
       if (error instanceof UnknownAccount) {
         throw new ApiError("invalid_request", "That person hasn't signed in to Satchel yet.");
+      }
+      if (error instanceof InactiveAccount) {
+        throw new ApiError("invalid_request", "That person no longer has access to Satchel.");
       }
       throw error;
     }

@@ -116,6 +116,17 @@ describe("loadConfig push settings", () => {
     expect(loadConfig({ ...WARD, ...VAPID, VAPID_SUBJECT: "https://gandolh.ro/satchel/" }).push.enabled).toBe(true);
   });
 
+  it.each([
+    ["an empty mailto: address", "mailto:"],
+    ["a mailto: with only a query", "mailto:?subject=push"],
+    ["a mailto: with no domain", "mailto:johndoe@"],
+    ["a mailto: with no local part", "mailto:@example.com"],
+    ["a mailto: with no @", "mailto:johndoe"],
+    ["an https: URL with no host", "https://"],
+  ])("refuses %s as VAPID_SUBJECT", (_label, subject) => {
+    expect(problems({ ...WARD, ...VAPID, VAPID_SUBJECT: subject })).toContain("VAPID_SUBJECT must be");
+  });
+
   it("refuses two keys that aren't one pair", () => {
     const other = vapidPair();
     const message = problems({ ...WARD, ...VAPID, VAPID_PUBLIC_KEY: other.publicKey });

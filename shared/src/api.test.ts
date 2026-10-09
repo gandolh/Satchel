@@ -256,6 +256,7 @@ describe("push subscriptions", () => {
     ["Firefox's", "https://updates.push.services.mozilla.com/wpush/v2/gAAAA"],
     ["Safari's", "https://web.push.apple.com/QGx"],
     ["Edge's", "https://wns2-par02p.notify.windows.com/w/?token=abc"],
+    ["a push service's name with a trailing dot", "https://fcm.googleapis.com./fcm/send/abc"],
   ])("accepts %s push service", (_label, endpoint) => {
     expect(isPushEndpoint(endpoint)).toBe(true);
   });
@@ -270,6 +271,12 @@ describe("push subscriptions", () => {
     ["localhost", "https://localhost:8795/api/health"],
     ["a single-label host", "https://satchel-api/api/health"],
     ["a .internal name", "https://metadata.google.internal/computeMetadata"],
+    ["localhost with a trailing dot", "https://localhost./x"],
+    ["a single-label host with a trailing dot", "https://ward./"],
+    ["a .internal name with a trailing dot", "https://foo.internal./x"],
+    ["a .local name with a trailing dot", "https://a.local./x"],
+    ["a .localhost name with trailing dots", "https://app.localhost../x"],
+    ["a host of only dots", "https://../x"],
     ["an over-long URL", `https://fcm.googleapis.com/${"a".repeat(2048)}`],
   ])("refuses %s as an endpoint", (_label, endpoint) => {
     expect(isPushEndpoint(endpoint)).toBe(false);

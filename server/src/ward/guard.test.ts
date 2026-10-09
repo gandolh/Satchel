@@ -256,6 +256,24 @@ describe("403 forbidden", () => {
     expect(t.store.listClaudeTokens(A.subject).every((row) => row.revokedAt !== null)).toBe(true);
     expect(t.store.resolveClaudeToken(other.token)).not.toBeNull();
   });
+
+  it("locks the account out once the grant is gone, and a grant again lets it back in", async () => {
+    expect((await me(await t.signIn({ ...B, grants: FRIEND }))).statusCode).toBe(200);
+    const device = { endpoint: "https://fcm.googleapis.com/fcm/send/phone-b", p256dh: "p", auth: "a" };
+    t.store.savePushSubscription(B.subject, device);
+
+    expectError(await me(await t.signIn({ ...B, grants: { atrium: ["member"] } })), 403, "forbidden");
+
+    expect(t.store.isAccountActive(B.subject)).toBe(false);
+    expect(t.store.listPushSubscriptions(B.subject)).toEqual([]);
+    expect(t.store.listPeople(A.subject)).toEqual([]);
+    expect(accountCount()).toBe(1);
+
+    expect((await me(await t.signIn({ ...B, grants: FRIEND }))).statusCode).toBe(200);
+
+    expect(t.store.isAccountActive(B.subject)).toBe(true);
+    expect(t.store.listPeople(A.subject)).toEqual([{ subject: B.subject, displayName: B.username }]);
+  });
 });
 
 describe("cross-origin writes are refused before Ward is asked", () => {

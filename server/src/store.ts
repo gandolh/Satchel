@@ -43,6 +43,25 @@ export class UnknownAccount extends Error {
   }
 }
 
+/**
+ * Subjects named for a new conversation whose account lost its Satchel grant
+ * (`accounts.active = 0`). Routes answer 400, as for `UnknownAccount`.
+ */
+export class InactiveAccount extends Error {
+  constructor(readonly subjects: readonly string[]) {
+    super(`The Satchel account of ${subjects.join(", ")} no longer has a grant.`);
+    this.name = "InactiveAccount";
+  }
+}
+
+/** What `lockOutAccount` took away. */
+export interface LockedOut {
+  /** Claude tokens revoked now; ones already revoked aren't counted. */
+  revokedTokens: number;
+  /** Push subscriptions deleted. */
+  deletedPushSubscriptions: number;
+}
+
 /** A direct conversation's `direct_key`: the two subjects, sorted, joined with a space. */
 export function directKey(a: string, b: string): string {
   return [a, b].sort().join(" ");
@@ -170,7 +189,8 @@ export function createStore(db: Db, clock: Clock) {
   const upsertAccountStmt = db.prepare<{ subject: string; displayName: string; now: string }>(
     `INSERT INTO accounts (subject, display_name, created_at, last_seen_at)
      VALUES (@subject, @displayName, @now, @now)
-     ON CONFLICT (subject) DO UPDATE SET display_name = excluded.display_name, last_seen_at = excluded.last_seen_at`,
+     ON CONFLICT (subject) DO UPDATE SET
+       display_name = excluded.display_name, last_seen_at = excluded.last_seen_at, active = 1`,
   );
   const findInboxStmt = db.prepare<[string], { id: string }>(
     "SELECT id FROM conversations WHERE kind = 'inbox' AND created_by = ?",
@@ -186,10 +206,11 @@ export function createStore(db: Db, clock: Clock) {
     `INSERT INTO conversations (id, kind, title, created_by, created_at, direct_key)
      VALUES (@id, @kind, @title, @createdBy, @createdAt, @directKey)`,
   );
-  const accountStmt = db.prepare<[string], { subject: string }>("SELECT subject FROM accounts WHERE subject = ?");
+  const accountStmt = db.prepare<[string], { active: number }>("SELECT active FROM accounts WHERE subject = ?");
+  const deactivateAccountStmt = db.prepare<[string]>("UPDATE accounts SET active = 0 WHERE subject = ?");
   const peopleStmt = db.prepare<[string, string], { subject: string; display_name: string }>(
     `SELECT subject, display_name FROM accounts
-     WHERE subject <> ? AND subject <> ?
+     WHERE active = 1 AND subject <> ? AND subject <> ?
      ORDER BY display_name COLLATE NOCASE, display_name, subject`,
   );
   const directByKeyStmt = db.prepare<[string], { id: string }>("SELECT id FROM conversations WHERE direct_key = ?");
@@ -300,6 +321,7 @@ export function createStore(db: Db, clock: Clock) {
     `SELECT endpoint, p256dh, auth, created_at, last_success_at FROM push_subs
      WHERE subject = ? ORDER BY rowid`,
   );
+  const deleteAllPushSubsStmt = db.prepare<[string]>("DELETE FROM push_subs WHERE subject = ?");
   const deleteOwnPushSubStmt = db.prepare<[string, string]>("DELETE FROM push_subs WHERE endpoint = ? AND subject = ?");
   const deletePushSubStmt = db.prepare<[string]>("DELETE FROM push_subs WHERE endpoint = ?");
   const pushDeliveredStmt = db.prepare<[string, string]>("UPDATE push_subs SET last_success_at = ? WHERE endpoint = ?");
@@ -321,9 +343,21 @@ export function createStore(db: Db, clock: Clock) {
     return next;
   }
 
-  /** Claude is never an account, whatever the accounts table holds. */
-  function missingAccounts(subjects: readonly string[]): string[] {
-    return subjects.filter((subject) => subject === CLAUDE_MEMBER || accountStmt.get(subject) === undefined);
+  /**
+   * Throws unless every subject is an active account. Claude is never an
+   * account, whatever the accounts table holds. Unknown ones are reported
+   * first: `UnknownAccount`, then `InactiveAccount`.
+   */
+  function requireActiveAccounts(subjects: readonly string[]): void {
+    const missing: string[] = [];
+    const inactive: string[] = [];
+    for (const subject of subjects) {
+      const row = subject === CLAUDE_MEMBER ? undefined : accountStmt.get(subject);
+      if (row === undefined) missing.push(subject);
+      else if (row.active !== 1) inactive.push(subject);
+    }
+    if (missing.length > 0) throw new UnknownAccount(missing);
+    if (inactive.length > 0) throw new InactiveAccount(inactive);
   }
 
   /** Inserts the conversation and its members, each with marker 0, in the order given. */
@@ -369,8 +403,10 @@ export function createStore(db: Db, clock: Clock) {
 
   const createDirectTx = db.transaction((a: string, b: string): CreatedDirect => {
     if (a === b) throw new Error("A direct conversation needs two different accounts.");
-    const missing = missingAccounts([b]);
-    if (missing.length > 0) throw new UnknownAccount(missing);
+    // Before the existing-pair lookup, on purpose: an account without a grant
+    // is refused like an unknown one even when the pair already has a chat.
+    // That chat stays in both lists and still opens by its id.
+    requireActiveAccounts([b]);
     const key = directKey(a, b);
     const existing = directByKeyStmt.get(key);
     if (existing !== undefined) return { conversation: summaryFor(existing.id, a), created: false };
@@ -383,8 +419,7 @@ export function createStore(db: Db, clock: Clock) {
       if (members.includes(creator) || new Set(members).size !== members.length) {
         throw new Error("A group's members must be distinct and must not list its creator.");
       }
-      const missing = missingAccounts(members);
-      if (missing.length > 0) throw new UnknownAccount(missing);
+      requireActiveAccounts(members);
       const id = insertConversation("group", title, creator, null, [creator, ...members]);
       return summaryFor(id, creator);
     },
@@ -450,19 +485,36 @@ export function createStore(db: Db, clock: Clock) {
   const savePushSubscriptionTx = db.transaction(
     (subject: string, sub: PushSubscriptionInput): { created: boolean } => {
       const params = { subject, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
-      if (pushSubOwnerStmt.get(sub.endpoint) !== undefined) {
+      const holder = pushSubOwnerStmt.get(sub.endpoint)?.subject;
+      if (holder === subject) {
+        // The same browser and account again: new keys, same place in line.
         rebindPushSubStmt.run(params);
-        return { created: false };
+      } else {
+        // New here, or moving from another account: a fresh row, so it is this
+        // account's newest and the trim below can't drop it.
+        if (holder !== undefined) deletePushSubStmt.run(sub.endpoint);
+        insertPushSubStmt.run({ ...params, now: now() });
       }
-      insertPushSubStmt.run({ ...params, now: now() });
       // The cap keeps the newest, so the one just saved always stays.
       trimPushSubsStmt.run(subject, subject, PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
-      return { created: true };
+      return { created: holder === undefined };
     },
   );
 
+  const lockOutAccountTx = db.transaction((subject: string): LockedOut => {
+    deactivateAccountStmt.run(subject);
+    return {
+      revokedTokens: revokeAllTokensStmt.run(now(), subject).changes,
+      deletedPushSubscriptions: deleteAllPushSubsStmt.run(subject).changes,
+    };
+  });
+
   return {
-    /** Inserts the account, or updates its display name and `last_seen_at`. Call before anything that names the subject. */
+    /**
+     * Inserts the account, or updates its display name and `last_seen_at`, and
+     * marks it active either way: only a request with a Satchel grant calls
+     * this. Call before anything that names the subject.
+     */
     upsertAccount(subject: string, displayName: string): void {
       upsertAccountStmt.run({ subject, displayName, now: now() });
     },
@@ -472,7 +524,7 @@ export function createStore(db: Db, clock: Clock) {
       return ensureInboxTx(subject);
     },
 
-    /** Every account except `subject` (and never Claude), by display name, case-insensitively. */
+    /** Every active account except `subject` (and never Claude), by display name, case-insensitively. */
     listPeople(subject: string): Person[] {
       return peopleStmt
         .all(subject, CLAUDE_MEMBER)
@@ -482,8 +534,9 @@ export function createStore(db: Db, clock: Clock) {
     /**
      * The direct conversation between `a` (the caller) and `b`, creating it
      * with both as members at marker 0 if the pair has none. Either order
-     * finds the same one. `b` with no account throws `UnknownAccount`; `a`
-     * equal to `b` is a bug and throws.
+     * finds the same one. `b` with no account throws `UnknownAccount`, and
+     * an inactive `b` throws `InactiveAccount`, even when the pair already has
+     * a conversation; `a` equal to `b` is a bug and throws.
      */
     createDirect(a: string, b: string): CreatedDirect {
       return createDirectTx(a, b);
@@ -492,7 +545,8 @@ export function createStore(db: Db, clock: Clock) {
     /**
      * A new group titled `title`, with `creator` then `members`, all at marker
      * 0, as the creator sees it. Membership is fixed from here on. A member
-     * with no account throws `UnknownAccount` and nothing is stored; a
+     * with no account throws `UnknownAccount`, an inactive one throws
+     * `InactiveAccount`, and nothing is stored; a
      * duplicate or the creator in `members` is a bug and throws. The route
      * enforces the title and member-count limits.
      */
@@ -584,8 +638,10 @@ export function createStore(db: Db, clock: Clock) {
      * endpoint. An endpoint already stored is bound to `subject` and gets the
      * new keys, whoever had it: the browser is the authority on its own
      * subscription, and a browser that switched accounts must stop pushing to
-     * the old one. A new one beyond `PUSH_SUBSCRIPTIONS_PER_ACCOUNT` drops the
-     * account's oldest.
+     * the old one. An endpoint moving to another account counts as that
+     * account's newest. Every save beyond `PUSH_SUBSCRIPTIONS_PER_ACCOUNT`
+     * drops the account's oldest. `created` is false whenever the endpoint was
+     * already stored, whoever held it.
      */
     savePushSubscription(subject: string, subscription: PushSubscriptionInput): { created: boolean } {
       return savePushSubscriptionTx(subject, subscription);
@@ -615,6 +671,23 @@ export function createStore(db: Db, clock: Clock) {
     /** A push to the endpoint was accepted: record when. */
     markPushDelivered(endpoint: string): void {
       pushDeliveredStmt.run(now(), endpoint);
+    },
+
+    /**
+     * The subject lost its Satchel grant: marks the account inactive (out of
+     * `listPeople`, refused for new conversations, skipped by push), revokes
+     * its live Claude tokens and deletes its push subscriptions, in one
+     * transaction. Its conversations, messages and markers stay. A subject
+     * with no account is a no-op: nothing is created. `upsertAccount` makes
+     * it active again.
+     */
+    lockOutAccount(subject: string): LockedOut {
+      return lockOutAccountTx(subject);
+    },
+
+    /** Whether the subject has an account that is active. False for Claude and for a stranger. */
+    isAccountActive(subject: string): boolean {
+      return subject !== CLAUDE_MEMBER && accountStmt.get(subject)?.active === 1;
     },
 
     /**

@@ -1,4 +1,10 @@
-import { LIVE_CLOSE_SESSION_EXPIRED, LIVE_PATH, liveEventSchema, type LiveEvent } from "@satchel/shared";
+import {
+  LIVE_CLOSE_SESSION_EXPIRED,
+  LIVE_CLOSE_TOO_MANY_SOCKETS,
+  LIVE_PATH,
+  liveEventSchema,
+  type LiveEvent,
+} from "@satchel/shared";
 import { useEffect, useEffectEvent, useSyncExternalStore } from "react";
 import { API_BASE, onAuthEvent } from "./api";
 import { renewalGeneration, renewSince } from "./ward";
@@ -24,6 +30,10 @@ export type { LiveEvent } from "@satchel/shared";
  *   the Ward session first (unless it was renewed since), then reconnect.
  *   Renewal refused means the session is over: the client stops, polling
  *   resumes, and the API client's 401 handling sends the browser to sign in.
+ * - **4002** means this account has too many sockets open and the server
+ *   dropped this one, the oldest. The client doesn't reconnect on its own,
+ *   or a crowd of tabs would evict each other forever: it polls, and
+ *   reconnects the next time the page is shown or comes back online.
  *
  * The browser can't see why a handshake failed. A refused one (say, a 401
  * after a laptop slept through the token's life) just retries with backoff;
@@ -262,6 +272,12 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
       if (status === "off") return;
       if (openedAt !== null && code === LIVE_CLOSE_SESSION_EXPIRED) {
         void renewThenConnect(generation, deps.now() - openedAt);
+        return;
+      }
+      if (code === LIVE_CLOSE_TOO_MANY_SOCKETS) {
+        clearTimeout(timer);
+        timer = undefined;
+        setStatus("waiting");
         return;
       }
       scheduleReconnect();

@@ -166,6 +166,19 @@ done by hand in production Ward's console, <https://gandolh.ro/ward/console>.
    sign-in they appear in the people list (`GET /api/people`), and anyone can
    start a one-to-one chat or a group with them.
 
-Removing their role on `satchel` in Ward locks them out of Satchel from their
-next request. Their account and their chats stay, and they still show in the
-people list.
+Removing their role on `satchel` in Ward locks them out at their next request
+to Satchel. That request gets a 403, and Satchel then revokes any Claude
+tokens the account made, deletes the push subscriptions of all its devices,
+and hides it from the people list, so nobody can start a new chat or group
+with them. Chats they're already in stay, messages included; the others can
+still write there, and no notification goes to the person who was removed.
+Granting the role again lets them back in at their next sign-in: they're in
+the people list again, and notifications resume once their browser saves its
+subscription again, which it does the next time Satchel opens.
+
+Satchel only learns of the removal from that next request. Until they make
+one, nothing changes: their devices still get notifications with message
+previews, and keep getting them if they never open Satchel again. A tab that
+is already open keeps its live connection, and new messages over it, until
+its access token expires, at most 15 minutes. If nothing else that tab does
+has locked them out by then, its reconnect does.

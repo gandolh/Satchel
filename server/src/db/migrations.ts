@@ -80,6 +80,13 @@ export const migrations: readonly string[] = [
   );
   CREATE INDEX push_subs_by_subject ON push_subs(subject);
   `,
+  // 4 (phase-2 review): whether the account still holds a Satchel grant, as
+  // of its last request. The guard clears it when a live session comes
+  // without the grant and sets it again on the next sign-in that has one.
+  // Existing rows start active: they all signed in with a grant.
+  `
+  ALTER TABLE accounts ADD COLUMN active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1));
+  `,
 ];
 
 /** Brings the schema up to `list.length`, tracked in `PRAGMA user_version`. */

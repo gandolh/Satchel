@@ -362,6 +362,86 @@ describe("pushes for a stored message", () => {
   });
 });
 
+describe("an account that lost its Satchel grant", () => {
+  const people = async (cookie: string) => {
+    const res = await t.app.inject({ method: "GET", url: "/api/people", headers: { cookie } });
+    return routes.listPeople.response.parse(res.json()).people.map((p) => p.subject);
+  };
+  const create = (cookie: string, payload: object) =>
+    t.app.inject({ method: "POST", url: "/api/conversations", headers: { cookie }, payload });
+
+  /** A fresh session for B without the grant (a fresh token, so no cached introspection), and one request. */
+  async function loseGrant(): Promise<void> {
+    const cookie = await t.signIn({ ...B, grants: { atrium: ["member"] } });
+    expectError(await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } }), 403, "forbidden");
+  }
+
+  it("is locked out at its next request: hidden, not addable, its devices forgotten, its chats kept", async () => {
+    await subscribe(cookieB, subscription("phone-b"));
+    await subscribe(cookieC, subscription("phone-c"));
+    const chat = await direct(cookieA, B.subject);
+    const hike = await group(cookieA, "Hike", [B.subject, C.subject]);
+    expect(await people(cookieA)).toEqual([B.subject, C.subject]);
+
+    await loseGrant();
+
+    expect(t.store.isAccountActive(B.subject)).toBe(false);
+    expect(endpoints(B.subject)).toEqual([]);
+    expect(await people(cookieA)).toEqual([C.subject]);
+    expect(await people(cookieC)).toEqual([A.subject]);
+
+    for (const payload of [
+      { kind: "direct", with: B.subject },
+      { kind: "group", title: "Picnic", members: [B.subject, C.subject] },
+    ]) {
+      const res = await create(cookieA, payload);
+      expectError(res, 400, "invalid_request");
+      expect(errorResponseSchema.parse(res.json()).error.message).toBe("That person no longer has access to Satchel.");
+    }
+    // A friend of theirs can't add them either; nothing new was made.
+    expectError(await create(cookieC, { kind: "direct", with: B.subject }), 400, "invalid_request");
+    const friendChats = t.store.listConversations(A.subject).filter((c) => c.kind !== "inbox");
+    expect(friendChats.map((c) => c.id).sort()).toEqual([chat, hike].sort());
+
+    // The existing chats stay and still take messages; only C's phone hears about them.
+    expect((await send(cookieA, chat, "you there?")).statusCode).toBe(201);
+    expect((await send(cookieA, hike, "Saturday?")).statusCode).toBe(201);
+    await t.settle();
+    expect(t.sent.map((s) => s.endpoint)).toEqual([endpointOf("phone-c")]);
+    expect(t.store.listMessages(chat).map((m) => m.text)).toEqual(["you there?"]);
+  });
+
+  it("gets no push even while its subscriptions are still stored", async () => {
+    await subscribe(cookieB, subscription("phone-b"));
+    await subscribe(cookieC, subscription("phone-c"));
+    const hike = await group(cookieA, "Hike", [B.subject, C.subject]);
+    // Inactive without the guard's cleanup, to test the push filter on its own.
+    t.db.prepare("UPDATE accounts SET active = 0 WHERE subject = ?").run(B.subject);
+
+    expect((await send(cookieA, hike, "Saturday?")).statusCode).toBe(201);
+    await t.settle();
+
+    expect(t.sent.map((s) => s.endpoint)).toEqual([endpointOf("phone-c")]);
+    expect(endpoints(B.subject)).toEqual([endpointOf("phone-b")]);
+  });
+
+  it("is active and listed again once a grant comes back", async () => {
+    await loseGrant();
+    const regained = await t.signIn(B);
+    expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie: regained } })).statusCode).toBe(200);
+
+    expect(t.store.isAccountActive(B.subject)).toBe(true);
+    expect(await people(cookieA)).toEqual([B.subject, C.subject]);
+    const made = await create(cookieA, { kind: "direct", with: B.subject });
+    expect(made.statusCode).toBe(201);
+    // Its browser saves its subscription again on the next start, and pushes resume.
+    expect((await subscribe(regained, subscription("phone-b"))).statusCode).toBe(201);
+    await send(cookieA, routes.createConversation.response.parse(made.json()).conversation.id, "welcome back");
+    await t.settle();
+    expect(t.sent.map((s) => s.endpoint)).toEqual([endpointOf("phone-b")]);
+  });
+});
+
 describe("with push off", () => {
   let off: TestApp;
 

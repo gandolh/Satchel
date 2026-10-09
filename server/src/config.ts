@@ -47,6 +47,18 @@ export const VAPID_KEYS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJE
 const base64urlOf = (bytes: number) => (value: string) =>
   /^[A-Za-z0-9_-]+$/.test(value) && Buffer.from(value, "base64url").length === bytes;
 
+/**
+ * Who push services contact about this sender: a `mailto:` URL with an address
+ * (`local@domain`) or an `https:` URL with a host name. A bare `mailto:` parses
+ * as a URL but names nobody.
+ */
+function isVapidSubject(value: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  if (url.protocol === "mailto:") return /^[^@\s]+@[^@\s]+$/.test(url.pathname);
+  return url.protocol === "https:" && url.hostname !== "";
+}
+
 /** An empty value (`KEY=` copied from `.env.example`) counts as not set. */
 const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
@@ -83,8 +95,9 @@ const envSchema = z.object({
     }),
   ),
   VAPID_SUBJECT: optional(
-    z.string().refine((value) => URL.canParse(value) && ["mailto:", "https:"].includes(new URL(value).protocol), {
-      message: "VAPID_SUBJECT must be a mailto: or https: URL, such as mailto:johndoe@example.com.",
+    z.string().refine(isVapidSubject, {
+      message:
+        "VAPID_SUBJECT must be a mailto: URL with an address, such as mailto:johndoe@example.com, or an https: URL with a host name.",
     }),
   ),
 });

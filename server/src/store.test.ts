@@ -17,6 +17,7 @@ import { migrate, migrations } from "./db/migrations.js";
 import { databasePath, openDb, type Db } from "./db/open.js";
 import {
   ClientIdConflict,
+  InactiveAccount,
   NotAMember,
   PUSH_SUBSCRIPTIONS_PER_ACCOUNT,
   UnknownAccount,
@@ -137,6 +138,20 @@ describe("openDb and migrations", () => {
     old.close();
   });
 
+  it("migration 4 adds accounts.active to a version-3 database, every existing account active", () => {
+    const old = new Database(":memory:");
+    old.pragma("foreign_keys = ON");
+    migrate(old, migrations.slice(0, 3));
+    old.prepare("INSERT INTO accounts VALUES (?, 'Alice', ?, ?)").run(A, T0, T0);
+
+    migrate(old);
+
+    expect(old.pragma("user_version", { simple: true })).toBe(migrations.length);
+    expect(old.prepare("SELECT subject, active FROM accounts").all()).toEqual([{ subject: A, active: 1 }]);
+    expect(() => old.prepare("UPDATE accounts SET active = 2").run()).toThrow(/CHECK/);
+    old.close();
+  });
+
   it("only a direct conversation has a direct_key, and a pair has one at most", () => {
     const insert = (id: string, kind: string, key: string | null) =>
       db
@@ -170,7 +185,7 @@ describe("accounts and the inbox", () => {
     const later = advance();
     store.upsertAccount(A, "Alice B.");
     const row = db.prepare<[string], Record<string, string>>("SELECT * FROM accounts WHERE subject = ?").get(A);
-    expect(row).toEqual({ subject: A, display_name: "Alice B.", created_at: T0, last_seen_at: later });
+    expect(row).toEqual({ subject: A, display_name: "Alice B.", created_at: T0, last_seen_at: later, active: 1 });
   });
 
   it("ensureInbox twice gives one inbox with members subject and claude", () => {
@@ -503,6 +518,90 @@ describe("createGroup", () => {
   });
 });
 
+describe("an account that lost its Satchel grant", () => {
+  const sub = (n: number) => ({
+    endpoint: `https://fcm.googleapis.com/fcm/send/device-${String(n)}`,
+    p256dh: "p256dh",
+    auth: "auth",
+  });
+  const active = (subject: string) =>
+    db.prepare<[string], { active: number }>("SELECT active FROM accounts WHERE subject = ?").get(subject)?.active;
+
+  it("lockOutAccount marks it inactive, revokes its live tokens and deletes its push subscriptions", () => {
+    store.createClaudeToken(B);
+    store.createClaudeToken(B);
+    store.createClaudeToken(A);
+    store.savePushSubscription(B, sub(1));
+    store.savePushSubscription(B, sub(2));
+    store.savePushSubscription(A, sub(3));
+
+    expect(store.lockOutAccount(B)).toEqual({ revokedTokens: 2, deletedPushSubscriptions: 2 });
+
+    expect(active(B)).toBe(0);
+    expect(store.isAccountActive(B)).toBe(false);
+    expect(store.listClaudeTokens(B).every((token) => token.revokedAt !== null)).toBe(true);
+    expect(store.listPushSubscriptions(B)).toEqual([]);
+    // Nobody else is touched.
+    expect(store.isAccountActive(A)).toBe(true);
+    expect(store.listClaudeTokens(A)[0]?.revokedAt).toBeNull();
+    expect(store.listPushSubscriptions(A)).toHaveLength(1);
+    // Again: nothing left to take.
+    expect(store.lockOutAccount(B)).toEqual({ revokedTokens: 0, deletedPushSubscriptions: 0 });
+  });
+
+  it("keeps its conversations, messages and markers", () => {
+    const chat = store.createDirect(A, B).conversation.id;
+    send(chat, B, "before");
+    send(chat, A, "reply");
+    const before = { a: store.getConversation(chat, A), b: store.getConversation(chat, B), count: messageCount() };
+
+    store.lockOutAccount(B);
+
+    expect(store.getConversation(chat, A)).toEqual(before.a);
+    expect(store.getConversation(chat, B)).toEqual(before.b);
+    expect(messageCount()).toBe(before.count);
+    expect(marker(chat, B)?.seen_up_to).toBe(1);
+    // The other side can still write to the existing chat.
+    expect(send(chat, A, "still here").created).toBe(true);
+  });
+
+  it("lockOutAccount for a subject with no account creates nothing", () => {
+    expect(store.lockOutAccount("subject-stranger")).toEqual({ revokedTokens: 0, deletedPushSubscriptions: 0 });
+    expect(db.prepare("SELECT subject FROM accounts WHERE subject = ?").get("subject-stranger")).toBeUndefined();
+    expect(store.isAccountActive("subject-stranger")).toBe(false);
+    expect(store.isAccountActive(CLAUDE_MEMBER)).toBe(false);
+  });
+
+  it("leaves the people list", () => {
+    store.lockOutAccount(B);
+    expect(store.listPeople(A).map((p) => p.subject)).toEqual([C]);
+    expect(store.listPeople(C).map((p) => p.subject)).toEqual([A]);
+  });
+
+  it("can't be put in a new direct or group conversation, and nothing is stored", () => {
+    const existing = store.createDirect(A, C).conversation.id;
+    store.lockOutAccount(B);
+    store.lockOutAccount(C);
+    const count = () => db.prepare<[], { n: number }>("SELECT COUNT(*) AS n FROM conversations").get()?.n;
+
+    expect(() => store.createDirect(A, B)).toThrow(InactiveAccount);
+    // Even a pair that already has a chat: that chat stays, but isn't handed out again.
+    expect(() => store.createDirect(A, C)).toThrow(InactiveAccount);
+    expect(() => store.createGroup(A, "Hike", [B])).toThrow(InactiveAccount);
+    expect(() => store.createGroup(A, "Hike", [B, "subject-nobody"])).toThrow(UnknownAccount);
+    expect(count()).toBe(1);
+    expect(store.getConversation(existing, A)?.id).toBe(existing);
+  });
+
+  it("upsertAccount makes it active again: listed and addable", () => {
+    store.lockOutAccount(B);
+    store.upsertAccount(B, "Bob");
+    expect(active(B)).toBe(1);
+    expect(store.listPeople(A).map((p) => p.subject)).toEqual([B, C]);
+    expect(store.createDirect(A, B).created).toBe(true);
+  });
+});
+
 describe("Claude tokens", () => {
   function sha256(value: string): string {
     return createHash("sha256").update(value).digest("hex");
@@ -664,6 +763,22 @@ describe("push subscriptions", () => {
     store.markPushDelivered(sub(2).endpoint);
     store.forgetPushEndpoint(sub(1).endpoint);
     expect(store.listPushSubscriptions(A)).toEqual([{ ...sub(2), createdAt: T0, lastSuccessAt: at }]);
+  });
+
+  it("an endpoint moving to another account becomes its newest and counts toward its cap", () => {
+    store.savePushSubscription(B, sub(99, "b"));
+    for (let n = 1; n <= PUSH_SUBSCRIPTIONS_PER_ACCOUNT; n += 1) store.savePushSubscription(A, sub(n));
+    const at = advance();
+
+    // The browser B saved first (the lowest rowid of all) now saves for A.
+    expect(store.savePushSubscription(A, sub(99, "a"))).toEqual({ created: false });
+
+    const kept = store.listPushSubscriptions(A);
+    expect(kept).toHaveLength(PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
+    expect(kept.at(-1)).toEqual({ ...sub(99, "a"), createdAt: at, lastSuccessAt: null });
+    expect(kept.map((s) => s.endpoint)).not.toContain(sub(1).endpoint);
+    expect(kept[0]?.endpoint).toBe(sub(2).endpoint);
+    expect(endpoints(B)).toEqual([]);
   });
 
   it(`keeps at most ${String(PUSH_SUBSCRIPTIONS_PER_ACCOUNT)} per account, dropping the oldest`, () => {

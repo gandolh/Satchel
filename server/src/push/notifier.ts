@@ -17,11 +17,11 @@ export interface PushNotifier {
   readonly publicKey: string | null;
   /**
    * A message was stored, not a repeated client ID. Pushes it to every
-   * device of every member except the sender and Claude, starting on the
-   * next turn of the event loop, after the route has handed Fastify its
-   * reply. Never throws and never waits: a push that fails is logged, and a
-   * 404 or 410 from the push service deletes that subscription. Nothing is
-   * retried.
+   * device of every member except the sender, Claude and any account that
+   * lost its Satchel grant, starting on the next turn of the event loop,
+   * after the route has handed Fastify its reply. Never throws and never
+   * waits: a push that fails is logged, and a 404 or 410 from the push
+   * service deletes that subscription. Nothing is retried.
    */
   messageStored(message: Message): void;
   /** Resolves once every push started so far has finished. For shutdown and tests. */
@@ -82,7 +82,12 @@ export function createPushNotifier({ store, publicKey, send, log }: PushNotifier
   async function notify(message: Message): Promise<void> {
     const conversation = store.getConversation(message.conversationId, message.sender);
     if (conversation === null) return;
-    const recipients = pushRecipients(conversation, message.sender);
+    // An account that lost its grant gets nothing, whatever subscriptions it
+    // still has. The guard deletes them when it marks the account; this is
+    // the second lock.
+    const recipients = pushRecipients(conversation, message.sender).filter((subject) =>
+      store.isAccountActive(subject),
+    );
     if (recipients.length === 0) return;
     const payload = JSON.stringify(pushPayloadFor(conversation, message));
     await Promise.all(
