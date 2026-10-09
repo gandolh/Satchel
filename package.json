@@ -33,6 +33,7 @@
   },
   "license": "MIT",
   "overrides": {
-    "shell-quote": "1.11.0"
+    "shell-quote": "1.11.0",
+    "zod": "4.5.4"
   }
 }
