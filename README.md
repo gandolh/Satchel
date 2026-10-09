@@ -1,178 +1,103 @@
 # Satchel
 
-Satchel is a small messenger for the owner and a few friends, with an Ideas inbox that Claude can write to through the `satchel` command. Sign-in is handled by Ward.
+Satchel is a small text messenger for its owner and a few friends. Its first chat, the Ideas inbox, is with Claude. The owner writes ideas there from a phone, and Claude Code reads them later at home through the `satchel` command.
+
+<p align="center">
+  <img src="docs/images/ideas-inbox.webp" width="300" alt="Phone screen of the Ideas inbox: five ideas in blue bubbles, the first three with double ticks and a 'Seen 21:10' line under the third, the two from today with single ticks">
+</p>
+
+At home, Claude runs the CLI and gets only what it hasn't read yet:
+
+```text
+$ satchel unread
+Ideas inbox · 2 unread · seen up to #10
+
+#11  2026-10-09 08:31  About the backup script: compare file sizes first and only hash when two sizes match. Much faster.
+#12  2026-10-09 12:05  Small one: a "leave by" reminder that checks the tram times, not just the clock.
+
+Oldest first. Later messages can correct earlier ones. Gaps in numbers are normal.
+When you have read them all, run:  satchel seen 12
+$ satchel seen 12
+Seen up to #12.
+```
+
+**Status:** Personal project, built but not deployed yet. All fourteen briefs are done: the Ideas inbox, the `satchel` CLI, Ward sign-in, friend chats, live updates and push notifications. Push was tried end to end in headless Chrome only; iPhone push is untested.
+
+## What it does
+
+- Keeps ideas written on the go in one chat, in strict order. Nothing is edited or deleted; a correction is a later message.
+- Lets Claude Code catch up when the owner says "check my inbox". `satchel unread` prints every unread idea oldest first, and `satchel seen N` marks them read.
+- Shows what Claude has read with seen ticks and a "Seen" line, the way WhatsApp does.
+- Runs one-to-one and group chats with friends, with ticks, "Seen by" and unread badges. Claude can't read those chats.
+- Installs to the home screen as a PWA, updates live over a WebSocket, and can send push notifications.
+
+A notes app would hold the ideas too. Satchel adds an exact read marker, so Claude picks up only what is new, and an idea written while Claude is reading waits for the next read instead of being skipped. It is text only. There are no photos, files, search, editing or deleting, and Claude doesn't reply in the chat.
+
+## Screenshots
+
+| The chat list | A group with friends | Sending an idea |
+|---|---|---|
+| <img src="docs/images/chat-list.webp" width="250" alt="Chat list with the Ideas inbox pinned first, then Ana with two unread messages, the Weekend hike group and Theo"> | <img src="docs/images/group-chat.webp" width="250" alt="The Weekend hike group: messages from Maya, Theo and Ana, a note that Claude has no access to this chat, and 'Seen by Maya, Theo' under the last message"> | <img src="docs/images/send-and-seen.gif" width="250" alt="Typing an idea in the Ideas inbox and sending it: it gets one tick, then the Seen line moves under it once Claude marks it seen"> |
+
+In the GIF, the owner sends an idea and it gets one tick. Claude then runs `satchel seen` at home, and the "Seen" line moves under the new idea without a reload.
+
+The owner creates the Claude token in Settings and can revoke it there:
+
+<img src="docs/images/connect-claude.webp" width="390" alt="The Connect Claude card: a token created on 9 Oct, when it was last used, a Revoke button and a Create token button">
+
+On a laptop the chat list and the open chat sit side by side:
+
+<img src="docs/images/desktop.webp" width="100%" alt="Desktop layout: the chat list on the left, the Weekend hike group open on the right">
+
+## How it works
+
+Four npm workspaces. `shared` holds the zod contract every other part uses. `server` is Fastify with SQLite. It gives each message a server `seq` and keeps one seen marker per member that only moves forward. `web` is the React PWA. It signs in through Ward, the estate's sign-in service, and talks to `/api/*`. `cli` is the `satchel` command, which reads only the Ideas inbox through `/claude/*` with a Claude token.
+
+```mermaid
+flowchart LR
+  phone["Phone, the PWA"] -- "Ward session" --> api["Satchel API<br/>Fastify + SQLite"]
+  cli["satchel CLI<br/>run by Claude Code"] -- "Claude token" --> api
+  api -- "verify session" --> ward["Ward"]
+  api -- "live updates" --> phone
+```
+
+More in [docs/architecture.md](docs/architecture.md).
 
 ## Run it locally
 
-```
+Requires Node 24 or later and the local Ward container from `wzd_auth/infrastructure/local` on <http://localhost:8792>. Its seed registers Satchel, gives your account a role on it, and fills the three `WARD_` values in this repo's `.env`, so copy `.env.example` to `.env` before you run it.
+
+```bash
 npm install
 npm run dev
 ```
 
-Then open <http://localhost:5175/satchel/>. The API listens on port 8807; copy `.env.example` to `.env` and fill the Ward values from Ward's local `seed.mjs`.
+Then open <http://localhost:5175/satchel/> and sign in. The API listens on port 8807. Env vars, tests, push and the CLI against a local server are in [docs/getting-started.md](docs/getting-started.md).
 
-## Owner setup
+## Deploy and setup
 
-Everything here is done by hand, in this order. Nothing in the repo deploys or
-writes a secret for you. Commands run on your machine; the deploy builds the
-API image on the VPS.
+Deploying is a hand-run owner step through vps-deploy. These live in [docs/owner-setup.md](docs/owner-setup.md):
 
-1. **Register Satchel in production Ward.** Open
-   <https://gandolh.ro/ward/console> and sign in as the break-glass superuser.
-   Create an app with slug `satchel` and name `Satchel`, with public
-   registration closed. On the app's page, issue a service key under "Service
-   keys" (it is shown once; copy it now). Then grant your own account the
-   `admin` role on `satchel`.
+- **Owner setup.** Registering Satchel in Ward, the first deploy, the Claude token, installing the CLI and the line for `~/.claude/CLAUDE.md`
+- **Push notifications.** Making the VAPID key pair and turning notifications on per device
+- **Inviting a friend.** A Ward account with the `member` role on `satchel`
 
-2. **Store the key.** Put it in vps-deploy's secrets, as one line:
+## Project layout
 
-   ```
-   WARD_APP_KEY=<the service key>
-   ```
+| Path | What lives there |
+|---|---|
+| `shared/` | zod schemas for every route, limits, seen rules |
+| `server/` | Fastify API, SQLite store, Ward guard, live updates, push |
+| `web/` | React PWA, served under `/satchel/` |
+| `cli/` | the `satchel` command and its guide |
+| `infrastructure/` | Dockerfile and compose file for the API container |
+| `corpus/` | design wiki, decisions and the numbered briefs |
 
-   in `~/projects/vps-deploy/secrets/satchel.env` (`chmod 600` it). The deploy
-   writes it into the container's environment next to `WARD_PUBLIC_ORIGIN` and
-   `WARD_API_BASE_PATH`.
+## Docs
 
-3. **Redeploy Ward's UI,** so its login allowlist knows `/satchel/`:
+- [docs/](docs/README.md): setup, architecture, the owner's steps, and the images used here
+- [corpus/](corpus/index.md): the project wiki, with decisions, status and the briefs
 
-   ```
-   cd ~/projects/vps-deploy && node cli.ts ward deploy
-   ```
+## License
 
-4. **First deploy of Satchel** (builds the web app, ships it, builds and starts
-   the API container):
-
-   ```
-   cd ~/projects/vps-deploy && node cli.ts satchel all
-   ```
-
-5. **Install it on the phone.** Open <https://gandolh.ro/satchel/>, sign in,
-   then Add to Home Screen.
-
-6. **Create a Claude token.** In the app: Settings, Connect Claude, Create
-   token. Copy it (shown once) and write it to the CLI's config file:
-
-   ```
-   mkdir -p ~/.config/satchel && umask 077 && read -rs -p 'Claude token: ' T && printf 'SATCHEL_TOKEN=%s\n' "$T" > ~/.config/satchel/env && unset T
-   ```
-
-   Run this yourself in a terminal, not through Claude, so the token stays out
-   of shell history and transcripts.
-
-   The file may also set `SATCHEL_URL`; it defaults to
-   `https://gandolh.ro/satchel-api`.
-
-7. **Install the CLI.**
-
-   ```
-   cd ~/projects/satchel && npm install && npm run build
-   cd cli && npm link
-   satchel --version
-   satchel unread
-   ```
-
-   `satchel unread` works from any directory. Exit codes: 0 success, 1 usage
-   error (including no token), 2 Satchel rejected the call (for example a
-   revoked token), 3 Satchel isn't reachable.
-
-8. **Tell Claude about it.** Add this line to `~/.claude/CLAUDE.md`:
-
-   > When the owner asks to check the inbox (or "my ideas", "Satchel"), run `satchel guide` and follow it.
-
-9. **Try it.** Write a message on the phone, then say "check my inbox" in
-   Claude Code.
-
-Later updates:
-
-```
-cd ~/projects/vps-deploy
-node cli.ts satchel deploy   # the web app
-node cli.ts satchel server   # the API container
-```
-
-To run the API container locally, copy the Ward values from `.env` to
-`infrastructure/.env` (git-ignored) and run
-`docker compose -f infrastructure/docker-compose.yml up --build -d`; it listens
-on `127.0.0.1:8795` and keeps its data in `./data`.
-
-## Push notifications
-
-Satchel can notify a phone or computer when someone else writes to you, with
-the app closed. The server signs every push with a VAPID key pair. Without
-the pair it starts with push off and says so once in its log; everything else
-works as before.
-
-1. **Make a pair,** once, on your machine:
-
-   ```
-   npx web-push generate-vapid-keys
-   ```
-
-   It prints a public key and a private key. The private key is a secret:
-   keep it out of the repo, out of chats and out of shell history.
-
-2. **Local development.** Add three lines to the repo's `.env` (git-ignored):
-
-   ```
-   VAPID_PUBLIC_KEY=<public key>
-   VAPID_PRIVATE_KEY=<private key>
-   VAPID_SUBJECT=mailto:johndoe@example.com
-   ```
-
-   `npm run dev` runs no service worker, so try push on the built app:
-   `npm run build`, then `npm run dev -w @satchel/server` and
-   `npm run preview -w @satchel/web`, and open
-   <http://localhost:4175/satchel/>. For the local container, copy the same
-   lines into `infrastructure/.env`.
-
-3. **Production.** Add `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to
-   `~/projects/vps-deploy/secrets/satchel.env`, next to `WARD_APP_KEY`.
-   `VAPID_SUBJECT` defaults to `mailto:johndoe@example.com` there; set it too
-   if you want a different contact. Then redeploy:
-
-   ```
-   cd ~/projects/vps-deploy && node cli.ts satchel all
-   ```
-
-   `all` runs `server` (restarts the API with the keys) and `deploy` (ships
-   the web app with its new service worker); you can run the two separately.
-
-4. **Turn it on, per device:** Settings, Notifications. On an iPhone, web
-   push works only in the Home Screen app (iOS 16.4 or later): open
-   <https://gandolh.ro/satchel/> in Safari, Share → Add to Home Screen, open
-   Satchel from the Home Screen icon, and turn Notifications on there.
-   Android and desktop browsers need no such step.
-
-Keep the pair. If you ever replace it, every device shows Notifications as off
-and has to turn it on again.
-
-## Inviting a friend
-
-Friends sign in with Ward, the same as you. Satchel lets in any account with a
-role on `satchel`, and the role decides what the account gets. All of this is
-done by hand in production Ward's console, <https://gandolh.ro/ward/console>.
-
-1. **Give them an account.** Under Accounts, use "New account" with a username
-   and a password, and pass the password on yourself. An account made there
-   has no email address, so it has no reset link.
-
-   Or let them sign up: on Satchel's page under Apps, use "Open
-   registration…" with the baseline role `member`. Anyone who finds the
-   sign-up page then becomes a friend in Satchel, so close registration again
-   once they're in.
-
-2. **Grant `member` on `satchel`.** On the account's page, pick the app
-   `satchel`, type the role `member`, and press "Add role". An account that
-   signed up through Satchel's registration already has it.
-
-   Never grant `admin`. That role marks the owner: an `admin` account gets an
-   Ideas inbox and can create Claude tokens. A `member` gets neither.
-
-3. **They sign in once** at <https://gandolh.ro/satchel/>. After that first
-   sign-in they appear in the people list (`GET /api/people`), and anyone can
-   start a one-to-one chat or a group with them.
-
-Removing their role on `satchel` in Ward locks them out of Satchel from their
-next request. Their account and their chats stay, and they still show in the
-people list.
+[MIT](LICENSE).
