@@ -1,0 +1,171 @@
+/* The chat list: rows as in design.md, the Ideas inbox pinned first. */
+
+.chat-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+}
+
+.chat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.chat-row:hover {
+  background: color-mix(in srgb, var(--sunk) 60%, var(--surface));
+}
+
+.chat-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.chat-row--pinned {
+  background: var(--accent-soft);
+}
+
+.chat-row--pinned:hover {
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--accent) 6%);
+}
+
+.chat-row[aria-current="page"] {
+  background: var(--sunk);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.chat-row--pinned[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--accent) 12%);
+}
+
+.chat-row__body {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chat-row__top,
+.chat-row__bottom {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.chat-row__bottom {
+  align-items: center;
+}
+
+.chat-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-title);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-row__tag {
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chat-row__time {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-row__time--unread {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chat-row__preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-row__preview--empty {
+  font-style: italic;
+}
+
+.badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading, empty and error states inside the list column. */
+.list-note {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  color: var(--muted);
+}
+
+.list-note--center {
+  justify-items: center;
+  text-align: center;
+}
+
+.list-banner {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.skeleton-row .avatar {
+  background: var(--sunk);
+}
+
+.skeleton-lines {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+}

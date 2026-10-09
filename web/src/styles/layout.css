@@ -1,0 +1,367 @@
+/*
+ * The shell and the shared pieces: bars, the tab bar, avatars, buttons, cards
+ * and the full-screen gate. Phone first: one view at a time. From 900px the
+ * chat list sits in a 320px column and the thread or Settings fills the rest.
+ */
+
+/* --- Shell --------------------------------------------------------------- */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.shell--wide {
+  display: grid;
+  grid-template-columns: var(--list-width) minmax(0, 1fr);
+}
+
+.shell__side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* A screen: a bar on top, a scrolling body beneath. */
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.screen__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* --- Bar ----------------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: calc(var(--bar-height) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--space-4) 0;
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.bar__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.bar__title {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bar__title--large {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bar__subtitle {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.icon-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: calc(-1 * var(--space-2));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+}
+
+.icon-button:hover {
+  background: var(--sunk);
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* The back arrow only exists while one view fills the screen. */
+.shell--wide .back-button {
+  display: none;
+}
+
+/* --- Tab bar -------------------------------------------------------------- */
+
+.tabbar {
+  display: flex;
+  flex: none;
+  justify-content: space-around;
+  padding: var(--space-1) 0 max(var(--space-2), env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.tabbar__item {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 88px;
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.tabbar__item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tabbar__item[aria-current="page"] {
+  color: var(--accent);
+}
+
+.tabbar__item:hover {
+  color: var(--ink);
+}
+
+.tabbar__item[aria-current="page"]:hover {
+  color: var(--accent);
+}
+
+/* --- Avatar --------------------------------------------------------------- */
+
+.avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.avatar--sm {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+}
+
+.avatar--xs {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.avatar--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
+.avatar--claude {
+  background: var(--ok);
+  color: var(--surface);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.avatar--claude.avatar--sm {
+  font-size: 17px;
+}
+
+.avatar--claude.avatar--xs {
+  font-size: 10px;
+}
+
+/* --- Tick ------------------------------------------------------------------ */
+
+.tick {
+  flex: none;
+  margin-right: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: -3px;
+  padding-right: 3px;
+}
+
+.tick--seen {
+  color: var(--accent);
+}
+
+/* --- Buttons --------------------------------------------------------------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: color-mix(in srgb, var(--accent) 88%, var(--ink));
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.button--quiet {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.button--quiet:hover {
+  background: var(--sunk);
+}
+
+.button--danger {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--bad);
+}
+
+.button--danger:hover {
+  background: var(--sunk);
+}
+
+/* --- Card ------------------------------------------------------------------ */
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.card__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* --- Brand mark -------------------------------------------------------------- */
+
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-title);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+/* --- Gate (signed out, no access, sign-in down) ------------------------------- */
+
+.gate {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-6) var(--space-4);
+  padding-top: max(var(--space-6), env(safe-area-inset-top, 0px));
+}
+
+.gate__panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  max-width: 360px;
+  text-align: center;
+}
+
+.gate__title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.gate__message {
+  color: var(--muted);
+  font-size: 16px;
+  text-wrap: pretty;
+}
+
+.gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* --- The empty right pane on a wide screen ------------------------------------ */
+
+.empty-pane {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-pane .mark {
+  opacity: 0.9;
+}

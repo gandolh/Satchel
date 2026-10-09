@@ -1,0 +1,56 @@
+/*
+ * Satchel's tokens, from corpus/wiki/design.md. Light first; dark follows the
+ * system through prefers-color-scheme (no toggle in phase 1). Neutrals lean
+ * slightly green. Reuse these names; don't add raw colours in components.
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f2f5f4; /* page and thread background */
+  --surface: #ffffff; /* bars, list rows, other people's bubbles */
+  --sunk: #e8edeb; /* day separators, input fill */
+  --ink: #14201c; /* text */
+  --muted: #56645f; /* secondary text, times */
+  --line: #d3dcd8; /* borders, dividers */
+  --accent: #2a45c4; /* my bubbles, links, badges, Send */
+  --accent-ink: #ffffff; /* text on accent */
+  --accent-soft: #e6eafb; /* the pinned inbox row, selected tab wash */
+  --ok: #1d7650; /* Claude's avatar */
+  --bad: #b3261e; /* not-sent state, Sign out */
+
+  --font-title: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --list-width: 320px; /* the chat list column from 900px up */
+  --bar-height: 56px;
+  --focus-ring: 2px solid var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1412;
+    --surface: #161f1c;
+    --sunk: #1c2723;
+    --ink: #e3eae7;
+    --muted: #98a6a1;
+    --line: #2a3631;
+    --accent: #8da0ff;
+    --accent-ink: #0e1412;
+    --accent-soft: #1d2547;
+    --ok: #62c796;
+    --bad: #ff8a80;
+  }
+}
