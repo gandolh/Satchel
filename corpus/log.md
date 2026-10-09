@@ -148,7 +148,7 @@ as [todos/recheck-ward-session-on-socket-ping.md](todos/recheck-ward-session-on-
 
 Commit `e388001`, 400 tests. Adds New chat, group threads and the no-access
 fix. The controller moved New chat into `AppShell`'s main pane. Follow-up
-captured: [todos/hide-ungranted-accounts-from-people.md](todos/hide-ungranted-accounts-from-people.md).
+captured: `todos/hide-ungranted-accounts-from-people.md` (resolved later the same day and removed).
 
 ## [2026-10-09] done | Brief 14: push notifications; every brief is built
 
