@@ -2,12 +2,13 @@ import { CLAUDE_MEMBER, seenLine, tickState, type Message } from "@satchel/share
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { listMessages, markSeen, sendMessage, SignedOut, NoAccess, ApiError } from "../api";
 import { useMe } from "../auth/session";
-import { conversationSubtitle, conversationTitle } from "../chats/conversation";
-import { refreshConversations, useConversationSummary } from "../chats/conversations";
+import { conversationSubtitle, conversationTitle, withNewerMarkers } from "../chats/conversation";
+import { refreshConversations, useConversationSummary, useLiveChats } from "../chats/conversations";
 import { clockTime } from "../chats/time";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { Tick } from "../layout/Tick";
+import { isLiveConnected, useLiveCatchUp, useLiveEvents } from "../live";
 import { usePageVisible, usePolling } from "../polling";
 import { Composer } from "./Composer";
 import { buildTimeline, initialThreadState, isRetryable, threadReducer, type PendingMessage } from "./model";
@@ -18,57 +19,84 @@ export interface ThreadScreenProps {
   conversationId: string;
 }
 
-/** design.md and the brief: new messages are fetched every 3 seconds while visible. */
+/** design.md and the brief: new messages are fetched every 3 seconds while visible, now only while live updates are down. */
 export const THREAD_POLL_MS = 3000;
 const SEND_TIMEOUT_MS = 10_000;
 const PAGE = 200;
-/** Stop paging an enormous first load; the poll catches up from the cursor anyway. */
-const MAX_FIRST_PAGES = 10;
+/** Stop paging one enormous fetch; the next one carries on from the cursor. */
+const MAX_PAGES = 10;
 
 /**
- * Polling lives here (`usePolling` below): brief 12 swaps that one hook for a
- * WebSocket feed that dispatches the same `loaded` action. All state is the
- * reducer in model.ts.
+ * Live events (brief 12) dispatch `received` and `seenMoved`; every
+ * (re)connect fetches `after=<cursor>`; `usePolling` runs only while the
+ * tab's socket is down. All state is the reducer in model.ts.
  */
 export function ThreadScreen({ conversationId }: ThreadScreenProps) {
   const me = useMe();
   const visible = usePageVisible();
+  const connected = useLiveChats();
   const [state, dispatch] = useReducer(threadReducer, initialThreadState);
   const summary = useConversationSummary(conversationId);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
 
-  const conversation = state.conversation ?? summary;
+  // The thread's own answer, with any marker the (live-updated) list has seen move since.
+  const conversation = useMemo(
+    () => (state.conversation && summary ? withNewerMarkers(state.conversation, summary) : (state.conversation ?? summary)),
+    [state.conversation, summary],
+  );
   const title = conversation ? conversationTitle(conversation, me.subject) : "Chat";
   const subtitle = conversation ? conversationSubtitle(conversation, me.subject) : "";
   const members = conversation?.members ?? [];
   const isInbox = conversation?.kind === "inbox";
   const isGroup = conversation?.kind === "group";
 
-  // --- Loading and polling -----------------------------------------------------
+  // --- Loading: live events, catch-up, and polling while down -----------------
 
-  const poll = async () => {
-    try {
-      let cursor = state.cursor;
-      for (let page = 0; page < (state.loaded ? 1 : MAX_FIRST_PAGES); page += 1) {
-        const response = await listMessages(
-          conversationId,
-          { after: cursor, limit: PAGE },
-          { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) },
-        );
-        dispatch({ type: "loaded", conversation: response.conversation, messages: response.messages });
-        cursor = response.messages.at(-1)?.seq ?? cursor;
-        if (response.messages.length < PAGE) break;
-      }
-      setOffline(false);
-      setLoadError(null);
-    } catch (error) {
-      if (error instanceof SignedOut || error instanceof NoAccess) return;
-      if (state.loaded) setOffline(true);
-      else setLoadError(error instanceof ApiError ? error.message : "Couldn't load this chat. Retrying.");
+  /** Everything after the cursor as it is now, page by page until a short page. Throws on failure. */
+  const fetchNew = async () => {
+    let cursor = state.cursor;
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const response = await listMessages(
+        conversationId,
+        { after: cursor, limit: PAGE },
+        { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) },
+      );
+      dispatch({ type: "loaded", conversation: response.conversation, messages: response.messages });
+      cursor = response.messages.at(-1)?.seq ?? cursor;
+      if (response.messages.length < PAGE) break;
     }
+    setOffline(false);
+    setLoadError(null);
   };
-  usePolling(poll, { intervalMs: THREAD_POLL_MS, resetKey: conversationId });
+  const showLoadFailure = (error: unknown) => {
+    if (error instanceof SignedOut || error instanceof NoAccess) return;
+    if (state.loaded) setOffline(true);
+    else setLoadError(error instanceof ApiError ? error.message : "Couldn't load this chat. Retrying.");
+  };
+
+  const poll = () => fetchNew().catch(showLoadFailure);
+  usePolling(poll, { intervalMs: THREAD_POLL_MS, resetKey: conversationId, enabled: !connected });
+
+  // On every (re)connect, and on opening a chat while live. A failure that
+  // retrying can fix drops the socket, so polling covers until it's back; a
+  // 404 or the session ending just shows, like a failed poll.
+  useLiveCatchUp(async () => {
+    try {
+      await fetchNew();
+    } catch (error) {
+      showLoadFailure(error);
+      if (isRetryable(error)) throw error;
+    }
+  }, conversationId);
+
+  useLiveEvents((event) => {
+    if (event.type === "message" && event.conversationId === conversationId) {
+      dispatch({ type: "received", message: event.message });
+    } else if (event.type === "seen" && event.conversationId === conversationId) {
+      dispatch({ type: "seenMoved", member: event.member, seenUpTo: event.seenUpTo, seenAt: event.seenAt });
+    }
+  });
 
   // --- Own seen marker ---------------------------------------------------------
 
@@ -89,7 +117,8 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
     const upTo = newestFromOthers;
     marked.current = upTo;
     markSeen(conversationId, { upTo }, { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) }).then(
-      () => void refreshConversations(),
+      // While live, the `seen` event updates the list.
+      () => void (isLiveConnected() || refreshConversations()),
       () => {
         // The marker only moves forward. Retry no faster than the poll interval.
         marked.current = Math.min(marked.current, upTo - 1);
@@ -110,7 +139,8 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
           { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) },
         );
         dispatch({ type: "sendSucceeded", message });
-        void refreshConversations();
+        // While live, the `message` event updates the list.
+        if (!isLiveConnected()) void refreshConversations();
       } catch (error) {
         if (error instanceof SignedOut) return;
         dispatch({

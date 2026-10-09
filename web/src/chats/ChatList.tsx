@@ -3,7 +3,7 @@ import { NetworkError, Unavailable } from "../api";
 import { useMe } from "../auth/session";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { usePolling } from "../polling";
-import { CHAT_LIST_POLL_MS, refreshConversations, useConversations } from "./conversations";
+import { CHAT_LIST_POLL_MS, refreshConversations, useConversations, useLiveChats } from "./conversations";
 import { ChatRow } from "./ChatRow";
 
 /** Why the list couldn't refresh, in plain words. */
@@ -14,14 +14,16 @@ function describe(error: Error): string {
 }
 
 /**
- * The chat list: `GET /api/conversations` every 10 seconds while the page is
- * visible, and at once when it becomes visible again. The Ideas inbox comes
- * first; the server sends it first and the store keeps it there.
+ * The chat list. Live events keep it current while the tab's socket is up;
+ * while it's down, `GET /api/conversations` every 10 seconds while the page
+ * is visible, and at once when it becomes visible again. The Ideas inbox
+ * comes first; the server sends it first and the store keeps it there.
  */
 export function ChatList({ selectedId }: { selectedId?: string }) {
   const me = useMe();
   const { conversations, error } = useConversations();
-  usePolling(refreshConversations, { intervalMs: CHAT_LIST_POLL_MS });
+  const connected = useLiveChats();
+  usePolling(refreshConversations, { intervalMs: CHAT_LIST_POLL_MS, enabled: !connected });
 
   return (
     <section className="screen">

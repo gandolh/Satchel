@@ -267,6 +267,49 @@ export const claudeMessagesResponseSchema = z.strictObject({
 });
 export type ClaudeMessagesResponse = z.infer<typeof claudeMessagesResponseSchema>;
 
+// --- GET /api/live: the WebSocket ---------------------------------------------------
+// Not in `routes`: it answers with a stream of events, not one response. The
+// server only ever sends; anything a client sends is ignored. Every event goes
+// to the sockets of the conversation's members (never to Claude, who has none).
+
+/** Behind the Ward guard, like every `/api/*` route. The upgrade's `Origin` must be the app's own. */
+export const LIVE_PATH = "/api/live";
+
+/** The server closes a socket with this code when the access token it opened with expires. Renew, then reconnect. */
+export const LIVE_CLOSE_SESSION_EXPIRED = 4001;
+
+/** A stored message, sent to every member, the sender's own sockets included. */
+export const liveMessageEventSchema = z.object({
+  type: z.literal("message"),
+  conversationId: id,
+  message: messageSchema,
+});
+
+/** A member's seen marker moved forward. `member` is a subject, or `CLAUDE_MEMBER` after `/claude/seen`. */
+export const liveSeenEventSchema = z.object({
+  type: z.literal("seen"),
+  conversationId: id,
+  member: id,
+  seenUpTo: seqOrZero,
+  seenAt: timestamp,
+});
+
+/** A conversation was created. Each member gets the summary as they see it (`unreadCount` is theirs). */
+export const liveConversationEventSchema = z.object({
+  type: z.literal("conversation"),
+  conversation: conversationSummarySchema,
+});
+
+export const liveEventSchema = z.discriminatedUnion("type", [
+  liveMessageEventSchema,
+  liveSeenEventSchema,
+  liveConversationEventSchema,
+]);
+export type LiveEvent = z.infer<typeof liveEventSchema>;
+export type LiveMessageEvent = z.infer<typeof liveMessageEventSchema>;
+export type LiveSeenEvent = z.infer<typeof liveSeenEventSchema>;
+export type LiveConversationEvent = z.infer<typeof liveConversationEventSchema>;
+
 // --- The routes ---------------------------------------------------------------------
 
 export const routes = {

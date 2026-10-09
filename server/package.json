@@ -11,10 +11,12 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@fastify/websocket": "11.3.1",
     "@satchel/shared": "0.1.0",
     "better-sqlite3": "13.0.3",
     "fastify": "5.12.5",
     "jose": "6.2.10",
+    "ws": "8.21.3",
     "zod": "4.5.4"
   },
   "devDependencies": {

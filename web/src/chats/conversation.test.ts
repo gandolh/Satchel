@@ -1,6 +1,13 @@
 import { CLAUDE_MEMBER, type ConversationSummary, type Member, type Message } from "@satchel/shared";
 import { describe, expect, it } from "vitest";
-import { conversationSubtitle, conversationTitle, lastMessagePreview, sortConversations } from "./conversation";
+import {
+  applyLiveEvent,
+  conversationSubtitle,
+  conversationTitle,
+  lastMessagePreview,
+  sortConversations,
+  withNewerMarkers,
+} from "./conversation";
 import { calendarDaysBetween, listTime } from "./time";
 
 const ME = "sub-me";
@@ -110,5 +117,76 @@ describe("listTime", () => {
   it("counts calendar days, not 24-hour spans", () => {
     expect(calendarDaysBetween(new Date(2026, 9, 8, 23, 59), new Date(2026, 9, 9, 0, 1))).toBe(1);
     expect(calendarDaysBetween(new Date(2026, 9, 9, 0, 1), new Date(2026, 9, 9, 23, 59))).toBe(0);
+  });
+});
+
+describe("applyLiveEvent", () => {
+  const T = "2026-10-09T10:05:00.000Z";
+  const direct = conversation({
+    id: "d",
+    members: [member(ME, "owner", 3), member("m", "Maria", 3)],
+    lastMessage: message(3, "m"),
+    unreadCount: 0,
+  });
+  const list = [inbox, direct];
+
+  it("someone else's message becomes the last message, adds one unread, and moves their marker", () => {
+    const { conversations, stale } = applyLiveEvent(
+      list,
+      { type: "message", conversationId: "d", message: { ...message(8, "m"), conversationId: "d" } },
+      ME,
+    );
+    expect(stale).toBe(false);
+    const updated = conversations.find((c) => c.id === "d");
+    expect(updated).toMatchObject({ unreadCount: 1, lastMessage: { seq: 8 } });
+    expect(updated?.members.find((m) => m.id === "m")?.seenUpTo).toBe(8);
+  });
+
+  it("my own message clears my unread count; a message the list already has changes nothing", () => {
+    const unread = [inbox, { ...direct, unreadCount: 2 }];
+    const mine = applyLiveEvent(unread, { type: "message", conversationId: "d", message: message(9, ME) }, ME);
+    expect(mine.conversations.find((c) => c.id === "d")?.unreadCount).toBe(0);
+
+    const old = applyLiveEvent(list, { type: "message", conversationId: "d", message: message(3, "m") }, ME);
+    expect(old.conversations).toBe(list);
+  });
+
+  it("my marker reaching the last message clears my unread count; short of it, the list is stale", () => {
+    const unread = [inbox, { ...direct, lastMessage: message(6, "m"), unreadCount: 3 }];
+    const all = applyLiveEvent(unread, { type: "seen", conversationId: "d", member: ME, seenUpTo: 6, seenAt: T }, ME);
+    expect(all).toMatchObject({ stale: false });
+    expect(all.conversations.find((c) => c.id === "d")?.unreadCount).toBe(0);
+
+    const some = applyLiveEvent(unread, { type: "seen", conversationId: "d", member: ME, seenUpTo: 4, seenAt: T }, ME);
+    expect(some.stale).toBe(true);
+  });
+
+  it("another member's seen moves only their marker, forward only", () => {
+    const seen = applyLiveEvent(list, { type: "seen", conversationId: "d", member: "m", seenUpTo: 5, seenAt: T }, ME);
+    expect(seen.conversations.find((c) => c.id === "d")?.members.find((m) => m.id === "m")).toMatchObject({
+      seenUpTo: 5,
+      seenAt: T,
+    });
+    const back = applyLiveEvent(list, { type: "seen", conversationId: "d", member: "m", seenUpTo: 1, seenAt: T }, ME);
+    expect(back.conversations).toBe(list);
+  });
+
+  it("a new conversation is added in order; an event for one the list lacks is stale", () => {
+    const fresh = conversation({ id: "new", members: [member(ME, "owner"), member("a", "Andrei")] });
+    const added = applyLiveEvent(list, { type: "conversation", conversation: fresh }, ME);
+    expect(added.conversations.map((c) => c.id)).toEqual(["inbox", "d", "new"]);
+
+    const unknown = applyLiveEvent(list, { type: "message", conversationId: "x", message: message(10, "a") }, ME);
+    expect(unknown).toEqual({ conversations: list, stale: true });
+  });
+});
+
+describe("withNewerMarkers", () => {
+  it("keeps the higher marker of two answers, whichever is older", () => {
+    const T = "2026-10-09T10:05:00.000Z";
+    const older = conversation({ members: [member(ME, "owner", 2), member("m", "Maria", 7)] });
+    const newer = conversation({ members: [member(ME, "owner", 5), { ...member("m", "Maria", 4), seenAt: T }] });
+    const merged = withNewerMarkers(older, { ...newer, members: newer.members.map((m) => ({ ...m, seenAt: T })) });
+    expect(merged.members.map((m) => m.seenUpTo)).toEqual([5, 7]);
   });
 });

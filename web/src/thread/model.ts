@@ -1,5 +1,6 @@
 import { MAX_TEXT_LENGTH, type ConversationSummary, type Message } from "@satchel/shared";
 import { ApiError, NetworkError } from "../errors";
+import { withMarker, withNewerMarkers } from "../chats/conversation";
 import { calendarDaysBetween } from "../chats/time";
 
 /**
@@ -57,9 +58,11 @@ export interface ThreadState {
   /** Stored messages, ascending by seq, no duplicates. */
   messages: Message[];
   /**
-   * The polling cursor: the highest seq a *poll* returned. Send answers don't
-   * move it, or a friend's message that landed just before mine would be
-   * skipped by `after=`.
+   * Where the next fetch starts (`after=`): the highest seq a fetch (poll or
+   * catch-up) returned or a live event delivered once loaded. Send answers
+   * don't move it, or a friend's message that landed just before mine would
+   * be skipped. Live events may: the socket delivers in seq order, so every
+   * earlier message already arrived over it or in the catch-up before it.
    */
   cursor: number;
   pending: PendingMessage[];
@@ -75,6 +78,10 @@ export const initialThreadState: ThreadState = {
 
 export type ThreadAction =
   | { type: "loaded"; conversation: ConversationSummary; messages: Message[] }
+  /** A live `message` event for this conversation. */
+  | { type: "received"; message: Message }
+  /** A live `seen` event for this conversation. */
+  | { type: "seenMoved"; member: string; seenUpTo: number; seenAt: string }
   | { type: "sendStarted"; clientId: string; text: string }
   | { type: "sendSucceeded"; message: Message }
   | { type: "sendFailed"; clientId: string; retryable: boolean; error: string }
@@ -118,11 +125,38 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
       return {
         ...state,
         loaded: true,
-        conversation: action.conversation,
+        // An answer can be older than a live event already applied; markers only move forward.
+        conversation: state.conversation ? withNewerMarkers(action.conversation, state.conversation) : action.conversation,
         messages,
         cursor: last ? Math.max(state.cursor, last.seq) : state.cursor,
         pending: reconcilePending(state.pending, messages),
       };
+    }
+    case "received": {
+      const { message } = action;
+      if (state.messages.some((shown) => shown.seq === message.seq)) return state;
+      const messages = mergeMessages(state.messages, [message]);
+      const { conversation } = state;
+      return {
+        ...state,
+        messages,
+        // Before the first load answers, the load (not this event) decides where fetching resumes.
+        cursor: state.loaded ? Math.max(state.cursor, message.seq) : state.cursor,
+        pending: reconcilePending(state.pending, messages),
+        conversation: conversation && {
+          ...conversation,
+          // Sending marks seen: the sender's marker is at their message now.
+          members: withMarker(conversation.members, message.sender, message.seq, message.sentAt),
+          lastMessage:
+            conversation.lastMessage && conversation.lastMessage.seq > message.seq ? conversation.lastMessage : message,
+        },
+      };
+    }
+    case "seenMoved": {
+      const { conversation } = state;
+      if (!conversation) return state;
+      const members = withMarker(conversation.members, action.member, action.seenUpTo, action.seenAt);
+      return members === conversation.members ? state : { ...state, conversation: { ...conversation, members } };
     }
     case "sendStarted":
       if (state.pending.some((bubble) => bubble.clientId === action.clientId)) return state;

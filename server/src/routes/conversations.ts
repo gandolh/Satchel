@@ -14,8 +14,12 @@ import { signedIn } from "../ward/guard.js";
  * Satchel grant, owner and friends alike. Creating never makes an inbox: the
  * body's `kind` is `direct` or `group` only, and Claude is never an account,
  * so no friend conversation has Claude as a member.
+ *
+ * Live events (brief 12) go out after the store call succeeded and only when
+ * something changed: a stored message (not a repeated client ID), a marker
+ * that moved, a conversation that was created (not an existing direct one).
  */
-export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store }) => {
+export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live }) => {
   const notFound = () => new ApiError("not_found", "No such conversation");
 
   /** Runs a store call that names other subjects; one with no account is a 400. */
@@ -48,6 +52,7 @@ export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { s
     if (body.kind === "direct") {
       if (body.with === subject) throw new ApiError("invalid_request", "A chat needs someone other than you.");
       const made = withKnownPeople(() => store.createDirect(subject, body.with));
+      if (made.created) live.conversationCreated(made.conversation.id, subject);
       reply.code(made.created ? 201 : 200);
       return routes.createConversation.response.parse({ conversation: made.conversation });
     }
@@ -56,6 +61,7 @@ export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { s
       throw new ApiError("invalid_request", "Leave yourself out of the members; you're added to the group anyway.");
     }
     const conversation = withKnownPeople(() => store.createGroup(subject, body.title, body.members));
+    live.conversationCreated(conversation.id, subject);
     reply.code(201);
     return routes.createConversation.response.parse({ conversation });
   });
@@ -84,6 +90,7 @@ export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { s
       clientId,
       text,
     });
+    if (created) live.messageStored(message);
     reply.code(created ? 201 : 200);
     return routes.sendMessage.response.parse({ message });
   });
@@ -92,7 +99,11 @@ export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { s
     const { subject } = signedIn(request);
     const { id } = routes.markSeen.params.parse(request.params);
     const { upTo } = routes.markSeen.body.parse(request.body);
-    if (!store.getConversation(id, subject)) throw notFound();
-    return routes.markSeen.response.parse({ seenUpTo: store.markSeen(id, subject, upTo) });
+    const conversation = store.getConversation(id, subject);
+    if (!conversation) throw notFound();
+    const before = conversation.members.find((member) => member.id === subject)?.seenUpTo;
+    const seenUpTo = store.markSeen(id, subject, upTo);
+    if (seenUpTo !== before) live.seenMoved(id, subject);
+    return routes.markSeen.response.parse({ seenUpTo });
   });
 };

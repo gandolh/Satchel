@@ -1,9 +1,15 @@
+import fastifyWebsocket from "@fastify/websocket";
 import { routes } from "@satchel/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import type { Clock } from "./clock.js";
 import { registerErrorHandling } from "./errors.js";
+import { createHub } from "./live/hub.js";
+import { registerUpgradeChecks } from "./live/origin.js";
+import { createLivePublisher, type LivePublisher } from "./live/publish.js";
+import { LIVE_MAX_PAYLOAD_BYTES } from "./live/socket.js";
 import { claudeRoutes } from "./routes/claude.js";
 import { conversationRoutes } from "./routes/conversations.js";
+import { liveRoutes } from "./routes/live.js";
 import { meRoutes } from "./routes/me.js";
 import { tokenRoutes } from "./routes/tokens.js";
 import type { Store } from "./store.js";
@@ -48,6 +54,8 @@ export interface AppDeps {
 export interface RouteDeps {
   store: Store;
   clock: Clock;
+  /** Sends live events to open sockets after a store call succeeded (`live/publish.ts`). Never throws. */
+  live: LivePublisher;
 }
 
 function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"] {
@@ -69,6 +77,11 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *   `/claude/*` never runs it.
  * - Route plugins (`routes/*.ts`) take `RouteDeps`, so later briefs fill them
  *   in without editing this file.
+ * - Live updates (brief 12): `@fastify/websocket` serves `GET /api/live`
+ *   behind the same guard. A WebSocket upgrade must carry the app's own
+ *   `Origin`; that check is a root hook ahead of the guard
+ *   (`live/origin.ts`). The hub knows who has a socket open; route plugins
+ *   publish through `RouteDeps.live`.
  * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).
  */
 export function buildApp({ store, ward, publicOrigin, clock, logger }: AppDeps): FastifyInstance {
@@ -89,15 +102,21 @@ export function buildApp({ store, ward, publicOrigin, clock, logger }: AppDeps):
   });
 
   registerErrorHandling(app);
+  registerUpgradeChecks(app, publicOrigin);
   registerWardGuard(app, { ward, store, publicOrigin });
 
   app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
 
-  const deps: RouteDeps = { store, clock };
+  // Before the route plugins: it wraps the handlers of routes registered after it.
+  void app.register(fastifyWebsocket, { options: { maxPayload: LIVE_MAX_PAYLOAD_BYTES } });
+
+  const hub = createHub(app.log);
+  const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }) };
   void app.register(meRoutes, deps);
   void app.register(conversationRoutes, deps);
   void app.register(tokenRoutes, deps);
   void app.register(claudeRoutes, deps);
+  void app.register(liveRoutes, { hub, ward, clock });
 
   return app;
 }

@@ -41,7 +41,7 @@ function claudeToken(request: FastifyRequest): ResolvedClaudeToken {
   return request.claudeToken;
 }
 
-export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store }) => {
+export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live }) => {
   app.decorateRequest("claudeToken", null);
 
   // Scoped to this plugin's routes. `onRequest` runs before the body is
@@ -70,7 +70,10 @@ export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store }
   app.post(routes.claudeSeen.path, (request) => {
     const { conversationId } = claudeToken(request);
     const { upTo } = routes.claudeSeen.body.parse(request.body);
+    const before = store.seenUpTo(conversationId, CLAUDE_MEMBER);
     const seenUpTo = store.markSeen(conversationId, CLAUDE_MEMBER, upTo);
+    // The owner's sockets, so the ticks turn blue while they watch (brief 12).
+    if (seenUpTo !== before) live.seenMoved(conversationId, CLAUDE_MEMBER);
     return routes.claudeSeen.response.parse({ seenUpTo });
   });
 

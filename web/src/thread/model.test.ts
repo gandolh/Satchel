@@ -157,3 +157,77 @@ describe("composer rules", () => {
     expect(canSend("x".repeat(4000))).toBe(true);
   });
 });
+
+describe("live events", () => {
+  const T1 = "2026-10-09T08:01:00.000Z";
+  const T2 = "2026-10-09T08:02:00.000Z";
+  const DIRECT: ConversationSummary = {
+    id: "c1",
+    kind: "direct",
+    title: null,
+    members: [
+      { id: "me", displayName: "Me", seenUpTo: 0, seenAt: null },
+      { id: "friend", displayName: "Friend", seenUpTo: 0, seenAt: null },
+    ],
+    lastMessage: null,
+    unreadCount: 0,
+  };
+  const marker = (state: ThreadState, id: string) => state.conversation?.members.find((m) => m.id === id);
+
+  it("a received message is shown once, moves the cursor once loaded, and the sender's marker with it", () => {
+    const loaded = run(initialThreadState, { type: "loaded", conversation: DIRECT, messages: [message(3, "c3")] });
+    const state = run(
+      loaded,
+      { type: "received", message: message(7, "c7", T1, "friend") },
+      { type: "received", message: message(7, "c7", T1, "friend") },
+    );
+    expect(state.messages.map((m) => m.seq)).toEqual([3, 7]);
+    expect(state.cursor).toBe(7);
+    expect(marker(state, "friend")).toMatchObject({ seenUpTo: 7, seenAt: T1 });
+    expect(state.conversation?.lastMessage?.seq).toBe(7);
+  });
+
+  it("an event before the first load answers is shown but leaves the cursor to the load", () => {
+    const early = run(initialThreadState, { type: "received", message: message(9, "c9", T1, "friend") });
+    expect(early.cursor).toBe(0);
+    expect(early.messages.map((m) => m.seq)).toEqual([9]);
+    const state = run(early, { type: "loaded", conversation: DIRECT, messages: [message(4, "c4")] });
+    expect(state.messages.map((m) => m.seq)).toEqual([4, 9]);
+    expect(state.cursor).toBe(4);
+  });
+
+  it("my own message's event replaces its pending bubble, before or after the send answer", () => {
+    const state = run(
+      initialThreadState,
+      { type: "loaded", conversation: DIRECT, messages: [] },
+      { type: "sendStarted", clientId: A, text: "hello" },
+      { type: "received", message: message(5, A, T1, "me") },
+      { type: "sendSucceeded", message: message(5, A, T1, "me") },
+    );
+    expect(state.pending).toEqual([]);
+    expect(state.messages.map((m) => m.seq)).toEqual([5]);
+  });
+
+  it("a seen event moves that member's marker forward only", () => {
+    const loaded = run(initialThreadState, { type: "loaded", conversation: DIRECT, messages: [] });
+    const state = run(
+      loaded,
+      { type: "seenMoved", member: "friend", seenUpTo: 6, seenAt: T2 },
+      { type: "seenMoved", member: "friend", seenUpTo: 4, seenAt: T1 },
+    );
+    expect(marker(state, "friend")).toMatchObject({ seenUpTo: 6, seenAt: T2 });
+    expect(run(initialThreadState, { type: "seenMoved", member: "friend", seenUpTo: 6, seenAt: T2 })).toBe(
+      initialThreadState,
+    );
+  });
+
+  it("an older fetch answer doesn't move a marker back that an event moved", () => {
+    const state = run(
+      initialThreadState,
+      { type: "loaded", conversation: DIRECT, messages: [] },
+      { type: "seenMoved", member: "friend", seenUpTo: 6, seenAt: T2 },
+      { type: "loaded", conversation: DIRECT, messages: [] },
+    );
+    expect(marker(state, "friend")).toMatchObject({ seenUpTo: 6, seenAt: T2 });
+  });
+});
