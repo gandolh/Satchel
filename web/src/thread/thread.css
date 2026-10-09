@@ -1,0 +1,210 @@
+/* The thread: bubbles, day separators, the composer. Tokens only. */
+
+.thread {
+  position: relative;
+  background: var(--bg);
+}
+
+.thread__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.thread__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 100%;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  list-style: none;
+  justify-content: flex-end;
+}
+
+.thread__status,
+.thread__empty {
+  margin: var(--space-6) auto;
+  padding: 0 var(--space-4);
+  color: var(--muted);
+  text-align: center;
+}
+
+.thread__notice,
+.thread__day {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-2) 0;
+}
+
+.thread__pill,
+.thread__day span {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.row--mine {
+  align-items: flex-end;
+}
+
+.bubble {
+  display: block;
+  max-width: min(78%, 560px);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+
+.bubble--mine {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.bubble--sending {
+  opacity: 0.7;
+}
+
+.bubble--failed {
+  border: 1px dashed var(--bad);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+button.bubble {
+  font: inherit;
+  cursor: pointer;
+}
+
+.bubble__sender {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bubble__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Ticks sit on the accent bubble: keep them readable there. */
+.bubble--mine .tick,
+.bubble--mine .tick--seen {
+  color: var(--accent-ink);
+}
+
+.bubble--mine .tick--seen {
+  opacity: 1;
+  font-weight: 700;
+}
+
+.bubble--mine .tick:not(.tick--seen) {
+  opacity: 0.7;
+}
+
+.row__error {
+  margin-top: 2px;
+  color: var(--bad);
+  font-size: 12px;
+}
+
+.row__seen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.thread__offline {
+  flex: none;
+  padding: var(--space-1) var(--space-4);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.thread__new {
+  position: absolute;
+  right: var(--space-4);
+  bottom: 84px;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+/* --- Composer -------------------------------------------------------------- */
+
+.composer {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  padding-bottom: max(var(--space-2), env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.composer__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.composer__input {
+  display: block;
+  width: 100%;
+  padding: 10px var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--sunk);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 22px;
+  resize: none;
+}
+
+.composer__count {
+  position: absolute;
+  right: var(--space-3);
+  bottom: calc(100% + 2px);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.composer__count--over {
+  color: var(--bad);
+  font-weight: 600;
+}
