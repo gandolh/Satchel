@@ -54,8 +54,11 @@ API image on the VPS.
    token. Copy it (shown once) and write it to the CLI's config file:
 
    ```
-   mkdir -p ~/.config/satchel && umask 077 && printf 'SATCHEL_TOKEN=%s\n' '<paste>' > ~/.config/satchel/env
+   mkdir -p ~/.config/satchel && umask 077 && read -rs -p 'Claude token: ' T && printf 'SATCHEL_TOKEN=%s\n' "$T" > ~/.config/satchel/env && unset T
    ```
+
+   Run this yourself in a terminal, not through Claude, so the token stays out
+   of shell history and transcripts.
 
    The file may also set `SATCHEL_URL`; it defaults to
    `https://gandolh.ro/satchel-api`.

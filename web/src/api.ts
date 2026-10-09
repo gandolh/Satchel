@@ -164,8 +164,9 @@ async function call<T>(route: CallRoute<T>, parts: CallParts, options: CallOptio
     const sentAt = renewalGeneration();
     const response = await send(url, init, options.signal);
     if (response.status !== 401) return read(route.response, response);
-    // A 401 after a successful renewal means renewal can't fix it.
-    if (attempt > 0) break;
+    // A 401 after a successful renewal means renewal can't fix it, and a login
+    // redirect could loop forever, so report it instead.
+    if (attempt > 0) throw new ApiError(401, "unauthorized", "Satchel can't verify your sign-in right now.");
     // Throws `Unavailable` when Ward itself isn't answering.
     if (!(await renewSince(sentAt))) break;
   }

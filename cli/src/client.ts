@@ -24,6 +24,7 @@ export class SatchelClient {
 
   private async call<T>(method: string, path: string, schema: Schema<T>, body?: unknown): Promise<T> {
     let res: Response;
+    let text: string;
     try {
       res = await fetch(`${this.url}${path}`, {
         method,
@@ -34,10 +35,11 @@ export class SatchelClient {
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
+      // The timeout signal also covers the body, so a stalled body lands here too.
+      text = await res.text();
     } catch {
       throw new Unreachable(this.url);
     }
-    const text = await res.text();
     let json: unknown;
     try {
       json = text ? JSON.parse(text) : undefined;
@@ -48,7 +50,9 @@ export class SatchelClient {
     if (!res.ok) {
       const message = (json as { error?: { message?: unknown } } | undefined)?.error?.message;
       if (typeof message === "string") throw new Rejected(`satchel: ${message}`);
-      throw new Rejected(res.status >= 500 ? `satchel: Satchel failed (${res.status}).` : OUT_OF_DATE);
+      // A 5xx that isn't Satchel's own JSON error is a proxy answering for a dead API.
+      if (res.status >= 500) throw new Unreachable(this.url);
+      throw new Rejected(OUT_OF_DATE);
     }
     const parsed = schema.safeParse(json);
     if (!parsed.success) throw new Rejected(OUT_OF_DATE);

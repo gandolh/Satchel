@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApp, type TestApp } from "@satchel/server/testing";
-import { DEFAULT_URL, resolveConfig, type Context } from "./config.js";
+import { DEFAULT_URL, parseEnvFile, resolveConfig, type Context } from "./config.js";
 import { main } from "./main.js";
 
 const PACKAGE_ROOT = new URL("../", import.meta.url);
@@ -173,6 +173,56 @@ describe("failures", () => {
     await fake.close();
     expect(res.code).toBe(2);
     expect(res.err).toContain("Is the CLI out of date?");
+  });
+});
+
+describe("a server that is down or stuck", () => {
+  const oneLine = (u: string) => `satchel: Satchel isn't reachable at ${u}. Tell the owner and carry on without it.`;
+
+  it("a stalled body is exit 3, not a timeout error", async () => {
+    const { createServer: http } = await import("node:http");
+    const s = http((_req, res) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.write("{");
+    });
+    await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
+    const u = `http://127.0.0.1:${(s.address() as { port: number }).port}`;
+    const res = await run(["unread"], { SATCHEL_URL: u, SATCHEL_TOKEN: token });
+    s.closeAllConnections();
+    await new Promise<void>((r) => s.close(() => r()));
+    expect(res.code).toBe(3);
+    expect(res.err).toBe(oneLine(u));
+  }, 15_000);
+
+  it.each([502, 503, 504, 500])("a %i with an HTML body is exit 3", async (status) => {
+    const { createServer: http } = await import("node:http");
+    const s = http((_req, res) => {
+      res.writeHead(status, { "content-type": "text/html" });
+      res.end("<html>Bad Gateway</html>");
+    });
+    await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
+    const u = `http://127.0.0.1:${(s.address() as { port: number }).port}`;
+    const res = await run(["unread"], { SATCHEL_URL: u, SATCHEL_TOKEN: token });
+    await new Promise<void>((r) => s.close(() => r()));
+    expect(res.code).toBe(3);
+    expect(res.err).toBe(oneLine(u));
+  });
+});
+
+describe("config hardening", () => {
+  it("strips an inline comment from an unquoted value but keeps # inside quotes", () => {
+    expect(parseEnvFile("SATCHEL_TOKEN=stl_abc # work\nA='x # y'\nB=\"p#q\" # c\nC=ab#cd")).toEqual({
+      SATCHEL_TOKEN: "stl_abc",
+      A: "x # y",
+      B: "p#q",
+      C: "ab#cd",
+    });
+  });
+
+  it("refuses a plain-http, non-loopback URL as a usage error", async () => {
+    const res = await run(["unread"], { SATCHEL_URL: "http://example.com", SATCHEL_TOKEN: token });
+    expect(res.code).toBe(1);
+    expect(res.err).toContain("only sent over https");
   });
 });
 

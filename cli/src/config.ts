@@ -18,7 +18,9 @@ export function parseEnvFile(text: string): Record<string, string> {
   for (const line of text.split(/\r?\n/)) {
     const match = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
     if (!match) continue;
-    values[match[1]!] = match[2]!.replace(/^(['"])(.*)\1$/, "$2").trim();
+    const raw = match[2]!;
+    const quoted = /^(['"])(.*)\1(?:\s+#.*)?$/.exec(raw);
+    values[match[1]!] = quoted ? quoted[2]!.trim() : raw.replace(/\s+#.*$/, "").trim();
   }
   return values;
 }
@@ -38,5 +40,20 @@ export function resolveConfig(ctx: Context): { url: string; token: string } {
   const url = (pick("SATCHEL_URL") ?? DEFAULT_URL).replace(/\/+$/, "");
   const token = pick("SATCHEL_TOKEN");
   if (!token) throw new UsageError(NO_TOKEN);
+  assertSafeUrl(url);
   return { url, token };
+}
+
+const LOOPBACK = new Set(["127.0.0.1", "::1", "[::1]", "localhost"]);
+
+/** The token goes out in a header, so only https (or a loopback host) may carry it. */
+function assertSafeUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new UsageError(`SATCHEL_URL isn't a valid URL: ${url}`);
+  }
+  if (parsed.protocol === "https:" || (parsed.protocol === "http:" && LOOPBACK.has(parsed.hostname))) return;
+  throw new UsageError(`SATCHEL_URL must be https: the token is only sent over https (http is allowed for localhost only). Got ${url}`);
 }

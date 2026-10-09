@@ -79,6 +79,10 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
   );
   const marked = useRef(0);
   const seenBase = mine?.seenUpTo ?? 0;
+  // Bumped after a failed seen call so the effect below runs again.
+  const [seenRetry, setSeenRetry] = useState(0);
+  const seenTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(seenTimer.current), []);
   useEffect(() => {
     if (!visible || !state.loaded) return;
     if (newestFromOthers <= Math.max(seenBase, marked.current)) return;
@@ -87,11 +91,13 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
     markSeen(conversationId, { upTo }, { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) }).then(
       () => void refreshConversations(),
       () => {
-        // Try again on the next change; the marker only moves forward.
+        // The marker only moves forward. Retry no faster than the poll interval.
         marked.current = Math.min(marked.current, upTo - 1);
+        clearTimeout(seenTimer.current);
+        seenTimer.current = setTimeout(() => setSeenRetry((n) => n + 1), THREAD_POLL_MS);
       },
     );
-  }, [visible, state.loaded, newestFromOthers, seenBase, conversationId]);
+  }, [visible, state.loaded, newestFromOthers, seenBase, conversationId, seenRetry]);
 
   // --- Sending -----------------------------------------------------------------
 

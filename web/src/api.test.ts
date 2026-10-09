@@ -149,13 +149,17 @@ describe("renewal on 401", () => {
     expect(events).toEqual(["signed-out"]);
   });
 
-  it("goes to login, without a second refresh, when the retry is a 401 too", async () => {
+  it("reports an error, without a redirect or a second refresh, when the retry is a 401 too", async () => {
     serve((url) => (url === "/ward-api/refresh" ? new Response(null, { status: 200 }) : apiError(401, "unauthorized")));
 
-    await expect(getMe()).rejects.toBeInstanceOf(SignedOut);
+    await expect(getMe()).rejects.toMatchObject({
+      code: "unauthorized",
+      message: "Satchel can't verify your sign-in right now.",
+    });
     expect(callsTo("/ward-api/refresh")).toBe(1);
     expect(callsTo("/satchel-api/api/me")).toBe(2);
-    expect(assign).toHaveBeenCalledTimes(1);
+    expect(assign).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
   });
 
   it("says Unavailable, and stays put, when Ward doesn't answer the refresh", async () => {
