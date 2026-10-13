@@ -23,7 +23,7 @@ npm workspaces, as in the-board:
 ## Request paths
 
 ```
-phone ──https──► Caddy gandolh.ro
+phone ──https──► Caddy (production domain)
                  ├─ /satchel/*        static PWA (try_files spa)
                  ├─ /satchel-api/*    handle_path → container on 127.0.0.1:8795
                  └─ /ward, /ward-api  Ward

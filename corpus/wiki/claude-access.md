@@ -24,7 +24,7 @@ The CLI reads, first match wins:
 
 1. `SATCHEL_URL` and `SATCHEL_TOKEN` in the environment,
 2. the same keys in `~/.config/satchel/env` (`KEY=value` lines),
-3. for the URL only, the default `https://gandolh.ro/satchel-api`.
+3. for the URL only, the production default, `/satchel-api`.
 
 No token anywhere is a usage error that says where to put one. The CLI never
 reads a repo `.env`: the inbox isn't tied to any one project.

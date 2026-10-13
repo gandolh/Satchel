@@ -13,7 +13,7 @@ writes a secret for you. Commands run on your machine; the deploy builds the
 API image on the VPS.
 
 1. **Register Satchel in production Ward.** Open
-   <https://gandolh.ro/ward/console> and sign in as the break-glass superuser.
+   `/ward/console` on the production site and sign in as the break-glass superuser.
    Create an app with slug `satchel` and name `Satchel`, with public
    registration closed. On the app's page, issue a service key under "Service
    keys" (it is shown once; copy it now). Then grant your own account the
@@ -42,7 +42,7 @@ API image on the VPS.
    cd ~/projects/vps-deploy && node cli.ts satchel all
    ```
 
-5. **Install it on the phone.** Open <https://gandolh.ro/satchel/>, sign in,
+5. **Install it on the phone.** Open `/satchel/` on the production site, sign in,
    then Add to Home Screen.
 
 6. **Create a Claude token.** In the app: Settings, Connect Claude, Create
@@ -56,7 +56,7 @@ API image on the VPS.
    of shell history and transcripts.
 
    The file may also set `SATCHEL_URL`; it defaults to
-   `https://gandolh.ro/satchel-api`.
+   the production `/satchel-api`.
 
 7. **Install the CLI.**
 
@@ -133,7 +133,7 @@ works as before.
 
 4. **Turn it on, per device:** Settings, Notifications. On an iPhone, web
    push works only in the Home Screen app (iOS 16.4 or later): open
-   <https://gandolh.ro/satchel/> in Safari, Share → Add to Home Screen, open
+   `/satchel/` on the production site in Safari, Share → Add to Home Screen, open
    Satchel from the Home Screen icon, and turn Notifications on there.
    Android and desktop browsers need no such step.
 
@@ -144,7 +144,7 @@ and has to turn it on again.
 
 Friends sign in with Ward, the same as you. Satchel lets in any account with a
 role on `satchel`, and the role decides what the account gets. All of this is
-done by hand in production Ward's console, <https://gandolh.ro/ward/console>.
+done by hand in production Ward's console (`/ward/console` on the production site).
 
 1. **Give them an account.** Under Accounts, use "New account" with a username
    and a password, and pass the password on yourself. An account made there
@@ -162,7 +162,7 @@ done by hand in production Ward's console, <https://gandolh.ro/ward/console>.
    Never grant `admin`. That role marks the owner: an `admin` account gets an
    Ideas inbox and can create Claude tokens. A `member` gets neither.
 
-3. **They sign in once** at <https://gandolh.ro/satchel/>. After that first
+3. **They sign in once** at `/satchel/` on the production site. After that first
    sign-in they appear in the people list (`GET /api/people`), and anyone can
    start a one-to-one chat or a group with them.
 

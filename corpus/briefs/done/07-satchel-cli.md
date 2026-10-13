@@ -37,7 +37,7 @@ cli/src/commands/*.ts  cli/src/*.test.ts  cli/package.json
    1. `SATCHEL_URL` / `SATCHEL_TOKEN` in the environment,
    2. the same keys in `~/.config/satchel/env` (`KEY=value` lines, `#`
       comments, optional quotes), found through `os.homedir()`,
-   3. for the URL only, `https://gandolh.ro/satchel-api`.
+   3. for the URL only, the production default, `/satchel-api`.
    A missing token is a usage error: "No Claude token. Create one in Satchel
    under Settings → Connect Claude and put it in ~/.config/satchel/env as
    SATCHEL_TOKEN=…". Never read a repo `.env`.

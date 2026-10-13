@@ -85,7 +85,7 @@ Application code in `shared/`, `server/`, `web/`, `cli/`, and `corpus/`.
      vps-deploy.
 5. **README "Owner setup"**, in this order, each with exact commands or
    clicks:
-   1. In production Ward's console (`https://gandolh.ro/ward/console`, as the
+   1. In production Ward's console (`/ward/console`, as the
       break-glass superuser): register app `satchel` / "Satchel" with public
       registration closed; issue a service key (shown once); grant your own
       account `admin` on `satchel`.
@@ -94,7 +94,7 @@ Application code in `shared/`, `server/`, `web/`, `cli/`, and `corpus/`.
    3. Redeploy Ward's UI so its login allowlist knows `/satchel/` (brief 04
       added it): `cd ~/projects/vps-deploy && node cli.ts ward deploy`.
    4. `cd ~/projects/vps-deploy && node cli.ts satchel all`.
-   5. Open `https://gandolh.ro/satchel/` on the phone, sign in, Add to Home
+   5. On the phone, open `/satchel/` on the production site, sign in, Add to Home
       Screen.
    6. Settings → Connect Claude → Create token. Then
       `mkdir -p ~/.config/satchel && umask 077 && printf 'SATCHEL_TOKEN=%s\n'
