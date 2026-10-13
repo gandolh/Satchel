@@ -1,6 +1,6 @@
 import type { ConversationSummary, LiveEvent } from "@satchel/shared";
 import { useEffect, useSyncExternalStore } from "react";
-import { listConversations, NoAccess, SignedOut } from "../api";
+import { listConversations, SignedOut } from "../api";
 import { useMe } from "../auth/session";
 import { live, useLiveConnected, useLiveConnection } from "../live";
 import { applyLiveEvent, sortConversations } from "./conversation";
@@ -43,7 +43,7 @@ function load(): Promise<void> {
       publish({ conversations: sortConversations(conversations), error: null });
     } catch (error) {
       // The auth gate takes over for these; there is no list to show.
-      if (!(error instanceof SignedOut || error instanceof NoAccess)) {
+      if (!(error instanceof SignedOut)) {
         publish({ ...snapshot, error: error instanceof Error ? error : new Error(String(error)) });
       }
       throw error;
@@ -64,7 +64,7 @@ async function catchUpConversations(): Promise<void> {
   try {
     await load();
   } catch (error) {
-    if (error instanceof SignedOut || error instanceof NoAccess) return;
+    if (error instanceof SignedOut) return;
     throw error;
   }
 }

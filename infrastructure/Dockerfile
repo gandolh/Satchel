@@ -95,6 +95,7 @@ COPY shared/package.json ./shared/
 COPY --from=builder /app/shared/dist ./shared/dist
 COPY server/package.json ./server/
 COPY --from=builder /app/server/dist ./server/dist
+COPY server/vendor ./server/vendor
 # tsc compiles src/**/* including the tests. They import a runner that
 # --omit=dev never installed, so shipping them is dead weight.
 RUN find ./server/dist ./shared/dist \( -name '*.test.js' -o -name '*.test.js.map' -o -name '*.test.d.ts' \) -delete

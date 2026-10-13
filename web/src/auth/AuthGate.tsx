@@ -1,46 +1,67 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { onAuthEvent } from "../api";
-import { rebindPushSubscription } from "../push/account";
-import { goToWardLogin, signOut, startRenewal } from "../ward";
+import { useLogout, useSession } from "../../vendor/ward/ward-auth-react.js";
+import { live } from "../live";
+import { forgetPushSubscription, rebindPushSubscription } from "../push/account";
+import { LoginPage } from "./LoginPage";
 import { checkSession, MeContext, type GateState } from "./session";
 
 /**
- * The session gate around the whole app. On load it asks `GET /api/me`:
- * signed in renders the app (with the account in `MeContext`) and keeps the
- * session renewed; anything else renders one of the screens below. Any later
- * API call that hits a 403 or a failed renewal flips the gate too.
+ * The session gate around the whole app. The vendored hooks hold the session
+ * (`useSession`, one shared state asked of `GET /auth/session`):
+ *
+ * - loading: a quiet "Loading…" screen;
+ * - signed out: the login page (`LoginPage`), with the reason when a session
+ *   just ended, and the tab's live socket stopped;
+ * - signed in: `GET /api/me` for the account and its Ideas inbox, then the app
+ *   (with the account in `MeContext`);
+ * - the session answer failing: "Can't reach Satchel", with Retry.
+ *
+ * Any API call that hits a 401 asks the hooks to look again (`ward.ts`), so a
+ * session that ends while the app is open lands on the login page too.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
+  const session = useSession();
+  const signedOut = session.status === "signed_out";
+
+  // The session is gone: the socket would only be refused.
+  useEffect(() => {
+    if (signedOut) live.stop();
+  }, [signedOut]);
+
+  switch (session.status) {
+    case "loading":
+      return <GateScreen state={{ kind: "checking" }} onRetry={() => {}} />;
+    case "error":
+      return <GateScreen state={{ kind: "unreachable" }} onRetry={() => void session.refresh()} />;
+    case "signed_out":
+      return <LoginPage />;
+    case "signed_in":
+      return <SignedInGate key={session.user.id}>{children}</SignedInGate>;
+  }
+}
+
+/** Signed in: fetch the account, keep asking if the API can't be reached, then render the app. */
+function SignedInGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>({ kind: "checking" });
 
   useEffect(() => {
-    let live = true;
+    let current = true;
     void checkSession().then((next) => {
-      if (live) setState(next);
+      if (current) setState(next);
     });
     return () => {
-      live = false;
+      current = false;
     };
   }, []);
 
-  useEffect(
-    () =>
-      onAuthEvent((event) => {
-        setState(event === "no-access" ? { kind: "no-access" } : { kind: "signed-out" });
-      }),
-    [],
-  );
-
   const signedIn = state.kind === "signed-in";
   useEffect(() => {
-    if (!signedIn) return;
-    void rebindPushSubscription();
-    return startRenewal();
+    if (signedIn) void rebindPushSubscription();
   }, [signedIn]);
 
-  // Offline or sign-in down: ask again on its own when the device comes back
-  // online or the app is shown again, so nobody has to find the Retry button.
-  const waiting = state.kind === "unreachable" || state.kind === "unavailable";
+  // Offline: ask again on its own when the device comes back online or the
+  // app is shown again, so nobody has to find the Retry button.
+  const waiting = state.kind === "unreachable";
   useEffect(() => {
     if (!waiting) return;
     let checking = false;
@@ -80,51 +101,13 @@ export interface GateScreenProps {
   onRetry: () => void;
 }
 
-/** Everything the gate shows instead of the app. Pure, so it renders in tests. */
+/** Everything the gate shows instead of the app and the login page. Pure, so it renders in tests. */
 export function GateScreen({ state, onRetry }: GateScreenProps) {
   switch (state.kind) {
     case "checking":
       return (
         <Gate busy>
           <p className="gate__message">Loading…</p>
-        </Gate>
-      );
-    case "signed-out":
-      return (
-        <Gate>
-          <p className="gate__message" role="status">
-            Taking you to sign in…
-          </p>
-          <div className="gate__actions">
-            {/* In case the automatic navigation didn't happen. */}
-            <button type="button" className="button button--quiet" onClick={() => goToWardLogin()}>
-              Sign in
-            </button>
-          </div>
-        </Gate>
-      );
-    case "no-access":
-      return (
-        <Gate title="No access">
-          <p className="gate__message" role="alert">
-            Your account doesn&rsquo;t have access to Satchel. Ask the owner to add you.
-          </p>
-          <div className="gate__actions">
-            <SignOutButton />
-          </div>
-        </Gate>
-      );
-    case "unavailable":
-      return (
-        <Gate title="Sign-in is down">
-          <p className="gate__message" role="alert">
-            Satchel can&rsquo;t reach sign-in right now.
-          </p>
-          <div className="gate__actions">
-            <button type="button" className="button" onClick={onRetry}>
-              Retry
-            </button>
-          </div>
         </Gate>
       );
     case "unreachable":
@@ -157,20 +140,21 @@ function Gate({ title, busy = false, children }: { title?: string; busy?: boolea
   );
 }
 
-/** Ends the Ward session and goes to Ward's login page. */
+/** Signs out of Satchel. A shared browser must stop showing this account's previews first, so the push subscription goes before the session does. */
 export function SignOutButton({ className = "button button--danger" }: { className?: string }) {
-  const [leaving, setLeaving] = useState(false);
+  const { logout, pending } = useLogout();
   return (
     <button
       type="button"
       className={className}
-      disabled={leaving}
+      disabled={pending}
       onClick={() => {
-        setLeaving(true);
-        void signOut();
+        void forgetPushSubscription()
+          .catch(() => undefined)
+          .then(() => logout());
       }}
     >
-      {leaving ? "Signing out…" : "Sign out"}
+      {pending ? "Signing out…" : "Sign out"}
     </button>
   );
 }

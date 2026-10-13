@@ -26,7 +26,7 @@ The person who runs Satchel and whose Claude reads their Ideas inbox.
 _Avoid_: admin, me
 
 **Friend**:
-Any other account that signs in to Satchel through a Ward grant.
+Any other account (the `member` role). It signs in with a local password or with Ward.
 _Avoid_: contact, user
 
 ## Messages

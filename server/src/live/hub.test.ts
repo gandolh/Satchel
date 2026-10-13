@@ -13,7 +13,7 @@ import { openDb, type Db } from "../db/open.js";
 import { createStore, type Store } from "../store.js";
 import { LIVE_SOCKETS_PER_SUBJECT, SOCKET_OPEN, createHub, type Hub } from "./hub.js";
 import { createLivePublisher } from "./publish.js";
-import { LIVE_PING_MS, serveLiveSocket, type LiveConnection } from "./socket.js";
+import { LIVE_PING_MS, LIVE_RECHECK_MS, serveLiveSocket, type LiveConnection } from "./socket.js";
 
 /** A socket that records what it was sent, and can be told to fail or close. */
 class FakeSocket extends EventEmitter implements LiveConnection {
@@ -175,13 +175,11 @@ describe("the hub", () => {
 
 describe("one live socket", () => {
   let hub: Hub;
-  let now: number;
-  const clock = () => new Date(now);
+  const signedIn = () => Promise.resolve(true);
 
   beforeEach(() => {
     vi.useFakeTimers();
     hub = createHub();
-    now = Date.parse(at);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -189,7 +187,7 @@ describe("one live socket", () => {
 
   it("pings every 25 seconds and drops a socket that stopped answering", () => {
     const socket = new FakeSocket();
-    serveLiveSocket(socket, { subject: "a", hub, expiresAt: now + 15 * 60_000, clock });
+    serveLiveSocket(socket, { subject: "a", hub, stillSignedIn: signedIn });
 
     vi.advanceTimersByTime(LIVE_PING_MS - 1);
     expect(socket.pings).toBe(0);
@@ -206,30 +204,57 @@ describe("one live socket", () => {
     expect(hub.socketCount("a")).toBe(0);
   });
 
-  it("closes with 4001 at the token's exp, by the app's clock", () => {
+  it("asks whether the session is live every 10 seconds, and closes with 4001 when it is not", async () => {
     const socket = new FakeSocket();
-    // Pings answered, so only the expiry can close it.
+    // Pings answered, so only the session check can close it.
     socket.ping = () => socket.emit("pong");
-    serveLiveSocket(socket, { subject: "a", hub, expiresAt: now + 60_000, clock });
+    let live = true;
+    const stillSignedIn = vi.fn(() => Promise.resolve(live));
+    serveLiveSocket(socket, { subject: "a", hub, stillSignedIn });
     expect(hub.socketCount("a")).toBe(1);
 
-    vi.advanceTimersByTime(59_999);
+    await vi.advanceTimersByTimeAsync(LIVE_RECHECK_MS - 1);
+    expect(stillSignedIn).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(stillSignedIn).toHaveBeenCalledTimes(1);
     expect(socket.closedWith).toBeUndefined();
-    vi.advanceTimersByTime(1);
+
+    live = false;
+    await vi.advanceTimersByTimeAsync(LIVE_RECHECK_MS);
     expect(socket.closedWith).toBe(LIVE_CLOSE_SESSION_EXPIRED);
-    expect(hub.socketCount("a")).toBe(0);
   });
 
-  it("closes at once when the token has already expired", () => {
+  it("fails closed: a check that throws closes the socket, and is logged", async () => {
     const socket = new FakeSocket();
-    serveLiveSocket(socket, { subject: "a", hub, expiresAt: now - 1000, clock });
-    vi.advanceTimersByTime(0);
+    const warn = vi.fn<Warn>();
+    serveLiveSocket(socket, {
+      subject: "a",
+      hub,
+      stillSignedIn: () => Promise.reject(new Error("database is locked")),
+      log: { warn },
+    });
+    await vi.advanceTimersByTimeAsync(LIVE_RECHECK_MS);
     expect(socket.closedWith).toBe(LIVE_CLOSE_SESSION_EXPIRED);
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it("never runs two checks at once", async () => {
+    const socket = new FakeSocket();
+    socket.ping = () => socket.emit("pong");
+    let release: (live: boolean) => void = () => {};
+    const stillSignedIn = vi.fn(() => new Promise<boolean>((resolve) => (release = resolve)));
+    serveLiveSocket(socket, { subject: "a", hub, stillSignedIn, recheckMs: 1000 });
+
+    await vi.advanceTimersByTimeAsync(3500);
+    expect(stillSignedIn).toHaveBeenCalledTimes(1);
+    release(true);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(stillSignedIn).toHaveBeenCalledTimes(2);
   });
 
   it("clears its timers when the client goes away", () => {
     const socket = new FakeSocket();
-    serveLiveSocket(socket, { subject: "a", hub, expiresAt: now + 60_000, clock });
+    serveLiveSocket(socket, { subject: "a", hub, stillSignedIn: signedIn });
     socket.readyState = 3;
     socket.emit("close");
     expect(vi.getTimerCount()).toBe(0);
@@ -242,7 +267,7 @@ describe("one live socket", () => {
       throw new Error("WebSocket is not open");
     };
     const warn = vi.fn<Warn>();
-    serveLiveSocket(socket, { subject: "a", hub, expiresAt: now + 60_000, clock, log: { warn } });
+    serveLiveSocket(socket, { subject: "a", hub, stillSignedIn: signedIn, log: { warn } });
     expect(() => vi.advanceTimersByTime(LIVE_PING_MS)).not.toThrow();
     expect(warn).toHaveBeenCalledOnce();
   });

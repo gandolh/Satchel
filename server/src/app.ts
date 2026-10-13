@@ -1,6 +1,8 @@
 import fastifyWebsocket from "@fastify/websocket";
 import { routes } from "@satchel/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import { wardAuth, type Accounts, type WardClient } from "../vendor/ward/ward-auth.js";
+import { registerAccountGuard } from "./auth/guard.js";
 import type { Clock } from "./clock.js";
 import type { VapidKeys } from "./config.js";
 import { registerErrorHandling } from "./errors.js";
@@ -17,8 +19,9 @@ import { meRoutes } from "./routes/me.js";
 import { pushRoutes } from "./routes/push.js";
 import { tokenRoutes } from "./routes/tokens.js";
 import type { Store } from "./store.js";
-import type { WardClient } from "./ward/client.js";
-import { registerWardGuard } from "./ward/guard.js";
+
+/** Where the plugin's routes sit as Fastify sees them. The proxy strips the API prefix, so the browser reaches them at `<apiPrefix>/auth/...`. */
+export const AUTH_ROUTE_PREFIX = "/auth";
 
 /** Request bodies above this are refused with 413 `invalid_request`. */
 export const BODY_LIMIT_BYTES = 64 * 1024;
@@ -50,15 +53,26 @@ export interface PushOptions {
   send?: SendPush;
 }
 
+/** The session cookie's name. Unique in the estate: every app shares one origin. */
+export const SESSION_COOKIE = "satchel_session";
+
 export interface AppDeps {
   store: Store;
-  /** The Ward client. `index.ts` builds the real one from config; tests point one at `fakeWard`. */
-  ward: WardClient;
-  /** The app's origin as the browser sees it (`WARD_PUBLIC_ORIGIN`). The guard refuses writes from any other. */
+  /** The local accounts, on the same SQLite handle as `store` (`createAccounts({ store: createSqliteStore(db) })`). */
+  accounts: Accounts;
+  /** "Sign in with Ward". Absent means local accounts only, and the Ward button is hidden. `index.ts` builds it from the environment. */
+  ward?: WardClient;
+  /** The app's origin as the browser sees it. The guard refuses writes and WebSocket upgrades from any other. */
   publicOrigin: string;
+  /** The API prefix as the browser sees it (`/satchel-api`): the session cookie's `Path`. The Ward callback lives under it. */
+  apiPrefix: string;
+  /** The web app's base path with a trailing slash (`/satchel/`): where Ward sends the browser back to. */
+  webBase: string;
   clock: Clock;
   /** Web Push. Default: off (`GET /api/push/key` is a 404 and nothing is sent). `index.ts` passes it when VAPID is configured. */
   push?: PushOptions;
+  /** How often an open live socket asks the guard again, in ms. Default `LIVE_RECHECK_MS`. Tests shorten it. */
+  liveRecheckMs?: number;
   /** Default: on, except when `NODE_ENV=test`. Redaction applies either way. */
   logger?: boolean | LogOptions;
 }
@@ -87,13 +101,17 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
 /**
  * The Fastify app, not listening. Tests `inject` into it; `index.ts` listens.
  *
- * - The Ward guard is one root `onRequest` hook that covers every `/api/*`
- *   route except `/api/health`, judged by route pattern (see `ward/guard.ts`).
- *   `/claude/*` never runs it.
+ * - The vendored `wardAuth` plugin is the guard: one root `onRequest` hook that
+ *   refuses every route without a live session except `GET /api/health` and
+ *   `/claude/*`, judged by route pattern, and serves `/auth/*` (local login,
+ *   "Sign in with Ward", the 30-second Ward check). `auth/guard.ts` then
+ *   turns the session's user into `request.account` on `/api/*`.
+ *   `/claude/*` takes a Claude token instead and never has a session.
  * - Route plugins (`routes/*.ts`) take `RouteDeps`, so later briefs fill them
  *   in without editing this file.
  * - Live updates (brief 12): `@fastify/websocket` serves `GET /api/live`
- *   behind the same guard. A WebSocket upgrade must carry the app's own
+ *   behind the same guard, and re-checks it while open (`live/socket.ts`).
+ *   A WebSocket upgrade must carry the app's own
  *   `Origin`; that check is a root hook ahead of the guard
  *   (`live/origin.ts`). The hub knows who has a socket open; route plugins
  *   publish through `RouteDeps.live`.
@@ -102,7 +120,18 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *   the app waits for pushes already started.
  * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).
  */
-export function buildApp({ store, ward, publicOrigin, clock, push: pushOptions, logger }: AppDeps): FastifyInstance {
+export async function buildApp({
+  store,
+  accounts,
+  ward,
+  publicOrigin,
+  apiPrefix,
+  webBase,
+  clock,
+  push: pushOptions,
+  liveRecheckMs,
+  logger,
+}: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({ logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
 
   // A POST with `Content-Type: application/json` and no body is a body of
@@ -121,7 +150,27 @@ export function buildApp({ store, ward, publicOrigin, clock, push: pushOptions, 
 
   registerErrorHandling(app);
   registerUpgradeChecks(app, publicOrigin);
-  registerWardGuard(app, { ward, store, publicOrigin });
+  // First of the app's own routes and plugins: the guard is a root hook, and
+  // Fastify copies hooks into a plugin's context when it is created.
+  await app.register(wardAuth, {
+    accounts,
+    cookieName: SESSION_COOKIE,
+    cookiePath: apiPrefix,
+    publicOrigin,
+    routePrefix: AUTH_ROUTE_PREFIX,
+    // `/claude/*` takes a Claude token and has no session. `isPublic` sees the matched route pattern.
+    publicRoutes: [`GET ${routes.health.path}`],
+    isPublic: (request) => (request.routeOptions.url ?? "").startsWith("/claude/"),
+    ...(ward && {
+      ward: {
+        client: ward,
+        loginPath: webBase,
+        settingsPath: `${webBase}settings`,
+        afterSignInPath: webBase,
+      },
+    }),
+  });
+  registerAccountGuard(app, { store, publicOrigin });
 
   app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
 
@@ -146,7 +195,7 @@ export function buildApp({ store, ward, publicOrigin, clock, push: pushOptions, 
   void app.register(tokenRoutes, deps);
   void app.register(pushRoutes, deps);
   void app.register(claudeRoutes, deps);
-  void app.register(liveRoutes, { hub, ward, clock });
+  void app.register(liveRoutes, { hub, sessionUrl: `${AUTH_ROUTE_PREFIX}/session`, ...(liveRecheckMs ? { recheckMs: liveRecheckMs } : {}) });
 
   return app;
 }

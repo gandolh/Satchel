@@ -1,4 +1,3 @@
-import type { IncomingMessage } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
@@ -9,40 +8,23 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
  * Local dev on one origin, the way Caddy serves the deploy: `/satchel-api` is
- * the API with the prefix stripped, and `/ward` + `/ward-api` are the Ward the
- * API trusts (WARD_PUBLIC_ORIGIN; locally the container on 8792).
+ * the API with the prefix stripped. The session cookie is scoped to that
+ * prefix, and so are the auth routes and Ward's callback
+ * (`/satchel-api/auth/ward/callback`), so one proxy rule carries all of it.
+ * Ward itself is reached by the browser at its own origin (the issuer in
+ * `WARD_OIDC_ISSUER`) and by the API's server directly, so it needs no rule.
  *
- * Ward refuses /refresh and /logout unless the request's Origin is its own,
- * and the API refuses a write, or a WebSocket upgrade (`/api/live`), whose
- * Origin is not WARD_PUBLIC_ORIGIN. A request from a page on this dev server
- * would be same-origin in the deploy, so on both proxies its Origin is
- * rewritten to say so, upgrades included. Anything else keeps its Origin and
- * is still refused. (Not Vite's `rewriteWsOrigin`: that sets the target's
- * origin, the API's own port, which the API refuses.)
+ * The browser's own `Origin` goes through untouched: the API's `PUBLIC_ORIGIN`
+ * is this dev server's origin (`http://localhost:5175`), and it refuses a write
+ * or a WebSocket upgrade from any other.
  */
 function devProxy(env: Record<string, string>): Record<string, ProxyOptions> {
-  const ward = new URL(env.WARD_PUBLIC_ORIGIN || "http://localhost:8792").origin;
-  const sameOriginAsWard: ProxyOptions["configure"] = (server) => {
-    const rewrite = (proxyReq: { setHeader(name: string, value: string): unknown }, req: IncomingMessage) => {
-      const origin = req.headers.origin;
-      if (origin && URL.canParse(origin) && new URL(origin).host === req.headers.host) {
-        proxyReq.setHeader("origin", ward);
-      }
-    };
-    server.on("proxyReq", (proxyReq, req) => rewrite(proxyReq, req));
-    server.on("proxyReqWs", (proxyReq, req) => rewrite(proxyReq, req));
-  };
   return {
     "/satchel-api": {
       target: `http://127.0.0.1:${env.PORT || 8807}`,
       rewrite: (url) => url.replace(/^\/satchel-api/, ""),
       // Pass WebSocket upgrades through too (brief 12), prefix stripped the same way.
       ws: true,
-      configure: sameOriginAsWard,
-    },
-    "^/ward(-api)?(/|$)": {
-      target: ward,
-      configure: sameOriginAsWard,
     },
   };
 }

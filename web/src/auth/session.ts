@@ -1,39 +1,31 @@
 import type { MeResponse } from "@satchel/shared";
 import { createContext, useContext } from "react";
-import { getMe, NoAccess, SignedOut, Unavailable } from "../api";
+import { getMe, SignedOut } from "../api";
 
 /**
- * What the auth gate is showing. Only `signed-out` redirects (and the API
- * client has already started that navigation); the rest stop and say why.
+ * What the auth gate is showing once somebody is signed in. The login page
+ * itself is the gate's other half and is driven by the session state of the
+ * vendored hooks (`useSession`), not by this.
  *
- * - `no-access`: a live Ward session without a Satchel grant. Sending it to
- *   the login page would be a loop: only the owner granting access fixes it.
- * - `unavailable`: the API is up but Ward isn't. The login page is Ward's, so
- *   a redirect would fail the same way.
+ * - `checking`: asking `GET /api/me` for the account and its Ideas inbox.
+ * - `signed-in`: the account; the app renders.
  * - `unreachable`: no answer from Satchel at all (offline, API down).
  */
 export type GateState =
   | { kind: "checking" }
   | { kind: "signed-in"; me: MeResponse }
-  | { kind: "signed-out" }
-  | { kind: "no-access" }
-  | { kind: "unavailable" }
   | { kind: "unreachable" };
 
-/** The gate state for an error thrown by the `GET /api/me` probe. */
-export function gateStateForError(error: unknown): GateState {
-  if (error instanceof SignedOut) return { kind: "signed-out" };
-  if (error instanceof NoAccess) return { kind: "no-access" };
-  if (error instanceof Unavailable) return { kind: "unavailable" };
-  return { kind: "unreachable" };
-}
-
-/** Ask the API who is signed in. Never throws. */
+/**
+ * Ask the API who is signed in. Never throws. A 401 (the session ended
+ * between the two requests) leaves the gate checking: the API client has
+ * already told the login page to take over.
+ */
 export async function checkSession(): Promise<GateState> {
   try {
     return { kind: "signed-in", me: await getMe() };
   } catch (error) {
-    return gateStateForError(error);
+    return error instanceof SignedOut ? { kind: "checking" } : { kind: "unreachable" };
   }
 }
 

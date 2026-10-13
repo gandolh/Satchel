@@ -6,7 +6,7 @@ import {
   revokeClaudeTokenResponseSchema,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../ward/testing/testApp.js";
+import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };
@@ -51,7 +51,10 @@ function useToken(token: string) {
 
 function expectError(res: { statusCode: number; json(): unknown }, status: number, code: string) {
   expect(res.statusCode).toBe(status);
-  expect(errorResponseSchema.parse(res.json()).error.code).toBe(code);
+  const body = res.json() as { error: unknown };
+  // The session guard (the vendored plugin) answers `{ error: "unauthorized" }`, not Satchel's shape.
+  if (typeof body.error === "string") expect(body.error).toBe(code);
+  else expect(errorResponseSchema.parse(body).error.code).toBe(code);
 }
 
 describe("POST /api/claude-tokens", () => {
@@ -182,7 +185,7 @@ describe("owner-only", () => {
   let friend: string;
 
   beforeEach(async () => {
-    friend = await t.signIn({ ...C, grants: { satchel: ["member"] } });
+    friend = await t.signIn({ ...C, role: "member" });
   });
 
   function inboxCount(subject: string): number {

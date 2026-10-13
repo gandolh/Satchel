@@ -7,7 +7,7 @@ import {
 } from "@satchel/shared";
 import { useEffect, useEffectEvent, useSyncExternalStore } from "react";
 import { API_BASE, onAuthEvent } from "./api";
-import { renewalGeneration, renewSince } from "./ward";
+import { sessionEnded } from "./ward";
 
 export type { LiveEvent } from "@satchel/shared";
 
@@ -26,27 +26,26 @@ export type { LiveEvent } from "@satchel/shared";
  * - **Reconnect** with backoff from 1 to 30 seconds, at once when the page is
  *   shown again or the device comes back online, and not at all while the
  *   page is hidden.
- * - **4001** means the access token the socket opened with expired: renew
- *   the Ward session first (unless it was renewed since), then reconnect.
- *   Renewal refused means the session is over: the client stops, polling
- *   resumes, and the API client's 401 handling sends the browser to sign in.
+ * - **4001** means the server found the session the socket opened with over
+ *   (it re-checks every 10 seconds): a sign-out, a Ward session ended or
+ *   unreachable, a password change. The client asks the auth gate to look
+ *   again, which shows the login page when it is so (and stops the client), and
+ *   otherwise reconnects with backoff.
  * - **4002** means this account has too many sockets open and the server
  *   dropped this one, the oldest. The client doesn't reconnect on its own,
  *   or a crowd of tabs would evict each other forever: it polls, and
  *   reconnects the next time the page is shown or comes back online.
  *
- * The browser can't see why a handshake failed. A refused one (say, a 401
- * after a laptop slept through the token's life) just retries with backoff;
- * meanwhile the fallback polling hits the same 401, which renews the cookie,
- * and the next attempt gets through.
+ * The browser can't see why a handshake failed. A refused one (a 401 for a
+ * session that ended while the laptop slept) just retries with backoff;
+ * meanwhile the fallback polling hits the same 401, which sends the person to
+ * the login page.
  */
 
 /** First reconnect delay. */
 export const RECONNECT_MIN_MS = 1000;
 /** Reconnect delays double up to this. */
 export const RECONNECT_MAX_MS = 30_000;
-/** A socket closed with 4001 sooner than this after opening reconnects with backoff, not at once. */
-const SHORT_LIVED_MS = 60_000;
 
 /**
  * - `off`: not started, or stopped because the session ended.
@@ -72,9 +71,8 @@ export interface LiveSocketLike {
 export interface LiveClientDeps {
   url(): string;
   openSocket(url: string): LiveSocketLike;
-  /** `ward.ts`: renew unless a renewal happened since `since`. `true` renewed, `false` the session is over; throws when Ward is down. */
-  renewSince(since: number): Promise<boolean>;
-  renewalGeneration(): number;
+  /** The server closed the socket because the session is over: have the auth gate ask who is signed in now. */
+  sessionEnded(): void;
   /**
    * Calls back when the page is shown again or the device comes back online,
    * with how long it was hidden or offline, in ms. Returns an unsubscribe function.
@@ -209,25 +207,6 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
     setStatus("live");
   }
 
-  async function renewThenConnect(generation: number, livedMs: number): Promise<void> {
-    setStatus("waiting");
-    let renewed: boolean;
-    try {
-      renewed = await deps.renewSince(generation);
-    } catch {
-      // Ward isn't answering; try again later.
-      if (status !== "off") scheduleReconnect();
-      return;
-    }
-    if (status === "off") return;
-    if (!renewed) {
-      stop();
-      return;
-    }
-    if (livedMs < SHORT_LIVED_MS) scheduleReconnect();
-    else connect();
-  }
-
   function connect(): void {
     clearTimeout(timer);
     timer = undefined;
@@ -238,7 +217,6 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
       return;
     }
 
-    const generation = deps.renewalGeneration();
     let ws: LiveSocketLike;
     try {
       ws = deps.openSocket(deps.url());
@@ -271,7 +249,8 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
       buffered = [];
       if (status === "off") return;
       if (openedAt !== null && code === LIVE_CLOSE_SESSION_EXPIRED) {
-        void renewThenConnect(generation, deps.now() - openedAt);
+        deps.sessionEnded();
+        scheduleReconnect();
         return;
       }
       if (code === LIVE_CLOSE_TOO_MANY_SOCKETS) {
@@ -359,8 +338,7 @@ export function liveUrl(location: Pick<Location, "href"> = window.location): str
 export const live: LiveClient = createLiveClient({
   url: () => liveUrl(),
   openSocket: (url) => new WebSocket(url),
-  renewSince,
-  renewalGeneration,
+  sessionEnded,
   onWake(callback) {
     let awaySince: number | null = null;
     const leave = () => {
@@ -389,7 +367,7 @@ export const live: LiveClient = createLiveClient({
   now: Date.now,
 });
 
-// A 403 or a failed renewal anywhere ends the session, and the socket with it.
+// A 401 anywhere ends the session, and the socket with it.
 onAuthEvent(() => live.stop());
 
 /** Whether the tab's socket is live right now, for code outside React. */

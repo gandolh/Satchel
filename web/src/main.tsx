@@ -24,6 +24,10 @@ import "./styles/chats.css";
 import "./styles/settings.css";
 
 import { App } from "./App";
+import { setUpAuth } from "./ward";
+
+// The auth hooks need the plugin's routes before anything renders.
+setUpAuth();
 
 /*
  * The service worker precaches the app shell. A new version waits and is

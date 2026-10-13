@@ -2,10 +2,10 @@ import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
 import { ApiError } from "../errors.js";
-import { signedIn } from "../ward/guard.js";
+import { signedIn } from "../auth/guard.js";
 
 /**
- * The push routes under `/api/push` (brief 14). Behind the Ward guard, for
+ * The push routes under `/api/push` (brief 14). Behind the session guard, for
  * owner and friends alike; the POST and DELETE pass its cross-site write
  * check like every other write.
  *

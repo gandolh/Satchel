@@ -93,8 +93,7 @@ function deferred<T = void>() {
 const settle = () => vi.advanceTimersByTimeAsync(0);
 
 let sockets: FakeSocket[];
-let renewSince: ReturnType<typeof vi.fn<(since: number) => Promise<boolean>>>;
-let generation: number;
+let sessionEnded: ReturnType<typeof vi.fn<() => void>>;
 let hidden: boolean;
 let wake: ((awayMs?: number) => void) | undefined;
 let client: LiveClient;
@@ -108,10 +107,9 @@ function latest(): FakeSocket {
 beforeEach(() => {
   vi.useFakeTimers();
   sockets = [];
-  generation = 0;
   hidden = false;
   wake = undefined;
-  renewSince = vi.fn<(since: number) => Promise<boolean>>(async () => true);
+  sessionEnded = vi.fn<() => void>();
   client = createLiveClient({
     url: () => "ws://satchel.test/satchel-api/api/live",
     openSocket: (url) => {
@@ -119,8 +117,7 @@ beforeEach(() => {
       sockets.push(socket);
       return socket;
     },
-    renewSince,
-    renewalGeneration: () => generation,
+    sessionEnded,
     onWake: (callback) => {
       wake = callback;
       return () => {
@@ -289,45 +286,35 @@ describe("reconnecting", () => {
     }
   });
 
-  it("on 4001 it renews the session first (unless renewed since the handshake), then reconnects", async () => {
-    generation = 3;
+  it("on 4001 it asks the auth gate to look at the session, then reconnects with backoff", async () => {
     client.start();
-    generation = 4;
     latest().open();
     await settle();
-    await vi.advanceTimersByTimeAsync(15 * 60_000);
 
     latest().drop(LIVE_CLOSE_SESSION_EXPIRED);
-    expect(renewSince).toHaveBeenCalledWith(3);
+    expect(sessionEnded).toHaveBeenCalledOnce();
+    expect(client.status()).toBe("waiting");
     expect(sockets).toHaveLength(1);
-    await settle();
+    await vi.advanceTimersByTimeAsync(RECONNECT_MIN_MS);
     expect(sockets).toHaveLength(2);
   });
 
-  it("on 4001 with the session over, it stops and leaves the screens polling", async () => {
-    renewSince.mockResolvedValue(false);
+  it("on 4001 with the session over, the gate stops the client and the screens poll", async () => {
     client.start();
     latest().open();
     await settle();
-    await vi.advanceTimersByTimeAsync(15 * 60_000);
     latest().drop(LIVE_CLOSE_SESSION_EXPIRED);
-    await settle();
+    // What the login page taking over does.
+    client.stop();
     expect(client.status()).toBe("off");
     await vi.advanceTimersByTimeAsync(RECONNECT_MAX_MS * 2);
     expect(sockets).toHaveLength(1);
   });
 
-  it("on 4001 with Ward down, it tries again with backoff", async () => {
-    renewSince.mockRejectedValue(new Error("ward down"));
+  it("a 4001 on a socket that never opened is just a failed connect: the gate is not asked", () => {
     client.start();
-    latest().open();
-    await settle();
-    await vi.advanceTimersByTimeAsync(15 * 60_000);
     latest().drop(LIVE_CLOSE_SESSION_EXPIRED);
-    await settle();
-    expect(client.status()).toBe("waiting");
-    await vi.advanceTimersByTimeAsync(RECONNECT_MIN_MS);
-    expect(sockets).toHaveLength(2);
+    expect(sessionEnded).not.toHaveBeenCalled();
   });
 
   it("waits while the page is hidden, and reconnects the moment it's shown", async () => {

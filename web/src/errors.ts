@@ -20,15 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-/** 403 `forbidden`: a live Ward session without a Satchel grant. Signing in again changes nothing. */
-export class NoAccess extends ApiError {
-  constructor(message = "This account has no access to Satchel.") {
-    super(403, "forbidden", message);
-    this.name = "NoAccess";
-  }
-}
-
-/** 503 `unavailable` from the API, or Ward itself not answering a renewal. Retrying is the fix. */
+/** 503 `unavailable` from the API. Retrying is the fix. */
 export class Unavailable extends ApiError {
   constructor(status = 503, message = "Satchel can't reach sign-in right now.") {
     super(status, "unavailable", message);
@@ -37,8 +29,8 @@ export class Unavailable extends ApiError {
 }
 
 /**
- * The session is over and renewing it failed. The browser is already on its
- * way to Ward's login page; there is nothing to show but that.
+ * The session is over. The auth gate is already on its way to the login page;
+ * there is nothing for the calling screen to show.
  */
 export class SignedOut extends Error {
   constructor() {

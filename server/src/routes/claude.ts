@@ -7,10 +7,10 @@ import type { ResolvedClaudeToken } from "../store.js";
 /**
  * The Claude routes under `/claude/*` (brief 06).
  *
- * Outside the Ward guard: the guard only covers `/api/*`, so nothing here
- * reads the Ward cookie or calls Ward, and `request.account` is `null`. This
- * plugin authenticates its own requests with the Claude token. Its deps carry
- * no Ward client on purpose. The logger already redacts
+ * Outside the session guard: `wardAuth` is told these routes are public, so
+ * nothing here reads the session cookie or calls Ward, and `request.account`
+ * is `null`. This plugin authenticates its own requests with the Claude token.
+ * Its deps carry no accounts or Ward client on purpose. The logger already redacts
  * `req.headers.authorization` and `req.headers.cookie`; nothing here logs the
  * token or the header.
  *

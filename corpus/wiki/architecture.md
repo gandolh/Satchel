@@ -1,13 +1,13 @@
 ---
-summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs). Workspaces, request paths, the Ward guard with its cross-site and lost-grant rules, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; Ward sign-in (cookie, local verify, introspection, satchel grant); the Claude routes behind a bearer token; ports, data directory, local dev wiring and the cross-repo changes in wzd_auth and vps-deploy.
-updated: 2026-10-09
+summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs) and re-based on local accounts on 2026-10-13 (brief 26). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
+updated: 2026-10-13
 ---
 
 # Architecture
 
-Built on 2026-10-09 by briefs 01 to 14 and two review rounds. Verify against
-the code before relying on a detail. Verify against the
-code before relying on a detail.
+Built on 2026-10-09 by briefs 01 to 14 and two review rounds; the sign-in half
+was replaced on 2026-10-13 by brief 26. Verify against the code before relying
+on a detail.
 
 ## Pieces
 
@@ -16,8 +16,10 @@ npm workspaces, as in the-board:
 - `shared`: zod schemas for every route, the limits, and the seen rules
   (`nextSeenUpTo`, `tickState`, `seenLine`). Used by the other three.
 - `server`: Fastify with better-sqlite3. Owns the store (the only module that
-  runs SQL), the Ward guard, and the `/api/*` and `/claude/*` routes.
-- `web`: Vite + React PWA. Talks only to `/satchel-api/api/*` and Ward.
+  runs SQL, apart from the vendored auth library's own tables), the session
+  guard, and the `/api/*`, `/auth/*` and `/claude/*` routes.
+- `web`: Vite + React PWA. Talks only to `/satchel-api/*`; Ward is reached by
+  the browser only through the "Sign in with Ward" redirect.
 - `cli`: the `satchel` command. Talks only to `/satchel-api/claude/*`.
 
 ## Request paths
@@ -26,7 +28,7 @@ npm workspaces, as in the-board:
 phone ──https──► Caddy (production domain)
                  ├─ /satchel/*        static PWA (try_files spa)
                  ├─ /satchel-api/*    handle_path → container on 127.0.0.1:8795
-                 └─ /ward, /ward-api  Ward
+                 └─ /ward, /ward-api  Ward (the app's server talks to it directly)
 satchel CLI ──https + bearer──► /satchel-api/claude/*
 ```
 
@@ -37,55 +39,66 @@ satchel CLI ──https + bearer──► /satchel-api/claude/*
 
 Two doors, never mixed:
 
-- **`/api/*` (except `/api/health`)**: the Ward guard. It reads the
-  `ward_session` cookie (`Path=/`, so the browser sends it on the shared
-  origin), verifies the JWT locally against Ward's JWKS (EdDSA pinned,
-  `aud = "ward-estate"`, `iss = WARD_PUBLIC_ORIGIN`), then introspects it at
-  `/ward-api/introspect` with the `x-ward-app-key` header, cached 30 seconds
-  per token. The answer carries `subject`, `username` and `grants`; a session
-  without `grants.satchel` is a 403. Ward unreachable, a bad body or a JWKS
-  failure is a 503: fail closed, never "signed out". The client is copied
-  byte-identical from `../wzd_auth/client/src` into
-  [server/src/ward/](../../server/src/ward/), as its `integrating.md`
-  instructs; the guard is one root `onRequest` hook in
-  [server/src/ward/guard.ts](../../server/src/ward/guard.ts). Errors leave
-  through [server/src/errors.ts](../../server/src/errors.ts) in the shared
-  shape; anything unexpected is a 500 `internal` with no details.
+- **`/api/*` (except `/api/health`) and `/auth/*`**: the vendored `ward-auth`
+  plugin ([server/vendor/ward/](../../server/vendor/ward/), version 0.2.0,
+  never edited), registered first in
+  [server/src/app.ts](../../server/src/app.ts) as the root guard. It owns
+  local sign-in (`POST /auth/login`, `/auth/logout`, `GET /auth/session`,
+  password change), the Ward routes (`POST /auth/ward/start`, `GET
+  /auth/ward/callback`, link, unlink, set a password, "sign out of Ward too")
+  and the opaque session in the `satchel_session` cookie
+  (`Path=/satchel-api`, so it rides the WebSocket upgrade too). A request
+  without a live session is `401 { error: "unauthorized" }`, the plugin's
+  shape, not the `{ error: { code, message } }` of the rest. The routes are
+  public by an allowlist: `GET /api/health`, and `/claude/*` (judged by route
+  pattern). [server/src/auth/guard.ts](../../server/src/auth/guard.ts) is
+  Satchel's half, a hook that runs after the plugin on `/api/*`: it refuses a
+  cross-origin write, upserts the `accounts` row (display name = username),
+  reads the role from the user row, makes the owner's inbox and revokes the
+  Claude tokens of a non-admin, and sets `request.account`. Errors leave
+  through [server/src/errors.ts](../../server/src/errors.ts).
 - **`/claude/*`**: the Claude token as a bearer header, resolved by hash. No
   cookie is read and no Ward call is made.
 
-A Claude token on `/api/*` is a 401, and a Ward cookie on `/claude/*` is a
+A Claude token on `/api/*` is a 401, and a session cookie on `/claude/*` is a
 401. Tests assert both.
 
-Two more guard rules came out of the phase-1 review (2026-10-09):
+**Sign in with Ward** is an OpenID Connect code flow with PKCE that the server
+finishes (`WARD_OIDC_ISSUER`, `WARD_OIDC_CLIENT_ID`, `WARD_OIDC_CLIENT_KEY`,
+`WARD_OIDC_REDIRECT_URI`, `WARD_OIDC_POST_LOGOUT_REDIRECT_URI`; unset issuer
+means local accounts only, and the button is hidden). The callback is
+`<API prefix>/auth/ward/callback`, so the dev server and Caddy need no new
+rule. A first Ward sign-in makes a local user (role from Ward's grant); a user
+with an account links Ward in Settings; nothing is matched by username. A
+session that began with Ward is checked against Ward at most every 30 seconds;
+Ward not answering refuses it (`ward_unavailable`) and a local session is
+never checked.
 
-- **Cross-site writes are refused.** A POST to `/api/*` is a 403 when the
-  browser marks it cross-origin: an `Origin` that isn't
-  `WARD_PUBLIC_ORIGIN`, or, with no `Origin`, a `Sec-Fetch-Site` other than
-  `same-origin`. The check runs before Ward is asked. Without it, body-less
-  POSTs like creating a Claude token are CORS simple requests guarded only by
-  `SameSite=Lax`. Requests with neither header pass, which covers tests and
-  non-browser clients. The dev proxy rewrites `Origin` for `/satchel-api`
-  the same way it does for Ward.
-- **A lost grant locks the account out.** A live session whose grants no
-  longer include `satchel` gets a 403. The account is then marked inactive
-  (`accounts.active`, migration 4), its Claude tokens are revoked, its push
-  subscriptions are deleted, and it is hidden from the people list and
-  refused for new chats. Pushes skip inactive accounts. Signing in with a
-  grant again reactivates it. This is lazy: it happens on the person's next
-  request, not the moment the grant is removed in Ward.
+Two more guard rules:
+
+- **Cross-site writes are refused.** A POST to `/api/*` is a 403 `forbidden`
+  when the browser marks it cross-origin: an `Origin` that isn't
+  `PUBLIC_ORIGIN`, or, with no `Origin`, a `Sec-Fetch-Site` other than
+  `same-origin`. Requests with neither header pass, which covers tests and
+  non-browser clients. The plugin applies its own `cross_site` rule to `/auth/*`.
 - **An account without `admin`** loses its Claude tokens on every request,
   so a demoted owner keeps the inbox rows but not the tokens.
 
-The browser renews the 15-minute access token with `POST /ward-api/refresh`
-(same origin) on a 401, retries once, and sends the owner to
-`/ward/login?next=/satchel/` if renewal fails.
+The 2026-10-09 lost-grant lockout is gone from the guard; see
+[decisions.md](decisions.md).
+
+The browser has nothing to renew: the session slides on use (14 days idle, 30
+absolute). A request that comes back 401 tells the auth gate
+([web/src/auth/AuthGate.tsx](../../web/src/auth/AuthGate.tsx)), which shows the
+login page.
 
 ## Accounts
 
-`accounts.subject` is Ward's opaque subject; `display_name` is the Ward
-username from introspection, refreshed on every authenticated request. The
-guard also makes sure the account has its Ideas inbox.
+`accounts.subject` is the local user's id (`auth_users.id`); for an account
+that predates local sign-in it is the old Ward subject, kept so no row moves
+(boot-time [server/src/auth/migrate.ts](../../server/src/auth/migrate.ts)).
+`display_name` is the username, refreshed on every authenticated request. The
+guard also makes sure the owner has an Ideas inbox.
 
 ## Data
 
@@ -94,8 +107,9 @@ bind-mounted from `/srv/satchel-api/data` on the VPS. Schema and the
 append-only triggers: [messages-and-seen.md](messages-and-seen.md) and brief
 03. Updates reach the web app over a WebSocket at `/api/live`
 ([server/src/live/](../../server/src/live/)). Polling remains the fallback
-while the socket is down. The upgrade must carry Satchel's own `Origin`, passes
-the Ward guard, and closes with code 4001 at the access token's expiry. Events
+while the socket is down. The upgrade must carry Satchel's own `Origin` and passes
+the session guard, and the open socket asks the guard again every 10 seconds
+and closes with code 4001 when the session is over (why: [decisions.md](decisions.md)). Events
 go only to a conversation's members, never to `claude`. An account may hold
 ten sockets; an eleventh closes the oldest with 4002, and that tab then waits
 to be shown again instead of reconnecting.
@@ -126,13 +140,13 @@ skips it while that chat is focused. Code: [server/src/push/](../../server/src/p
 ## Local development
 
 The Vite dev server serves the app at `http://localhost:5175/satchel/` and
-proxies `/satchel-api` to the API (prefix stripped) and `/ward` and
-`/ward-api` to the local Ward container, rewriting `Origin` the way atrium's
-`vite.config.ts` does, because Ward's `/refresh` and `/logout` check it. The
-API reads the Ward trio (`WARD_PUBLIC_ORIGIN`, `WARD_API_BASE_PATH`,
-`WARD_APP_KEY`, all required) from the gitignored `.env` that Ward's
-`seed.mjs` writes. A relative `DATA_DIR` resolves against the repo root, so
-local data is `data/satchel.db`.
+proxies `/satchel-api` to the API (prefix stripped), WebSocket included; it
+passes `Origin` through untouched and has no Ward rule. The API reads the five
+`WARD_OIDC_*` values from the gitignored `.env` that Ward's `seed.mjs` writes,
+and takes `PUBLIC_ORIGIN` from the redirect URI's origin
+(`http://localhost:5175`). Users come from `npm run seed -w @satchel/server`
+(`SEED_USERNAME`, `SEED_PASSWORD`, `SEED_ROLE`). A relative `DATA_DIR` resolves
+against the repo root, so local data is `data/satchel.db`.
 
 ## Changes in other repos
 
@@ -144,8 +158,8 @@ local data is `data/satchel.db`.
 - `vps-deploy`: a `SourceRepo` in `../vps-deploy/lib/estate.ts`,
   `../vps-deploy/stacks/satchel.ts` modelled on
   `../vps-deploy/stacks/sports-app.ts`, the stack and `useWard` in its
-  `app.ts`, and the regenerated Caddyfile (brief 10). The key goes in
-  `../vps-deploy/secrets/satchel.env`, which only the owner writes.
+  `app.ts`, and the regenerated Caddyfile (brief 10). The OIDC client
+  key goes in `../vps-deploy/secrets/satchel.env`, which only the owner writes.
 
 ## Deploy
 

@@ -10,7 +10,7 @@ import {
   seenResponseSchema,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../ward/testing/testApp.js";
+import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };
@@ -273,8 +273,8 @@ describe("friend conversations are never reachable with a Claude token", () => {
     const C = { subject: "subject-c", username: "cora" };
     const a = await owner(A);
     const { token } = await createToken(a);
-    const friendB = await t.signIn({ ...B, grants: { satchel: ["member"] } });
-    const friendC = await t.signIn({ ...C, grants: { satchel: ["member"] } });
+    const friendB = await t.signIn({ ...B, role: "member" });
+    const friendC = await t.signIn({ ...C, role: "member" });
     for (const cookie of [friendB, friendC]) {
       expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } })).statusCode).toBe(200);
     }
@@ -410,15 +410,15 @@ describe("401 unauthorized", () => {
     expect(t.store.seenUpTo(a.inboxId, CLAUDE_MEMBER)).toBe(0);
   });
 
-  it("a Ward cookie alone, without asking Ward", async () => {
+  it("a session cookie alone, without asking Ward", async () => {
     const a = await owner(A);
     await createToken(a);
-    const before = t.fakeWard.introspectCallCount;
+    const before = t.fakeWard.requests.length;
 
     for (const request of claudeRequests) {
       expectUnauthorized(await t.app.inject({ ...request, headers: { cookie: a.cookie } }));
     }
-    expect(t.fakeWard.introspectCallCount).toBe(before);
+    expect(t.fakeWard.requests.length).toBe(before);
   });
 
   it("is answered before the body is parsed", async () => {
@@ -431,12 +431,15 @@ describe("401 unauthorized", () => {
     expectUnauthorized(res);
   });
 
-  it("A's Claude token is not a Ward session on /api/*", async () => {
+  it("A's Claude token is not a session on /api/*", async () => {
     const a = await owner(A);
     const { token } = await createToken(a);
 
     for (const url of ["/api/conversations", "/api/me", "/api/claude-tokens"]) {
-      expectError(await t.app.inject({ method: "GET", url, headers: bearer(token) }), 401, "unauthorized");
+      const res = await t.app.inject({ method: "GET", url, headers: bearer(token) });
+      expect(res.statusCode).toBe(401);
+      // The session guard's own answer.
+      expect(res.json()).toMatchObject({ error: "unauthorized" });
     }
   });
 });

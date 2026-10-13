@@ -1,6 +1,6 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends. Read before proposing to change any of these.
-updated: 2026-10-09
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds. Read before proposing to change any of these.
+updated: 2026-10-13
 ---
 
 # Decisions
@@ -10,7 +10,7 @@ a real trade-off. Changing one needs an explicit revisit and a `log.md` entry.
 
 ## Own app on the house stack
 _2026-10-09_. A Fastify + better-sqlite3 API in a Docker container and a Vite +
-React PWA, on the shared Caddy VPS through vps-deploy, signed in through Ward. The owner chose it after
+React PWA, on the shared Caddy VPS through vps-deploy, signed in through Ward (since 2026-10-13: local accounts, with Ward as a linked second way in; see the end of this page). The owner chose it after
 seeing three variants. Rejected: a Matrix homeserver (Tuwunel or Continuwuity)
 with an own client, because the server and protocol would be borrowed, Ward
 doesn't fit its login cleanly, and Claude would read through a bot or an MCP
@@ -88,3 +88,56 @@ machinery a Retry button covers.
 _2026-10-09_. Phase 1 ships only the inbox and the Claude path; friend chats,
 live updates and push are phase 2. Rejected: both at once. The inbox is
 useful on day one and has no other users to support.
+
+## Satchel has its own accounts; Ward is a linked second way in
+_2026-10-13, brief 26; the estate's call is in `../wzd_auth` `decisions-oidc.md`_.
+Satchel signs people in itself: a users table in its own database
+(`auth_users`, from the vendored `ward-auth` 0.2.0 library), scrypt passwords,
+opaque sessions in the `satchel_session` cookie (`Path=/satchel-api`), and a
+login page in Satchel's own design. "Sign in with Ward" is a button on that
+page. The role lives in that row: `admin` is the owner, `member` a friend. There
+is no register page; users are made by `npm run seed -w @satchel/server`
+(username, password and role from `SEED_*` environment variables or a prompt,
+never a file). The CLI's Claude tokens (`agent_tokens`) are not part of this and
+are untouched. Rejected: keeping Ward as the only credential store, because
+Satchel stops working whenever Ward does.
+
+**Existing rows keep their keys.** Every `accounts.subject` becomes a local user
+whose id is that subject, linked to it (`server/src/auth/migrate.ts`, run on
+every boot and idempotent), so no foreign key moves. The old schema never
+stored a role, so the owner is whoever has an Ideas inbox (the old guard made
+one for `admin` only) and everyone else is `member`; the username is the
+account's `display_name`, or `user-<first 8 of the subject>` when that name is
+not valid or is taken. A migrated user has no local password until they set one
+in Settings. Rejected: asking the owner to list roles, which would put a
+step between the deploy and a working app.
+
+**A removed Ward grant no longer locks the account out.** The 2026-10-09
+lockout (`accounts.active`, tokens revoked, push subscriptions deleted, on the
+next request without a `satchel` grant) needed Satchel to see the grant on every
+request. It no longer does: the grant decides only whether a Ward account may
+sign in, and a Ward-originated session ends within 30 seconds of Ward ending it.
+A local user is Satchel's own and keeps working. `store.lockOutAccount` and the
+`active` column stay, unused by the guard, until the owner decides whether
+Satchel should grow its own way to switch a person off.
+
+**A live socket re-checks its session every 10 seconds.** The upgrade goes
+through the same guard as any request, but a tab with a live socket stops
+polling, so it makes no more HTTP requests and the guard's 30-second Ward check
+would never run again. A revoked Ward session would keep receiving messages for
+the session's whole life, 14 days now that the 15-minute access token no longer
+bounds it. So `serveLiveSocket` asks the guard again every 10 seconds, through
+`GET /auth/session` with the cookie the socket opened with, and closes with 4001
+when the answer is "signed out". That ends a socket within 30 to 40 seconds of a
+Ward revoke, and straight away (at the next tick) for a sign-out, a password
+change or an unlink, and it fails closed when Ward is down, as HTTP does. A local
+socket is unaffected by Ward. Rejected: checking only on connect, which leaves
+the stream open for days; a bounded socket lifetime, which still leaves a window
+and makes every tab reconnect on a clock; and calling Ward's `checkSession`
+directly, which would copy the guard's logic and miss any validator added later.
+
+**`PUBLIC_ORIGIN`.** The guard and the upgrade check refuse a write or a socket
+whose `Origin` is not the app's own. The old value was Ward's origin (one shared
+origin); the app's origin is now its own setting, defaulting to the origin of
+`WARD_OIDC_REDIRECT_URI`. In development it is `http://localhost:5175`, and the
+Vite proxy no longer rewrites `Origin`.

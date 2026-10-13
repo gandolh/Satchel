@@ -3,10 +3,10 @@ import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
 import { ApiError } from "../errors.js";
 import { InactiveAccount, UnknownAccount } from "../store.js";
-import { signedIn } from "../ward/guard.js";
+import { signedIn } from "../auth/guard.js";
 
 /**
- * The conversation routes (briefs 05 and 11). Behind the Ward guard. A
+ * The conversation routes (briefs 05 and 11). Behind the session guard. A
  * conversation the caller is not a member of is a 404, the same as one that
  * does not exist.
  *

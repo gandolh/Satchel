@@ -19,27 +19,26 @@ import {
   type SendMessageRequest,
   type SendMessageResponse,
 } from "@satchel/shared";
-import { ApiError, NetworkError, NoAccess, SignedOut, Unavailable } from "./errors";
-import { goToWardLogin, renewalGeneration, renewSince } from "./ward";
+import { API_BASE } from "./base";
+import { ApiError, NetworkError, SignedOut, Unavailable } from "./errors";
+import { sessionEnded } from "./ward";
 
-export { ApiError, NetworkError, NoAccess, SignedOut, Unavailable } from "./errors";
+export { API_BASE } from "./base";
+export { ApiError, NetworkError, SignedOut, Unavailable } from "./errors";
 
 /**
  * The typed API client: one function per web-app route in `shared`'s
  * `routes`, responses parsed with the shared schemas so the app can't drift
  * from the server.
  *
- * Every call rides Ward's `ward_session` cookie, same origin. A 401 renews the
- * session once (concurrent 401s share one `POST /ward-api/refresh`) and
- * retries once; if renewal fails the browser goes to Ward's login page and
- * the call throws `SignedOut`. A 403 throws `NoAccess`, a 503 `Unavailable`,
- * a request that never got an answer `NetworkError`, and any other error
- * `ApiError` carrying the server's `code` and `message`. An aborted call
- * rethrows the abort reason unchanged.
+ * Every call rides the session cookie, same origin. A 401 means the session
+ * is over (signed out, a Ward session ended, a password changed elsewhere):
+ * the call tells the auth gate (`sessionEnded`), which shows the login page,
+ * and throws `SignedOut`. A 503 throws `Unavailable`, a request that never
+ * got an answer `NetworkError`, and any other error `ApiError` carrying the
+ * server's `code` and `message`. An aborted call rethrows the abort reason
+ * unchanged.
  */
-
-/** Where Caddy (and the Vite dev proxy) serve the API. */
-export const API_BASE = "/satchel-api";
 
 export interface CallOptions {
   /** Aborts the request, e.g. `AbortSignal.timeout(10_000)`. */
@@ -56,7 +55,7 @@ export type MessagesQueryInput = (typeof routes.listMessages.query)["_zod"]["inp
 // --- Auth events --------------------------------------------------------------
 
 /** What the auth gate needs to hear about from any call, not only its own. */
-export type AuthEvent = "no-access" | "signed-out";
+export type AuthEvent = "signed-out";
 
 const authListeners = new Set<(event: AuthEvent) => void>();
 
@@ -194,19 +193,11 @@ async function call<T>(route: CallRoute<T>, parts: CallParts, options: CallOptio
     init.body = JSON.stringify(parts.body);
   }
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const sentAt = renewalGeneration();
-    const response = await send(url, init, options.signal);
-    if (response.status !== 401) return read(route.response, response, route.path === routes.me.path);
-    // A 401 after a successful renewal means renewal can't fix it, and a login
-    // redirect could loop forever, so report it instead.
-    if (attempt > 0) throw new ApiError(401, "unauthorized", "Satchel can't verify your sign-in right now.");
-    // Throws `Unavailable` when Ward itself isn't answering.
-    if (!(await renewSince(sentAt))) break;
-  }
+  const response = await send(url, init, options.signal);
+  if (response.status !== 401) return read(route.response, response);
 
   emit("signed-out");
-  goToWardLogin();
+  sessionEnded();
   throw new SignedOut();
 }
 
@@ -219,7 +210,7 @@ async function send(url: string, init: RequestInit, signal: AbortSignal | undefi
   }
 }
 
-async function read<T>(schema: ResponseSchema<T>, response: Response, isMe: boolean): Promise<T> {
+async function read<T>(schema: ResponseSchema<T>, response: Response): Promise<T> {
   const body: unknown = await response.json().catch(() => undefined);
 
   if (response.ok) {
@@ -236,13 +227,8 @@ async function read<T>(schema: ResponseSchema<T>, response: Response, isMe: bool
     throw new ApiError(response.status, null, "Satchel isn't answering right now.");
   }
   const { code, message } = failure.data.error;
-  // Only `/api/me` answering 403 means "no Satchel grant". Any other 403 is
-  // about that one action (a friend asking for Claude tokens) and the calling
-  // screen shows it; the app keeps working.
-  if (code === "forbidden" && isMe) {
-    emit("no-access");
-    throw new NoAccess(message);
-  }
+  // A 403 is about that one action (a friend asking for Claude tokens) and
+  // the calling screen shows it; the app keeps working.
   if (code === "unavailable") throw new Unavailable(response.status, message);
   throw new ApiError(response.status, code, message);
 }

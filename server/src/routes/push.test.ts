@@ -1,15 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { errorResponseSchema, routes } from "@satchel/shared";
-import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildApp } from "../app.js";
-import { openDb, type Db } from "../db/open.js";
 import type { PushTarget, SendPush } from "../push/sender.js";
-import { createStore, type Store } from "../store.js";
-import { createWardClient } from "../ward/client.js";
-import { SATCHEL_APP_SLUG } from "../ward/guard.js";
-import { startFakeWard, type FakeWard } from "../ward/testing/fakeWard.js";
-import { TEST_APP_KEY, startTestApp, wardCookie, type TestApp } from "../ward/testing/testApp.js";
+import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 /**
  * The push routes and the pushes a stored message sends (brief 14), with
@@ -20,74 +13,45 @@ import { TEST_APP_KEY, startTestApp, wardCookie, type TestApp } from "../ward/te
 
 const PUBLIC_KEY = `B${"A".repeat(86)}`;
 const A = { subject: "subject-a", username: "ana" };
-const B = { subject: "subject-b", username: "bob", grants: { [SATCHEL_APP_SLUG]: ["member"] } };
-const C = { subject: "subject-c", username: "cora", grants: { [SATCHEL_APP_SLUG]: ["member"] } };
+const B = { subject: "subject-b", username: "bob", role: "member" };
+const C = { subject: "subject-c", username: "cora", role: "member" };
 
 interface Sent {
   endpoint: string;
   payload: { conversationId: string; title: string; body: string };
 }
 
-interface PushApp {
-  app: FastifyInstance;
-  origin: string;
-  store: Store;
-  db: Db;
-  logs: string[];
+interface PushApp extends TestApp {
   sent: Sent[];
   /** What the next `send` calls do; default: accepted. */
   respond: (target: PushTarget) => Promise<void>;
-  signIn(who: { subject: string; username: string; grants?: Record<string, string[]> }): Promise<string>;
   /** Closes the app, waiting for every push in flight. Inject nothing after this. */
   settle(): Promise<void>;
-  close(): Promise<void>;
 }
 
 async function startPushApp(): Promise<PushApp> {
-  const fakeWard: FakeWard = await startFakeWard();
-  fakeWard.requireAppKey(TEST_APP_KEY);
-  const ward = createWardClient({ publicOrigin: fakeWard.origin, apiBasePath: "", appKey: TEST_APP_KEY });
-  const db = openDb(":memory:");
-  const store = createStore(db, () => new Date());
-  const logs: string[] = [];
+  const sent: Sent[] = [];
+  const send: SendPush = (target, payload) => {
+    sent.push({ endpoint: target.endpoint, payload: JSON.parse(payload) as Sent["payload"] });
+    return t.respond(target);
+  };
+  const base = await startTestApp({
+    captureLogs: true,
+    push: { vapid: { publicKey: PUBLIC_KEY, privateKey: "unused", subject: "mailto:johndoe@example.com" }, send },
+  });
   let closed = false;
-
-  const t: PushApp = {
-    app: undefined as unknown as FastifyInstance,
-    origin: fakeWard.origin,
-    store,
-    db,
-    logs,
-    sent: [],
-    respond: () => Promise.resolve(),
-    async signIn({ subject, username, grants = { [SATCHEL_APP_SLUG]: ["admin"] } }) {
-      const sessionId = `family_${randomUUID()}`;
-      fakeWard.setSession(sessionId, { active: true, subject, username, grants });
-      return wardCookie(await fakeWard.mintToken({ subject, sessionId }));
-    },
+  const t: PushApp = Object.assign(base, {
+    sent,
+    respond: (() => Promise.resolve()) as PushApp["respond"],
     async settle() {
       if (closed) return;
       closed = true;
-      await t.app.close();
+      await base.app.close();
     },
     async close() {
       await t.settle();
-      db.close();
-      await fakeWard.close().catch(() => undefined);
+      base.db.close();
     },
-  };
-
-  const send: SendPush = (target, payload) => {
-    t.sent.push({ endpoint: target.endpoint, payload: JSON.parse(payload) as Sent["payload"] });
-    return t.respond(target);
-  };
-  t.app = buildApp({
-    store,
-    ward,
-    publicOrigin: fakeWard.origin,
-    clock: () => new Date(),
-    push: { vapid: { publicKey: PUBLIC_KEY, privateKey: "unused", subject: "mailto:johndoe@example.com" }, send },
-    logger: { level: "info", stream: { write: (line) => void logs.push(line) } },
   });
   return t;
 }
@@ -101,7 +65,10 @@ const subscription = (device: string) => ({
 
 function expectError(res: { statusCode: number; json(): unknown }, status: number, code: string) {
   expect(res.statusCode).toBe(status);
-  expect(errorResponseSchema.parse(res.json()).error.code).toBe(code);
+  const body = res.json() as { error: unknown };
+  // The session guard (the vendored plugin) answers `{ error: "unauthorized" }`, not Satchel's shape.
+  if (typeof body.error === "string") expect(body.error).toBe(code);
+  else expect(errorResponseSchema.parse(body).error.code).toBe(code);
 }
 
 let t: PushApp;
@@ -362,7 +329,7 @@ describe("pushes for a stored message", () => {
   });
 });
 
-describe("an account that lost its Satchel grant", () => {
+describe("an inactive account", () => {
   const people = async (cookie: string) => {
     const res = await t.app.inject({ method: "GET", url: "/api/people", headers: { cookie } });
     return routes.listPeople.response.parse(res.json()).people.map((p) => p.subject);
@@ -370,13 +337,16 @@ describe("an account that lost its Satchel grant", () => {
   const create = (cookie: string, payload: object) =>
     t.app.inject({ method: "POST", url: "/api/conversations", headers: { cookie }, payload });
 
-  /** A fresh session for B without the grant (a fresh token, so no cached introspection), and one request. */
+  /**
+   * The store's lockout for B, which the guard no longer calls (a removed Ward
+   * grant now ends only the Ward-originated session): hidden, not addable,
+   * devices and Claude tokens gone.
+   */
   async function loseGrant(): Promise<void> {
-    const cookie = await t.signIn({ ...B, grants: { atrium: ["member"] } });
-    expectError(await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } }), 403, "forbidden");
+    t.store.lockOutAccount(B.subject);
   }
 
-  it("is locked out at its next request: hidden, not addable, its devices forgotten, its chats kept", async () => {
+  it("is hidden, not addable, its devices forgotten, its chats kept", async () => {
     await subscribe(cookieB, subscription("phone-b"));
     await subscribe(cookieC, subscription("phone-c"));
     const chat = await direct(cookieA, B.subject);
@@ -415,7 +385,7 @@ describe("an account that lost its Satchel grant", () => {
     await subscribe(cookieB, subscription("phone-b"));
     await subscribe(cookieC, subscription("phone-c"));
     const hike = await group(cookieA, "Hike", [B.subject, C.subject]);
-    // Inactive without the guard's cleanup, to test the push filter on its own.
+    // Inactive without the store's cleanup, to test the push filter on its own.
     t.db.prepare("UPDATE accounts SET active = 0 WHERE subject = ?").run(B.subject);
 
     expect((await send(cookieA, hike, "Saturday?")).statusCode).toBe(201);
@@ -425,7 +395,7 @@ describe("an account that lost its Satchel grant", () => {
     expect(endpoints(B.subject)).toEqual([endpointOf("phone-b")]);
   });
 
-  it("is active and listed again once a grant comes back", async () => {
+  it("is active and listed again at its next request", async () => {
     await loseGrant();
     const regained = await t.signIn(B);
     expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie: regained } })).statusCode).toBe(200);

@@ -1,6 +1,6 @@
 import { CLAUDE_MEMBER, seenLine, tickState, type Message } from "@satchel/shared";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
-import { listMessages, markSeen, sendMessage, SignedOut, NoAccess, ApiError } from "../api";
+import { listMessages, markSeen, sendMessage, SignedOut, ApiError } from "../api";
 import { useMe } from "../auth/session";
 import { conversationSubtitle, conversationTitle, withNewerMarkers } from "../chats/conversation";
 import { refreshConversations, useConversationSummary, useLiveChats } from "../chats/conversations";
@@ -70,7 +70,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
     setLoadError(null);
   };
   const showLoadFailure = (error: unknown) => {
-    if (error instanceof SignedOut || error instanceof NoAccess) return;
+    if (error instanceof SignedOut) return;
     if (state.loaded) setOffline(true);
     else setLoadError(error instanceof ApiError ? error.message : "Couldn't load this chat. Retrying.");
   };

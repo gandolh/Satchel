@@ -2,7 +2,7 @@ import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
 import { ApiError } from "../errors.js";
-import { requireOwner } from "../ward/guard.js";
+import { requireOwner } from "../auth/guard.js";
 
 /** The 403 a friend gets from every route here. */
 export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";
@@ -10,7 +10,7 @@ export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";
 /**
  * The Claude token routes under `/api/claude-tokens` (brief 06).
  *
- * Behind the Ward guard, and owner-only: every route here is a 403
+ * Behind the session guard, and owner-only: every route here is a 403
  * `forbidden` for an account without the `admin` role, before anything else
  * happens, so a friend can neither see tokens nor create the inbox one would
  * be bound to (decisions.md, "The Ideas inbox is owner-only"). A POST with

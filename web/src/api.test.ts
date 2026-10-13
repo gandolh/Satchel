@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// `ward.ts` pulls in the auth hooks; the gate's `sessionEnded` is all these tests need to see called.
+const sessionEnded = vi.hoisted(() => vi.fn());
+vi.mock("./ward", () => ({ sessionEnded }));
+
 import {
   ApiError,
   createClaudeToken,
@@ -11,7 +16,6 @@ import {
   listConversations,
   listMessages,
   NetworkError,
-  NoAccess,
   onAuthEvent,
   revokeClaudeToken,
   savePushSubscription,
@@ -22,8 +26,6 @@ import {
   type AuthEvent,
 } from "./api";
 
-const ME = { subject: "sub-1", displayName: "owner", inboxId: "inbox-1" };
-
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
@@ -32,17 +34,8 @@ function apiError(status: number, code: string, message = code): Response {
   return json(status, { error: { code, message } });
 }
 
-function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
-
 type Handler = (url: string, init: RequestInit) => Response | Promise<Response>;
 
-let assign: ReturnType<typeof vi.fn>;
 let events: AuthEvent[];
 let stopListening: () => void;
 let calls: { url: string; init: RequestInit }[];
@@ -62,12 +55,12 @@ function callsTo(url: string): number {
 }
 
 beforeEach(() => {
-  assign = vi.fn();
+  sessionEnded.mockClear();
   calls = [];
   events = [];
   stopListening = onAuthEvent((event) => events.push(event));
   vi.stubEnv("BASE_URL", "/satchel/");
-  vi.stubGlobal("window", { location: { pathname: "/satchel/c/abc", search: "", assign } });
+  vi.stubGlobal("window", { location: { pathname: "/satchel/c/abc", search: "" } });
 });
 
 afterEach(() => {
@@ -76,103 +69,22 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("renewal on 401", () => {
-  it("shares one refresh between several concurrent 401s", async () => {
-    let renewed = false;
-    const refreshGate = deferred<void>();
-    serve(async (url) => {
-      if (url === "/ward-api/refresh") {
-        await refreshGate.promise;
-        renewed = true;
-        return new Response(null, { status: 200 });
-      }
-      return renewed ? json(200, ME) : apiError(401, "unauthorized");
-    });
-
-    const pending = Promise.all([getMe(), getMe(), getMe()]);
-    // Let all three 401s land before the refresh answers.
-    await vi.waitFor(() => expect(callsTo("/ward-api/refresh")).toBe(1));
-    await new Promise((r) => setTimeout(r, 10));
-    refreshGate.resolve();
-
-    await expect(pending).resolves.toEqual([ME, ME, ME]);
-    expect(callsTo("/ward-api/refresh")).toBe(1);
-    expect(callsTo("/satchel-api/api/me")).toBe(6);
-    expect(assign).not.toHaveBeenCalled();
-  });
-
-  it("retries the request once after a refresh", async () => {
-    let renewed = false;
-    serve((url) => {
-      if (url === "/ward-api/refresh") {
-        renewed = true;
-        return new Response(null, { status: 200 });
-      }
-      return renewed ? json(200, ME) : apiError(401, "unauthorized");
-    });
-
-    await expect(getMe()).resolves.toEqual(ME);
-    expect(calls.map((call) => call.url)).toEqual([
-      "/satchel-api/api/me",
-      "/ward-api/refresh",
-      "/satchel-api/api/me",
-    ]);
-    const refreshCall = calls[1];
-    expect(refreshCall?.init.method).toBe("POST");
-    expect(refreshCall?.init.credentials).toBe("same-origin");
-  });
-
-  it("does not refresh again for a 401 that raced a finished refresh", async () => {
-    let renewed = false;
-    const lateAnswer = deferred<Response>();
-    let meCalls = 0;
-    serve((url) => {
-      if (url === "/ward-api/refresh") {
-        renewed = true;
-        return new Response(null, { status: 200 });
-      }
-      meCalls += 1;
-      if (meCalls === 2) return lateAnswer.promise; // sent before the refresh, answered after it
-      return renewed ? json(200, ME) : apiError(401, "unauthorized");
-    });
-
-    const first = getMe();
-    const second = getMe();
-    await expect(first).resolves.toEqual(ME);
-    lateAnswer.resolve(apiError(401, "unauthorized"));
-    await expect(second).resolves.toEqual(ME);
-    expect(callsTo("/ward-api/refresh")).toBe(1);
-  });
-
-  it("goes to Ward's login with a bare next when the refresh fails", async () => {
-    serve((url) =>
-      url === "/ward-api/refresh" ? apiError(401, "invalid_refresh" as never) : apiError(401, "unauthorized"),
-    );
+describe("a 401", () => {
+  it("means the session is over: SignedOut, the auth gate told, and no retry or redirect", async () => {
+    serve(() => apiError(401, "unauthorized"));
 
     await expect(listConversations()).rejects.toBeInstanceOf(SignedOut);
-    expect(assign).toHaveBeenCalledWith("/ward/login?next=%2Fsatchel%2Fc%2Fabc");
     expect(callsTo("/satchel-api/api/conversations")).toBe(1);
     expect(events).toEqual(["signed-out"]);
+    expect(sessionEnded).toHaveBeenCalledOnce();
+    // The only calls are to the API: nothing goes to Ward, and nothing renews.
+    expect(calls.map((call) => call.url)).toEqual(["/satchel-api/api/conversations"]);
   });
 
-  it("reports an error, without a redirect or a second refresh, when the retry is a 401 too", async () => {
-    serve((url) => (url === "/ward-api/refresh" ? new Response(null, { status: 200 }) : apiError(401, "unauthorized")));
-
-    await expect(getMe()).rejects.toMatchObject({
-      code: "unauthorized",
-      message: "Satchel can't verify your sign-in right now.",
-    });
-    expect(callsTo("/ward-api/refresh")).toBe(1);
-    expect(callsTo("/satchel-api/api/me")).toBe(2);
-    expect(assign).not.toHaveBeenCalled();
-    expect(events).toEqual([]);
-  });
-
-  it("says Unavailable, and stays put, when Ward doesn't answer the refresh", async () => {
-    serve((url) => (url === "/ward-api/refresh" ? new Response("Bad Gateway", { status: 502 }) : apiError(401, "unauthorized")));
-
-    await expect(getMe()).rejects.toBeInstanceOf(Unavailable);
-    expect(assign).not.toHaveBeenCalled();
+  it("is the plugin's own body too: `{ error: \"unauthorized\" }` is not Satchel's error shape", async () => {
+    serve(() => json(401, { error: "unauthorized", reason: "ward_session_ended" }));
+    await expect(getMe()).rejects.toBeInstanceOf(SignedOut);
+    expect(sessionEnded).toHaveBeenCalledOnce();
   });
 });
 
@@ -181,7 +93,6 @@ describe("errors", () => {
     serve(() => apiError(403, "forbidden", "Only Satchel's owner can connect Claude."));
     const error = await listClaudeTokens().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).not.toBeInstanceOf(NoAccess);
     expect((error as ApiError).code).toBe("forbidden");
     expect((error as ApiError).message).toBe("Only Satchel's owner can connect Claude.");
     expect(events).toEqual([]);
@@ -201,14 +112,12 @@ describe("errors", () => {
     expect(post?.init.body).toBe(JSON.stringify({ kind: "direct", with: "s2" }));
   });
 
-  it("raises NoAccess on a 403 from /api/me and tells the auth gate", async () => {
-    serve(() => apiError(403, "forbidden", "This Ward account has no access to Satchel."));
+  it("treats a 403 from /api/me like any other: an ApiError, no event", async () => {
+    serve(() => apiError(403, "forbidden", "Not for you."));
     const error = await getMe().catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(NoAccess);
     expect(error).toBeInstanceOf(ApiError);
-    expect((error as NoAccess).code).toBe("forbidden");
-    expect(events).toEqual(["no-access"]);
-    expect(assign).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+    expect(sessionEnded).not.toHaveBeenCalled();
   });
 
   it("raises Unavailable on a 503", async () => {

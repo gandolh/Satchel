@@ -1,6 +1,6 @@
 ---
 summary: Snapshot as of 2026-10-09. All 14 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. 538 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
-updated: 2026-10-09
+updated: 2026-10-13
 ---
 
 # Status
@@ -12,6 +12,10 @@ deployed. The server signs in through Ward and serves the Ideas inbox, the
 Claude routes and friend chats. Live updates come over a WebSocket and push
 notifications over Web Push. The `satchel` CLI reads the inbox. The web app is
 an installable PWA. The container builds, and vps-deploy has the stack.
+
+On 2026-10-13 brief 26 (in Ward's corpus) moved sign-in to local accounts with
+a "Sign in with Ward" button; see [decisions.md](decisions.md). The test suite
+is at 534 tests after it (the old Ward guard's tests went with it).
 
 Each phase got a three-finder review followed by fix rounds; see `log.md`.
 The test suite is at 538 tests.

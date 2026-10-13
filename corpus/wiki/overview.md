@@ -22,8 +22,8 @@ naming the repository Satchel on 2026-10-09. It is also the CLI's name.
 ## The cast
 
 - **The owner.** Writes ideas, chats with friends, runs Claude Code at home.
-- **Friends.** A few people the owner knows. They sign in with Ward and only
-  ever see their own chats.
+- **Friends.** A few people the owner knows. They sign in with a password or with Ward
+  and only ever see their own chats.
 - **Claude.** A member of the owner's Ideas inbox and nothing else. It reads
   and marks messages seen through the CLI. It does not write messages (yet).
 

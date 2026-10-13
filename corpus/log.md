@@ -142,7 +142,7 @@ brief surfaced: only a 403 from `/api/me` locks the app.
 Commit `2879ee2`, 392 tests. One socket per tab, with origin-checked
 upgrades and expiry at the token's `exp`; polling stays as the fallback.
 The controller pinned `ws` 8.21.3. The lingering-socket concern is captured
-as [todos/recheck-ward-session-on-socket-ping.md](todos/recheck-ward-session-on-socket-ping.md).
+as `todos/recheck-ward-session-on-socket-ping.md` (done in brief 26, since removed).
 
 ## [2026-10-09] done | Brief 13: friend chats in the web app
 
@@ -195,3 +195,19 @@ moved the setup steps into `docs/` (`owner-setup.md`, `getting-started.md`,
 
 All 14 briefs are done. Nothing is deployed; the owner's steps are in
 `docs/owner-setup.md`.
+
+## [2026-10-13] decision | Local accounts, with Ward as a second way in (brief 26)
+
+Satchel signs people in itself now: the vendored `ward-auth` 0.2.0 plugin
+replaces `server/src/ward/`, the web app has its own login page with a "Sign in
+with Ward" button, and Settings can link and unlink Ward and set a local
+password. Every `accounts.subject` became a local user with that id, linked to
+it (owner = the account with an Ideas inbox; everyone else `member`). The CLI's
+agent tokens are untouched. Two calls recorded in
+[wiki/decisions.md](wiki/decisions.md): the lost-grant lockout left the guard
+(the Ward grant now only ends a Ward-originated session), and an open live
+socket re-checks its session every 10 seconds, because a tab with a live socket
+makes no HTTP requests and the 30-second Ward check would otherwise never run.
+That resolved `todos/recheck-ward-session-on-socket-ping.md`, which was removed.
+Not deployed. Docs outside the corpus (`README.md`, `docs/`) still describe the
+old Ward-only sign-in apart from `docs/getting-started.md`'s environment table.

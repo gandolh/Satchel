@@ -1,0 +1,91 @@
+/* The login page: the gate's panel with a form. Tokens only. */
+
+.login {
+  width: 100%;
+  max-width: 340px;
+}
+
+.login__form {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+}
+
+.login__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.login__label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login__input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.login__input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.login__submit {
+  width: 100%;
+}
+
+.login__error {
+  margin: 0;
+  color: var(--bad);
+  font-size: 14px;
+  text-wrap: pretty;
+}
+
+.login__or {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login__dismiss {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Settings: the sign-in methods card. */
+
+.signin-methods {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.signin-methods__row {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.signin-methods__form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.signin-methods__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

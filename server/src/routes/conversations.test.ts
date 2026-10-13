@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { errorResponseSchema, routes } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../ward/testing/testApp.js";
+import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bob" };
@@ -41,7 +41,10 @@ function seen(cookie: string, id: string, upTo: number) {
 
 function expectError(res: { statusCode: number; json(): unknown }, status: number, code: string) {
   expect(res.statusCode).toBe(status);
-  expect(errorResponseSchema.parse(res.json()).error.code).toBe(code);
+  const body = res.json() as { error: unknown };
+  // The session guard (the vendored plugin) answers `{ error: "unauthorized" }`, not Satchel's shape.
+  if (typeof body.error === "string") expect(body.error).toBe(code);
+  else expect(errorResponseSchema.parse(body).error.code).toBe(code);
 }
 
 async function post3(): Promise<number[]> {
@@ -150,7 +153,6 @@ describe("seen", () => {
 });
 
 describe("friends: people and new conversations", () => {
-  const FRIEND = { satchel: ["member"] };
   const C = { subject: "subject-c", username: "cora" };
   const D = { subject: "subject-d", username: "dan" };
   let friendB: string;
@@ -159,9 +161,9 @@ describe("friends: people and new conversations", () => {
 
   // A is the owner (admin); B, C and D are friends (member). Each has signed in once.
   beforeEach(async () => {
-    friendB = await t.signIn({ ...B, grants: FRIEND });
-    friendC = await t.signIn({ ...C, grants: FRIEND });
-    friendD = await t.signIn({ ...D, grants: FRIEND });
+    friendB = await t.signIn({ ...B, role: "member" });
+    friendC = await t.signIn({ ...C, role: "member" });
+    friendD = await t.signIn({ ...D, role: "member" });
     for (const cookie of [friendB, friendC, friendD]) {
       expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } })).statusCode).toBe(200);
     }
@@ -211,7 +213,7 @@ describe("friends: people and new conversations", () => {
 
     it("shows a person only after their first sign-in", async () => {
       const E = { subject: "subject-e", username: "eve" };
-      const cookieE = await t.signIn({ ...E, grants: FRIEND });
+      const cookieE = await t.signIn({ ...E, role: "member" });
       expect((await people(cookieA)).map((p) => p.subject)).not.toContain(E.subject);
       await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie: cookieE } });
       expect((await people(cookieA)).map((p) => p.subject)).toContain(E.subject);

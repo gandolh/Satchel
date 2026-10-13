@@ -4,6 +4,7 @@ import { useMe } from "../auth/session";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { Notifications } from "./Notifications";
+import { SignInMethods } from "./SignInMethods";
 
 /**
  * The Connect Claude slot. Brief 09 adds `./ConnectClaude.tsx` exporting
@@ -15,7 +16,7 @@ import { Notifications } from "./Notifications";
 const slot = import.meta.glob<{ ConnectClaude?: ComponentType }>("./ConnectClaude.tsx", { eager: true });
 const ConnectClaude = Object.values(slot)[0]?.ConnectClaude;
 
-/** Settings: who is signed in, Sign out, Notifications, and Connect Claude (the owner only). */
+/** Settings: who is signed in, Sign out, how this account signs in, Notifications, and Connect Claude (the owner only). */
 export function Settings() {
   const me = useMe();
   return (
@@ -31,13 +32,14 @@ export function Settings() {
               <Avatar name={me.displayName} size="lg" />
               <div className="account__text">
                 <p className="account__name">{me.displayName}</p>
-                <p className="muted">Signed in with Ward</p>
+                <p className="muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
               </div>
             </div>
             <div className="account__actions">
               <SignOutButton />
             </div>
           </section>
+          <SignInMethods />
           <Notifications />
           {ConnectClaude && <ConnectClaude />}
         </div>

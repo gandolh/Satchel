@@ -13,26 +13,25 @@ import {
   type LiveEvent,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../ward/testing/testApp.js";
+import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 /**
  * `GET /api/live` end to end: the real app listening on a port, the real Ward
  * client against the fake Ward, and Node's own WebSocket client sending the
- * Ward cookie and an `Origin`, the way a browser tab does.
+ * session cookie and an `Origin`, the way a browser tab does.
  */
 
 const A = { subject: "subject-a", username: "ana" };
-const B = { subject: "subject-b", username: "bob", grants: { satchel: ["member"] } };
-const C = { subject: "subject-c", username: "cora", grants: { satchel: ["member"] } };
+const B = { subject: "subject-b", username: "bob", role: "member" };
+const C = { subject: "subject-c", username: "cora", role: "member" };
 
 let t: TestApp;
-let clockOffsetMs: number;
 let port: number;
 const clients: LiveClient[] = [];
 
 beforeEach(async () => {
-  clockOffsetMs = 0;
-  t = await startTestApp({ clock: () => new Date(Date.now() + clockOffsetMs) });
+  // The socket asks the guard again every 50 ms, so the tests below don't wait 10 seconds.
+  t = await startTestApp({ liveRecheckMs: 50 });
   await t.app.listen({ port: 0, host: "127.0.0.1" });
   port = (t.app.server.address() as AddressInfo).port;
 });
@@ -114,8 +113,14 @@ function upgrade(headers: Record<string, string>): Promise<{ status: number; bod
   });
 }
 
+/** The code of Satchel's own error shape, `{ error: { code, message } }`. */
 function errorCode(body: string): string {
   return errorResponseSchema.parse(JSON.parse(body)).error.code;
+}
+
+/** The code of the session guard's answer, `{ error: "unauthorized" }`: the plugin's shape, not Satchel's. */
+function guardError(body: string): string {
+  return (JSON.parse(body) as { error: string }).error;
 }
 
 /** Signs in and calls `/api/me`, which makes the account (and the owner's inbox). */
@@ -289,23 +294,70 @@ describe("events reach the members' sockets and nobody else's", () => {
 
 // --- The session ---------------------------------------------------------------
 
-describe("the socket and the Ward session", () => {
-  it("closes with 4001 when the access token it opened with expires", async () => {
-    const { cookie } = await signIn(A);
-    const payload = JSON.parse(Buffer.from(cookie.split(".")[1]!, "base64url").toString("utf8")) as { exp: number };
-    // The app's clock says the token has 300 ms left; Ward's own checks still use the real time.
-    clockOffsetMs = payload.exp * 1000 - Date.now() - 300;
+describe("the socket and its session", () => {
+  /** Ends the Ward session at Ward and lets the app's 30-second cache of it run out. */
+  function revokeAtWard(wardSid: string): void {
+    t.fakeWard.setSession(wardSid, false);
+    t.advanceWard(31_000);
+  }
 
+  async function wardSignIn(who: typeof A | typeof B) {
+    const { cookie, wardSid } = await t.signInWithWard(who);
+    const res = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
+    expect(res.statusCode).toBe(200);
+    return { cookie, wardSid };
+  }
+
+  it("a Ward revoke closes an open socket with 4001, though the tab makes no HTTP request", async () => {
+    const { cookie, wardSid } = await wardSignIn(A);
     const a1 = await connect(cookie);
+    await new Promise((resolve) => setTimeout(resolve, 200));
     expect(a1.socket.readyState).toBe(WebSocket.OPEN);
+
+    revokeAtWard(wardSid);
+
+    const closed = await within(a1.closed, 3000, "the 4001 close");
+    expect(closed.code).toBe(LIVE_CLOSE_SESSION_EXPIRED);
+    // And the session is over for HTTP too, with the reason the login page shows.
+    const me = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
+    expect(me.statusCode).toBe(401);
+  });
+
+  it("Ward not answering closes a Ward-originated socket, and never a local one", async () => {
+    const ward = await wardSignIn(A);
+    const local = await signIn(B);
+    const [wardSocket, localSocket] = [await connect(ward.cookie), await connect(local.cookie)];
+
+    t.fakeWard.down = true;
+    t.advanceWard(31_000);
+
+    const closed = await within(wardSocket.closed, 3000, "the 4001 close");
+    expect(closed.code).toBe(LIVE_CLOSE_SESSION_EXPIRED);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(localSocket.socket.readyState).toBe(WebSocket.OPEN);
+  });
+
+  it("a session still inside Ward's 30-second answer keeps its socket", async () => {
+    const { cookie, wardSid } = await wardSignIn(A);
+    const a1 = await connect(cookie);
+    t.fakeWard.setSession(wardSid, false);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(a1.socket.readyState).toBe(WebSocket.OPEN);
+  });
+
+  it("signing out ends the socket", async () => {
+    const { cookie } = await signIn(A);
+    const a1 = await connect(cookie);
+    const res = await t.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie, origin: t.origin } });
+    expect(res.statusCode).toBe(204);
     const closed = await within(a1.closed, 3000, "the 4001 close");
     expect(closed.code).toBe(LIVE_CLOSE_SESSION_EXPIRED);
   });
 
-  it("stays open well before the token expires", async () => {
+  it("stays open while its session is live", async () => {
     const { cookie } = await signIn(A);
     const a1 = await connect(cookie);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     expect(a1.socket.readyState).toBe(WebSocket.OPEN);
   });
 
@@ -316,18 +368,16 @@ describe("the socket and the Ward session", () => {
 
     const res = await upgrade({ origin: t.origin, authorization: `Bearer ${token}` });
     expect(res.status).toBe(401);
-    expect(errorCode(res.body)).toBe("unauthorized");
+    expect(guardError(res.body)).toBe("unauthorized");
   });
 
-  it("no cookie is 401, and a Ward account without a Satchel grant is 403", async () => {
+  it("no cookie is 401, and so is a cookie for a session that does not exist", async () => {
     const none = await upgrade({ origin: t.origin });
     expect(none.status).toBe(401);
-    expect(errorCode(none.body)).toBe("unauthorized");
+    expect(guardError(none.body)).toBe("unauthorized");
 
-    const stranger = await t.signIn({ subject: "subject-x", username: "xena", grants: {} });
-    const refused = await upgrade({ origin: t.origin, cookie: stranger });
-    expect(refused.status).toBe(403);
-    expect(errorCode(refused.body)).toBe("forbidden");
+    const stale = await upgrade({ origin: t.origin, cookie: "satchel_session=not-a-session" });
+    expect(stale.status).toBe(401);
   });
 
   it("upgrades with the cookie and the app's own Origin", async () => {
@@ -336,8 +386,9 @@ describe("the socket and the Ward session", () => {
   });
 
   it("refuses an upgrade from another origin, or with none, before Ward is asked", async () => {
-    const { cookie } = await signIn(A);
-    const before = t.fakeWard.introspectCallCount;
+    const { cookie } = await wardSignIn(A);
+    t.advanceWard(31_000);
+    const before = t.fakeWard.statusCalls;
     const refused: Record<string, string>[] = [
       { cookie, origin: "https://evil.example" },
       { cookie, origin: "null" },
@@ -349,7 +400,7 @@ describe("the socket and the Ward session", () => {
       expect(res.status).toBe(403);
       expect(errorCode(res.body)).toBe("forbidden");
     }
-    expect(t.fakeWard.introspectCallCount).toBe(before);
+    expect(t.fakeWard.statusCalls).toBe(before);
 
     // And the browser client gets no socket either.
     await expect(connect(cookie, "https://evil.example")).rejects.toThrow("did not open");

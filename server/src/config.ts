@@ -20,14 +20,16 @@ export interface Config {
   port: number;
   /** As given. `index.ts` resolves a relative path against the repo root. */
   dataDir: string;
-  ward: {
-    /** Bare origin, no trailing slash. Also the `iss` every Ward token must carry. */
-    publicOrigin: string;
-    /** `/ward-api` in every real deployment. Required: see Ward's integrating.md, rule 2. */
-    apiBasePath: string;
-    /** Server-side secret, sent as `x-ward-app-key` on every introspection. */
-    appKey: string;
-  };
+  /**
+   * The app's own origin as the browser sees it, bare: the session cookie's
+   * `Secure` rule, the `Origin` every write and WebSocket upgrade must carry.
+   * `PUBLIC_ORIGIN`, or the origin of `WARD_OIDC_REDIRECT_URI` when that is set.
+   */
+  publicOrigin: string;
+  /** The API prefix as the browser sees it: the session cookie's `Path` and where the Ward callback lives. Default `/satchel-api`. */
+  apiPrefix: string;
+  /** The web app's base path, with a trailing slash: where Ward sends the browser back to. Default `/satchel/` (the web build's `SATCHEL_BASE`). */
+  webBase: string;
   /** Off, naming what is missing, unless VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT are all set. */
   push: PushSettings;
 }
@@ -40,7 +42,6 @@ export class ConfigError extends Error {
   }
 }
 
-const WARD_KEYS = ["WARD_PUBLIC_ORIGIN", "WARD_API_BASE_PATH", "WARD_APP_KEY"] as const;
 export const VAPID_KEYS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const;
 
 /** base64url without padding that decodes to exactly `bytes` bytes. Messages never echo the value. */
@@ -63,27 +64,27 @@ function isVapidSubject(value: string): boolean {
 const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
 
-const required = <T extends z.ZodType>(schema: T) =>
-  z.preprocess((value) => (value === "" ? undefined : value), schema);
-
 const envSchema = z.object({
   HOST: optional(z.string()).transform((value) => value ?? "127.0.0.1"),
   PORT: optional(
     z.coerce.number<string>().int().min(1).max(65535, { message: "PORT must be a port number (1-65535)." }),
   ).transform((value) => value ?? 8807),
   DATA_DIR: optional(z.string()).transform((value) => value ?? "./data"),
-  WARD_PUBLIC_ORIGIN: required(
+  PUBLIC_ORIGIN: optional(
     z.string().refine((value) => URL.canParse(value) && new URL(value).origin === value, {
-      message:
-        "WARD_PUBLIC_ORIGIN must be a bare origin such as https://gandolh.ro: no path and no trailing slash. It is the issuer Ward signs tokens with.",
+      message: "PUBLIC_ORIGIN must be a bare origin such as https://example.com: no path and no trailing slash.",
     }),
   ),
-  WARD_API_BASE_PATH: required(
+  SATCHEL_API_PREFIX: optional(
     z.string().regex(/^\/[^\s?#]*[^/\s?#]$/, {
-      message: "WARD_API_BASE_PATH must be a path such as /ward-api: a leading slash and no trailing slash.",
+      message: "SATCHEL_API_PREFIX must be a path such as /satchel-api: a leading slash and no trailing slash.",
     }),
-  ),
-  WARD_APP_KEY: required(z.string().min(1)),
+  ).transform((value) => value ?? "/satchel-api"),
+  SATCHEL_BASE: optional(
+    z.string().regex(/^\/([^\s?#]*\/)?$/, {
+      message: "SATCHEL_BASE must be a path such as /satchel/: a leading and a trailing slash.",
+    }),
+  ).transform((value) => value ?? "/satchel/"),
   VAPID_PUBLIC_KEY: optional(
     z.string().refine(base64urlOf(65), {
       message: "VAPID_PUBLIC_KEY must be the publicKey from `npx web-push generate-vapid-keys` (87 base64url characters).",
@@ -115,13 +116,6 @@ function isVapidPair(publicKey: string, privateKey: string): boolean {
 
 function describe(issue: z.core.$ZodIssue): string {
   const key = String(issue.path[0] ?? "");
-  const isWardKey = (WARD_KEYS as readonly string[]).includes(key);
-  if (isWardKey && issue.code === "invalid_type") {
-    return (
-      `${key} is not set. Locally, Ward's seed (../wzd_auth/infrastructure/local/seed.mjs) writes it ` +
-      `into this repo's .env; in production vps-deploy provides it.`
-    );
-  }
   return issue.message.startsWith(key) ? issue.message : `${key}: ${issue.message}`;
 }
 
@@ -132,6 +126,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new ConfigError(parsed.error.issues.map(describe).join("\n"));
   }
   const values = parsed.data;
+  // Locally the Ward seed writes the redirect URI, and its origin is the dev server's.
+  const redirectUri = env.WARD_OIDC_REDIRECT_URI;
+  const publicOrigin =
+    values.PUBLIC_ORIGIN ??
+    (redirectUri !== undefined && URL.canParse(redirectUri) ? new URL(redirectUri).origin : undefined);
+  if (publicOrigin === undefined) {
+    throw new ConfigError(
+      "PUBLIC_ORIGIN is not set. It is the app's own origin as the browser sees it, such as https://example.com (http://localhost:5175 in development).",
+    );
+  }
   const { VAPID_PUBLIC_KEY: publicKey, VAPID_PRIVATE_KEY: privateKey, VAPID_SUBJECT: subject } = values;
   let push: PushSettings;
   if (publicKey !== undefined && privateKey !== undefined && subject !== undefined) {
@@ -148,11 +152,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: values.HOST,
     port: values.PORT,
     dataDir: values.DATA_DIR,
-    ward: {
-      publicOrigin: values.WARD_PUBLIC_ORIGIN,
-      apiBasePath: values.WARD_API_BASE_PATH,
-      appKey: values.WARD_APP_KEY,
-    },
+    publicOrigin,
+    apiPrefix: values.SATCHEL_API_PREFIX,
+    webBase: values.SATCHEL_BASE,
     push,
   };
 }

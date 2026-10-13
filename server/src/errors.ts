@@ -2,7 +2,6 @@ import { ERROR_STATUS, apiError, type ErrorCode } from "@satchel/shared";
 import type { FastifyError, FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { ClientIdConflict } from "./store.js";
-import { WardAuthenticationError, WardForbiddenError, WardUnavailableError } from "./ward/errors.js";
 
 /**
  * Every error a route sends is the shared shape `{ error: { code, message } }`.
@@ -49,7 +48,6 @@ function statusOf(error: unknown): number | undefined {
  *   with the first issue's message. `z.core.$ZodError`'s `instanceof` checks
  *   traits, so it also matches errors from `@satchel/shared`'s own zod copy.
  * - `ClientIdConflict` → 409 `client_id_conflict`.
- * - A Ward error a route let through → 401 / 403 / 503.
  * - A 4xx Fastify raised (bad JSON, a body over the limit, an unsupported
  *   content type) → the matching code, keeping Fastify's status (413, 415).
  * - Anything else, `NotAMember` included → 500 `internal`. Logged; the
@@ -64,13 +62,6 @@ export function registerErrorHandling(app: FastifyInstance): void {
     }
 
     if (error instanceof ClientIdConflict) return sendError(reply, "client_id_conflict", error.message);
-
-    if (error instanceof WardUnavailableError) {
-      request.log.error({ err: error }, "ward is not answering; failing closed");
-      return sendError(reply, "unavailable", "Ward, the sign-in service, is not answering. Try again in a minute.");
-    }
-    if (error instanceof WardAuthenticationError) return sendError(reply, "unauthorized", "Sign in with Ward to use Satchel.");
-    if (error instanceof WardForbiddenError) return sendError(reply, "forbidden", "This Ward account has no access to Satchel.");
 
     const status = statusOf(error);
     if (status !== undefined && status >= 400 && status < 500) {
