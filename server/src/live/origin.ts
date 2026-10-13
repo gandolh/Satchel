@@ -5,21 +5,21 @@ import { sendError } from "../errors.js";
  * Two rules for every WebSocket upgrade, on any path.
  *
  * **The `Origin` must be the app's own.** Cross-site WebSocket hijacking: an
- * upgrade is a GET, so the Ward guard's cross-origin write check passes it,
+ * upgrade is a GET, so the guard's cross-origin write check passes it,
  * and browsers apply no CORS to WebSockets. Any page could open `/api/live`,
- * and on a same-site page the browser attaches the `SameSite=Lax` Ward cookie.
+ * and on a same-site page the browser attaches the `SameSite=Lax` session cookie.
  * So an upgrade must carry an `Origin` that is exactly `publicOrigin`. A
  * missing `Origin` is refused too: browsers always send one on an upgrade, so
  * only a non-browser client omits it, and that client can send the right one.
- * The hook is a root `onRequest` hook added before the Ward guard's, so a
- * refused upgrade never reaches Ward. In local dev the Vite proxy rewrites a
- * same-origin page's `Origin` to `WARD_PUBLIC_ORIGIN` on upgrades too.
+ * The hook is a root `onRequest` hook added before the auth guard's, so a
+ * refused upgrade never reaches it. In local dev the Vite proxy passes the
+ * page's `Origin` through untouched, which is `PUBLIC_ORIGIN` there.
  *
  * **A refused upgrade closes its connection.** An upgrade's socket belongs to
  * `@fastify/websocket` from the start, outside the HTTP server's keep-alive
  * handling. `@fastify/websocket` closes it after an answer only when its own
  * `onRequest` hook ran, and a hook that answers first (this one, the guard's
- * 401, 403 and 503) skips that. Left alone, the socket stays open after the
+ * 401 and 403) skips that. Left alone, the socket stays open after the
  * error answer until the client goes away, and holds up `app.close()`.
  */
 

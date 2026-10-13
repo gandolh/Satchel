@@ -22,24 +22,24 @@ flowchart LR
     ward["Ward"]
   end
   push["Browser push service"]
-  pwa -- "/api/* with the Ward session cookie" --> caddy
+  pwa -- "/api/* with the session cookie" --> caddy
   cli -- "/claude/* with a Claude token" --> caddy
   caddy --> api
-  api -- "introspect the session" --> ward
+  api -- "Sign in with Ward (OpenID Connect)" --> ward
   api -- "WebSocket /api/live" --> pwa
   api -- "Web Push" --> push --> pwa
 ```
 
 ## Two doors
 
-- **`/api/*`** is for people. The guard verifies the Ward session locally,
-  then asks Ward for the account's grants. No grant on `satchel` means no
-  access. The `admin` role marks the owner, who gets the Ideas inbox; `member`
-  is a friend.
+- **`/api/*`** is for people. They sign in with a local username and password,
+  or with "Sign in with Ward", and both give Satchel's own session cookie. The
+  guard checks it on every route. The account's role lives in Satchel: `admin`
+  marks the owner, who gets the Ideas inbox; `member` is a friend.
 - **`/claude/*`** is for the CLI. It takes only a Claude token, which is bound
-  to the owner's Ideas inbox. It reads no cookie and never calls Ward.
+  to the owner's Ideas inbox. It reads no cookie.
 
-The server refuses a Claude token on `/api/*` and a Ward cookie on `/claude/*`.
+The server refuses a Claude token on `/api/*` and a session cookie on `/claude/*`.
 
 ## A message, step by step
 
@@ -63,7 +63,7 @@ them stays unread for next time instead of being skipped.
 ## Read more
 
 - [corpus/wiki/architecture.md](../corpus/wiki/architecture.md): ports, the
-  guard's cross-site and lost-grant rules, data, deploy and the changes in
+  guard's cross-site rule, data, deploy and the changes in
   other repos
 - [corpus/wiki/messages-and-seen.md](../corpus/wiki/messages-and-seen.md):
   `seq`, client IDs, seen markers, ticks and "Seen by"
@@ -72,6 +72,6 @@ them stays unread for next time instead of being skipped.
 - [corpus/wiki/decisions.md](../corpus/wiki/decisions.md): what was decided
   and what was rejected
 - Code: [server/src/store.ts](../server/src/store.ts),
-  [server/src/ward/guard.ts](../server/src/ward/guard.ts),
+  [server/src/auth/guard.ts](../server/src/auth/guard.ts),
   [server/src/routes/](../server/src/routes/),
   [cli/src/guide.md](../cli/src/guide.md)

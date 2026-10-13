@@ -45,7 +45,7 @@ export interface LinkedAccounts {
   created: string[];
   /** Created under the `user-<subject>` placeholder because the display name could not be used. */
   placeholders: string[];
-  /** Subjects left alone: already linked, or Claude's reserved member name. */
+  /** Subjects left alone: already linked, already a local user id, or Claude's reserved member name. */
   skipped: string[];
   /** Subjects that could not be migrated, with why. Rows for them stay as they were. */
   failed: { subject: string; reason: string }[];
@@ -71,6 +71,12 @@ export async function linkExistingAccounts(db: Db, accounts: Accounts): Promise<
   for (const row of rows) {
     const { subject } = row;
     if (subject === CLAUDE_MEMBER || (await identities.findUserBySubject(subject)) !== undefined) {
+      result.skipped.push(subject);
+      continue;
+    }
+    // A user already has this id: seeded or registered locally, or migrated once and
+    // since unlinked from Ward. Never re-link an existing user automatically.
+    if ((await accounts.findUserById(subject)) !== undefined) {
       result.skipped.push(subject);
       continue;
     }

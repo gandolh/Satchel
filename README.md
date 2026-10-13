@@ -51,13 +51,13 @@ On a laptop the chat list and the open chat sit side by side:
 
 ## How it works
 
-Four npm workspaces. `shared` holds the zod contract every other part uses. `server` is Fastify with SQLite. It gives each message a server `seq` and keeps one seen marker per member that only moves forward. `web` is the React PWA. It signs in through Ward, the estate's sign-in service, and talks to `/api/*`. `cli` is the `satchel` command, which reads only the Ideas inbox through `/claude/*` with a Claude token.
+Four npm workspaces. `shared` holds the zod contract every other part uses. `server` is Fastify with SQLite. It gives each message a server `seq` and keeps one seen marker per member that only moves forward. `web` is the React PWA. It signs in with a local account, or with "Sign in with Ward", and talks to `/api/*`. `cli` is the `satchel` command, which reads only the Ideas inbox through `/claude/*` with a Claude token.
 
 ```mermaid
 flowchart LR
-  phone["Phone, the PWA"] -- "Ward session" --> api["Satchel API<br/>Fastify + SQLite"]
+  phone["Phone, the PWA"] -- "Session cookie" --> api["Satchel API<br/>Fastify + SQLite"]
   cli["satchel CLI<br/>run by Claude Code"] -- "Claude token" --> api
-  api -- "verify session" --> ward["Ward"]
+  api -- "Sign in with Ward" --> ward["Ward"]
   api -- "live updates" --> phone
 ```
 
@@ -65,29 +65,29 @@ More in [docs/architecture.md](docs/architecture.md).
 
 ## Run it locally
 
-Requires Node 24 or later and the local Ward container from `wzd_auth/infrastructure/local` on <http://localhost:8792>. Its seed registers Satchel, gives your account a role on it, and fills the three `WARD_` values in this repo's `.env`, so copy `.env.example` to `.env` before you run it.
+Requires Node 24 or later. Satchel runs on its own local accounts; make one with `npm run seed -w @satchel/server`. "Sign in with Ward" is optional: it needs the local Ward container from `wzd_auth/infrastructure/local` on <http://localhost:8792>, whose seed registers Satchel as a client and fills the five `WARD_OIDC_` values in this repo's `.env`, so copy `.env.example` to `.env` before you run it.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open <http://localhost:5175/satchel/> and sign in. The API listens on port 8807. Env vars, tests, push and the CLI against a local server are in [docs/getting-started.md](docs/getting-started.md).
+Then open <http://localhost:5175/satchel/> and sign in with your local account or with Ward. The API listens on port 8807. Env vars, tests, push and the CLI against a local server are in [docs/getting-started.md](docs/getting-started.md).
 
 ## Deploy and setup
 
 Deploying is a hand-run owner step through vps-deploy. These live in [docs/owner-setup.md](docs/owner-setup.md):
 
-- **Owner setup.** Registering Satchel in Ward, the first deploy, the Claude token, installing the CLI and the line for `~/.claude/CLAUDE.md`
+- **Owner setup.** Registering Satchel as a client in Ward, the first deploy, the Claude token, installing the CLI and the line for `~/.claude/CLAUDE.md`
 - **Push notifications.** Making the VAPID key pair and turning notifications on per device
-- **Inviting a friend.** A Ward account with the `member` role on `satchel`
+- **Inviting a friend.** A local account with the `member` role
 
 ## Project layout
 
 | Path | What lives there |
 |---|---|
 | `shared/` | zod schemas for every route, limits, seen rules |
-| `server/` | Fastify API, SQLite store, Ward guard, live updates, push |
+| `server/` | Fastify API, SQLite store, auth guard, live updates, push |
 | `web/` | React PWA, served under `/satchel/` |
 | `cli/` | the `satchel` command and its guide |
 | `infrastructure/` | Dockerfile and compose file for the API container |

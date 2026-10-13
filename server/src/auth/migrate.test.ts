@@ -62,6 +62,32 @@ describe("linkExistingAccounts", () => {
     expect((await t.accounts.findUserById(FRIEND))?.role).toBe("admin");
   });
 
+  it("skips a row whose subject is already a local user id, without reporting a failure", async () => {
+    // A locally seeded or registered user: it has an `accounts` row but no Ward link.
+    await t.accounts.createUser({ id: OWNER, username: "ana", password: "a-long-local-password-1", role: "admin" });
+    t.store.upsertAccount(OWNER, "ana");
+
+    const result = await linkExistingAccounts(t.db, t.accounts);
+
+    expect(result).toEqual({ created: [], placeholders: [], skipped: [OWNER], failed: [] });
+    expect(await t.identities.findUserBySubject(OWNER)).toBeUndefined();
+  });
+
+  it("never re-links a migrated user who unlinked Ward", async () => {
+    seedOldRows();
+    await linkExistingAccounts(t.db, t.accounts);
+    await t.accounts.setPassword(OWNER, "a-long-local-password-1");
+    await t.identities.unlink(OWNER);
+    expect(await t.identities.findUserBySubject(OWNER)).toBeUndefined();
+
+    const again = await linkExistingAccounts(t.db, t.accounts);
+
+    expect(again.created).toEqual([]);
+    expect(again.failed).toEqual([]);
+    expect(again.skipped.sort()).toEqual([OWNER, FRIEND].sort());
+    expect(await t.identities.findUserBySubject(OWNER)).toBeUndefined();
+  });
+
   it("keeps every foreign key working: Ward sign-in finds the same account with its chats, messages and tokens", async () => {
     const { inbox, chat } = seedOldRows();
     await linkExistingAccounts(t.db, t.accounts);

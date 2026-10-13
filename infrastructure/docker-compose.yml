@@ -6,8 +6,9 @@
 # `.env` in THIS directory is written by the deploy (vps-deploy's `server`
 # phase, 0600) and is read twice: compose interpolates ${...} below from it, and
 # the service declares it as env_file so the same values reach the process.
-# For a local run, copy the Ward trio from the repo's `.env`. It is git-ignored
-# because it carries the Ward service key.
+# For a local run, copy PUBLIC_ORIGIN and the WARD_OIDC_ values from the repo's
+# `.env`. It is git-ignored because it carries Satchel's Ward client key. In a
+# container behind a proxy, also set AUTH_TRUSTED_PROXIES to the proxy's range.
 services:
   satchel-api:
     build:
