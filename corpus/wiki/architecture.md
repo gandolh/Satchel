@@ -1,5 +1,5 @@
 ---
-summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs) and re-based on local accounts on 2026-10-13 (brief 26). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the API in a Docker container behind Caddy's handle_path at /satchel-api; the PWA at /satchel; local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
+summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs) and re-based on local accounts on 2026-10-13 (brief 26). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22, brief 15; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
 updated: 2026-10-13
 ---
 
@@ -25,15 +25,17 @@ npm workspaces, as in the-board:
 ## Request paths
 
 ```
-phone ──https──► Caddy (production domain)
-                 ├─ /satchel/*        static PWA (try_files spa)
+phone ──https──► Caddy, satchel.<domain>
                  ├─ /satchel-api/*    handle_path → container on 127.0.0.1:8795
-                 └─ /ward, /ward-api  Ward (the app's server talks to it directly)
-satchel CLI ──https + bearer──► /satchel-api/claude/*
+                 └─ /*                static PWA (try_files spa)
+       ──https──► Caddy, ward.<domain> (only the "Sign in with Ward" round trip)
+satchel CLI ──https + bearer──► satchel.<domain>/satchel-api/claude/*
 ```
 
 `handle_path` strips `/satchel-api`, so the server's own routes are
-`/api/...` and `/claude/...`. The Vite dev server strips it the same way.
+`/api/...` and `/claude/...`. The Vite dev server strips it the same way. The
+host is Satchel's alone since 2026-10-22 ([decisions.md](decisions.md)); the
+app is the same build, made with `SATCHEL_BASE=/`.
 
 ## Auth
 
@@ -167,6 +169,7 @@ The repo carries `infrastructure/Dockerfile` (multi-stage, node:24-alpine,
 modelled on Ward's because both build better-sqlite3) and
 `infrastructure/docker-compose.yml` (modelled on sports-app's: loopback port,
 `env_file: .env`, `/data` bind mount, healthcheck on `/api/health`). vps-deploy
-builds the image on the box. Deploying is an owner step:
+builds the image on the box and builds the client with `SATCHEL_BASE=/` for
+`satchel.<domain>` (its brief 16). Deploying is an owner step:
 `node cli.ts satchel all` the first time, then `deploy` for the client and
 `server` for the container.

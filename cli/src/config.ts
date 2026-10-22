@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { UsageError } from "./errors.js";
 
-export const DEFAULT_URL = "https://gandolh.ro/satchel-api";
+/** Satchel's API on its own host since 2026-10-22 (brief 15); it was on the apex before. */
+export const DEFAULT_URL = "https://satchel.gandolh.ro/satchel-api";
 
 export interface Context {
   env: NodeJS.ProcessEnv;

@@ -88,7 +88,7 @@ Deploying is a hand-run owner step through vps-deploy. These live in [docs/owner
 |---|---|
 | `shared/` | zod schemas for every route, limits, seen rules |
 | `server/` | Fastify API, SQLite store, auth guard, live updates, push |
-| `web/` | React PWA, served under `/satchel/` |
+| `web/` | React PWA, at the root of `satchel.<domain>` in production and under `/satchel/` in local dev |
 | `cli/` | the `satchel` command and its guide |
 | `infrastructure/` | Dockerfile and compose file for the API container |
 | `corpus/` | design wiki, decisions and the numbered briefs |

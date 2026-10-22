@@ -1,6 +1,6 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds. Read before proposing to change any of these.
-updated: 2026-10-13
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>. Read before proposing to change any of these.
+updated: 2026-10-22
 ---
 
 # Decisions
@@ -141,3 +141,17 @@ whose `Origin` is not the app's own. The old value was Ward's origin (one shared
 origin); the app's origin is now its own setting, defaulting to the origin of
 `WARD_OIDC_REDIRECT_URI`. In development it is `http://localhost:5175`, and the
 Vite proxy no longer rewrites `Origin`.
+
+## Served at the root of its own host, `satchel.<domain>`
+_2026-10-22, owner_. Satchel is served at the root of `satchel.<domain>`, with
+its API at `/satchel-api` on the same host, instead of `/satchel` and
+`/satchel-api` on the estate's shared origin. On the shared origin a script
+injected into any estate app could call Satchel's API with the
+`satchel_session` cookie attached and read the friend chats and the Ideas inbox:
+a cookie's `Path` does not stop a same-origin script. The estate's rule, in
+`../vps-deploy`'s decisions: an app that holds a shell, a mailbox or the keys
+to the others gets a host of its own, and a messenger is a mailbox. Satchel was
+never deployed, so no link, install or push subscription is lost, and no
+redirect from `/satchel` is kept. Rejected: staying on the apex, which the
+owner chose against for this kind of app. Local dev stays under `/satchel/`:
+the base is the build's `SATCHEL_BASE`, so one build setting covers both.

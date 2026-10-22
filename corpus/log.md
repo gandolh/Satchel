@@ -211,3 +211,15 @@ makes no HTTP requests and the 30-second Ward check would otherwise never run.
 That resolved `todos/recheck-ward-session-on-socket-ping.md`, which was removed.
 Not deployed. Docs outside the corpus (`README.md`, `docs/`) still describe the
 old Ward-only sign-in apart from `docs/getting-started.md`'s environment table.
+
+## 2026-10-22: brief 15, Satchel at the root of satchel.<domain>
+
+The owner asked for Satchel on its own host, with the imbatranimOS desktop,
+Postern and Ward: a messenger counts as a mailbox under the estate's rule. The
+app needed no code change, since its base was already the build's
+`SATCHEL_BASE`; `../vps-deploy` brief 16 builds it with `/`. The CLI's default
+URL moved to `https://satchel.<domain>/satchel-api`. The owner's setup steps
+were rewritten for the new host, and the step that redeployed Ward's UI for its
+login allowlist went, because Ward retired that allowlist on 2026-10-13.
+Checked: typecheck, lint, 536 tests, and a `SATCHEL_BASE=/` build. brief-board
+is down (since 2026-10-13), so progress is recorded here only.

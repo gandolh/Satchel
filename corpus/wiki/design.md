@@ -69,6 +69,7 @@ Theme follows the system (`prefers-color-scheme`). No toggle in phase 1.
 ## PWA
 
 Installable: a manifest with name "Satchel", the accent as theme colour, icons
-at 192 and 512 px, `display: standalone`, scope and start URL `/satchel/`.
+at 192 and 512 px, `display: standalone`, scope and start URL the build's base:
+`/` in production on `satchel.<domain>`, `/satchel/` in local dev.
 The service worker caches the app shell only. It never caches API responses:
 messages always come from the server.

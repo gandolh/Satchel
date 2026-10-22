@@ -1,6 +1,6 @@
 ---
-summary: Snapshot as of 2026-10-09. All 14 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. 538 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
-updated: 2026-10-13
+summary: Snapshot as of 2026-10-22. All 15 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 536 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
+updated: 2026-10-22
 ---
 
 # Status
@@ -19,6 +19,11 @@ is at 534 tests after it (the old Ward guard's tests went with it).
 
 Each phase got a three-finder review followed by fix rounds; see `log.md`.
 The test suite is at 538 tests.
+
+On 2026-10-22 [brief 15](../briefs/done/15-served-at-the-root-of-satchel-domain.md)
+moved production to the root of its own host, `satchel.<domain>`, with the API
+on the same host (`../vps-deploy` brief 16 carries the routes). The test suite
+is at 536 tests.
 
 What's left is the owner's: the steps in
 [docs/owner-setup.md](../../docs/owner-setup.md) (register the app in
@@ -65,6 +70,8 @@ Phase 2, friends:
   done 2026-10-09. New chat, groups, "Seen by", unread badges.
 - 14 [Push notifications](../briefs/done/14-push-notifications.md). done 2026-10-09.
   VAPID, subscriptions, the Notifications switch.
+- 15 [Served at the root of satchel.<domain>](../briefs/done/15-served-at-the-root-of-satchel-domain.md).
+  done 2026-10-22. Production on its own host; the CLI's default URL follows.
 
 ## Order
 
@@ -82,3 +89,4 @@ Each wave needs the one before it; briefs in one wave own disjoint files.
 10. 12
 11. 13
 12. 14
+13. 15 (with `../vps-deploy` brief 16)

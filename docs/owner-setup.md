@@ -12,51 +12,51 @@ Everything here is done by hand, in this order. Nothing in the repo deploys or
 writes a secret for you. Commands run on your machine; the deploy builds the
 API image on the VPS.
 
+Satchel lives at the root of its own host, `satchel.<domain>`, with its API at
+`/satchel-api` on that host (brief 15, 2026-10-22). Ward is at `ward.<domain>`.
+The DNS needs nothing: the zone's wildcard record already answers for both.
+
 1. **Register Satchel as a client in production Ward.** Open
-   `/ward/console` on the production site and sign in as the break-glass superuser.
+   `https://ward.<domain>/console` and sign in as the break-glass superuser.
    Create an app with slug `satchel` and name `Satchel`, with public
    registration closed. On the app's page, under "Sign in with Ward", register
-   a client: the redirect URI is `<production origin>/satchel-api/auth/ward/callback`
-   and the sign-out return URI is `<production origin>/satchel/`. Make the
-   client's key pair with `npm run oidc-client-key --workspace=api -- satchel`
-   from Ward's repo root, register the public half in the console, and keep the
-   private half for the next step. Then grant your own account the `admin`
-   role on `satchel`, so Ward lets it sign in.
+   a client with exactly these two addresses:
 
-2. **Store the settings.** Put them in vps-deploy's secrets, one per line:
+   - redirect URI: `https://satchel.<domain>/satchel-api/auth/ward/callback`
+   - sign-out return URI: `https://satchel.<domain>/`
+
+   Make the client's key pair with `npm run oidc-client-key --workspace=api --
+   satchel` from Ward's repo root, register the public half in the console, and
+   keep the private half for the next step. Then grant your own account the
+   `admin` role on `satchel`, so Ward lets it sign in.
+
+2. **Store the secrets.** In `~/projects/vps-deploy/secrets/satchel.env`
+   (`chmod 600` it), one per line:
 
    ```
-   PUBLIC_ORIGIN=<production origin, no path>
-   WARD_OIDC_ISSUER=<production origin>/ward-api/oidc
-   WARD_OIDC_CLIENT_ID=satchel
    WARD_OIDC_CLIENT_KEY=<the private key, base64url>
-   WARD_OIDC_REDIRECT_URI=<production origin>/satchel-api/auth/ward/callback
-   WARD_OIDC_POST_LOGOUT_REDIRECT_URI=<production origin>/satchel/
    ```
 
-   in `~/projects/vps-deploy/secrets/satchel.env` (`chmod 600` it). The deploy
-   writes them into the container's environment. Satchel also runs on local
-   accounts, so Ward is optional: leave `WARD_OIDC_ISSUER` out and there is no
-   Ward button. Behind Caddy, also set `AUTH_TRUSTED_PROXIES` to the address
-   range the container sees Caddy at, so the sign-in lockout counts real
-   client addresses. Make your own account too, with `SEED_ROLE=admin` (see
+   and, for push notifications, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+   (below). The deploy writes everything else itself: `PUBLIC_ORIGIN`, the
+   issuer, the client id, both redirect URIs and `AUTH_TRUSTED_PROXIES`, all
+   from the stack (`stacks/satchel.ts`). Make your own account too, with
+   `SEED_ROLE=admin` (see
    [getting-started.md](getting-started.md#create-a-user)).
 
-3. **Redeploy Ward's UI,** so its login allowlist knows `/satchel/`:
-
-   ```
-   cd ~/projects/vps-deploy && node cli.ts ward deploy
-   ```
-
-4. **First deploy of Satchel** (builds the web app, ships it, builds and starts
-   the API container):
+3. **First deploy of Satchel** (builds the web app for `/`, ships it, builds and
+   starts the API container, and installs the Caddyfile with Satchel's host):
 
    ```
    cd ~/projects/vps-deploy && node cli.ts satchel all
    ```
 
-5. **Install it on the phone.** Open `/satchel/` on the production site, sign in,
-   then Add to Home Screen.
+4. **Check it.** `https://satchel.<domain>/` loads with a valid certificate,
+   and `https://<domain>/satchel/` is a 404: nothing of Satchel's is on the
+   apex.
+
+5. **Install it on the phone.** Open `https://satchel.<domain>/`, sign in, then
+   Add to Home Screen.
 
 6. **Create a Claude token.** In the app: Settings, Connect Claude, Create
    token. Copy it (shown once) and write it to the CLI's config file:
@@ -69,7 +69,7 @@ API image on the VPS.
    of shell history and transcripts.
 
    The file may also set `SATCHEL_URL`; it defaults to
-   the production `/satchel-api`.
+   `https://satchel.<domain>/satchel-api`.
 
 7. **Install the CLI.**
 
@@ -146,7 +146,7 @@ works as before.
 
 4. **Turn it on, per device:** Settings, Notifications. On an iPhone, web
    push works only in the Home Screen app (iOS 16.4 or later): open
-   `/satchel/` on the production site in Safari, Share → Add to Home Screen, open
+   `https://satchel.<domain>/` in Safari, Share → Add to Home Screen, open
    Satchel from the Home Screen icon, and turn Notifications on there.
    Android and desktop browsers need no such step.
 
@@ -166,7 +166,7 @@ page, so you make the account, and role changes happen in Satchel.
    Never make a friend `admin`. That role marks the owner: an `admin` account
    gets an Ideas inbox and can create Claude tokens. A `member` gets neither.
 
-2. **They sign in** at `/satchel/` on the production site with that username and
+2. **They sign in** at `https://satchel.<domain>/` with that username and
    password. After the first sign-in they appear in the people list
    (`GET /api/people`), and anyone can start a one-to-one chat or a group with
    them.

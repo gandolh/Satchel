@@ -137,7 +137,7 @@ describe("config order", () => {
   it("defaults the URL only when nothing sets it", () => {
     const ctx: Context = { env: { SATCHEL_TOKEN: "stl_x" }, home, out: () => {}, err: () => {} };
     expect(resolveConfig(ctx).url).toBe(DEFAULT_URL);
-    expect(DEFAULT_URL).toBe("https://gandolh.ro/satchel-api");
+    expect(DEFAULT_URL).toBe("https://satchel.gandolh.ro/satchel-api");
   });
 });
 

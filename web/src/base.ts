@@ -1,6 +1,6 @@
 /**
- * The app's root path on the shared origin, with one trailing slash: `/satchel/`
- * unless the build set `SATCHEL_BASE`. Read on every call rather than once at
+ * The app's root path, with one trailing slash: `/satchel/` unless the build set
+ * `SATCHEL_BASE` (production sets `/`, the root of Satchel's own host). Read on every call rather than once at
  * module load, so tests can stub `import.meta.env.BASE_URL`.
  */
 export function appBase(): string {

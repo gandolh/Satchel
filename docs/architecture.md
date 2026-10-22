@@ -3,15 +3,16 @@
 Satchel is four npm workspaces. `shared` holds the zod schemas for every
 route, the limits and the seen rules, and the other three import it.
 `server` is the Fastify API with one SQLite file; its store is the only code
-that runs SQL. `web` is the React PWA, served under `/satchel/`. `cli` is the
-`satchel` command Claude Code runs. In production Caddy serves the PWA and
-forwards `/satchel-api/*` to the API container with the prefix stripped, so
-the server's own routes are `/api/*` and `/claude/*`.
+that runs SQL. `web` is the React PWA, at the root of `satchel.<domain>` in
+production (under `/satchel/` in local dev). `cli` is the `satchel` command
+Claude Code runs. In production Caddy serves the PWA on Satchel's own host and
+forwards `/satchel-api/*` on that host to the API container with the prefix
+stripped, so the server's own routes are `/api/*` and `/claude/*`.
 
 ```mermaid
 flowchart LR
   subgraph phone["Phone or laptop"]
-    pwa["Satchel PWA<br/>/satchel/"]
+    pwa["Satchel PWA<br/>its own host, at /"]
   end
   subgraph home["At home"]
     cli["satchel CLI<br/>run by Claude Code"]

@@ -16,7 +16,7 @@ import { clickPath, isShowingConversation, notificationFor, parsePushPayload, wi
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: (string | PrecacheEntry)[] };
 
-/** `/satchel/` unless the build set SATCHEL_BASE; one trailing slash. */
+/** `/satchel/` unless the build set SATCHEL_BASE (`/` in production); one trailing slash. */
 const BASE = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 
 // --- The app shell ------------------------------------------------------------
@@ -32,9 +32,10 @@ self.addEventListener("message", (event) => {
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// Never answer for the API or Ward. Neither is under the worker's scope, and
-// nothing caches at runtime, so their responses are never stored; the
-// denylist keeps it so if the scope ever widens.
+// Never answer for the API or Ward. In production the scope is `/`, the whole
+// of Satchel's own host since 2026-10-22, so the API is inside it and this
+// denylist is what keeps the worker off it. Nothing caches at runtime, so
+// their responses are never stored.
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL(`${BASE}index.html`), {
     denylist: [/^\/satchel-api(\/|$)/, /^\/ward(-api)?(\/|$)/],
