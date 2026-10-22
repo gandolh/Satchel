@@ -14,7 +14,7 @@ API image on the VPS.
 
 Satchel lives at the root of its own host, `satchel.<domain>`, with its API at
 `/satchel-api` on that host (brief 15, 2026-10-22). Ward is at `ward.<domain>`.
-The DNS needs nothing: the zone's wildcard record already answers for both.
+The DNS needs nothing: both names already have their A records.
 
 1. **Register Satchel as a client in production Ward.** Open
    `https://ward.<domain>/console` and sign in as the break-glass superuser.
