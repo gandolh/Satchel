@@ -15,7 +15,7 @@
     "@fastify/websocket": "11.3.1",
     "@satchel/shared": "0.1.0",
     "better-sqlite3": "13.0.3",
-    "fastify": "5.12.5",
+    "fastify": "5.12.7",
     "jose": "6.2.10",
     "web-push": "3.6.7",
     "ws": "8.21.3",
