@@ -65,3 +65,24 @@ package-lock.json  corpus/wiki/{decisions,status}.md
     the rest.
   Take before/after screenshots. They should look the same.
 - `bash corpus/lint.sh` passes.
+
+## Outcome (2026-10-23)
+
+Shipped in `1bc70c0`. The switch is `Switch.Root` + `Switch.Thumb`, restyled
+onto `data-checked`/`data-disabled`. It is pixel-identical to before in every
+state (off, on, busy, blocked). The group rows use `Checkbox.Root` +
+`Checkbox.Indicator` with a new `CheckIcon` in `layout/icons.tsx`. The box is
+drawn by `.person__check`, with its unchecked border on `--muted` for 3:1
+contrast. It is close to the native box, not identical. No `CheckboxGroup`:
+`picked` stays as it was. `Notifications.test.ts` needed no change, because
+Base UI's server markup keeps `role="switch"`, `aria-checked`, `checked` and
+`disabled`. The web bundle grew from 103.5 KB to 111.7 KB gzipped.
+
+How it was checked: typecheck, lint, 536 tests and the build pass. The switch
+only shows with working push, which `npm run dev` can't give (no service
+worker). So its states were checked on a scratch Vite page that renders
+`NotificationsCard` with the app's CSS: Space, a click on the label text and
+a click on the switch toggle it, and busy/denied ignore clicks. The group picker
+was checked in the dev server with three scratch local users (scratch
+`DATA_DIR`, Ward off): click, label click and Space tick a row. Before/after
+screenshots at 390 px and 1440 px.

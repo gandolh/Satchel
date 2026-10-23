@@ -72,8 +72,8 @@ Phase 2, friends:
   VAPID, subscriptions, the Notifications switch.
 - 15 [Served at the root of satchel.<domain>](../briefs/done/15-served-at-the-root-of-satchel-domain.md).
   done 2026-10-22. Production on its own host; the CLI's default URL follows.
-- 16 [Base UI for the notifications switch and the group picker](../briefs/todo/16-base-ui-controls.md).
-  todo, filed 2026-10-23.
+- 16 [Base UI for the notifications switch and the group picker](../briefs/done/16-base-ui-controls.md).
+  done 2026-10-23. Base UI `Switch` and `Checkbox`; no other hand-built widgets left.
 
 ## Order
 

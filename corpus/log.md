@@ -228,5 +228,14 @@ is down (since 2026-10-13), so progress is recorded here only.
 
 The owner asked for Base UI in the apps that still hand-build their widgets.
 Satchel has two: the Notifications switch and the New group checkboxes.
-[Brief 16](briefs/todo/16-base-ui-controls.md) moves them to Base UI `Switch`
+[Brief 16](briefs/done/16-base-ui-controls.md) moves them to Base UI `Switch`
 and `Checkbox`.
+
+## [2026-10-23] done | Brief 16: Base UI for the switch and the group picker
+
+The Notifications switch is Base UI's `Switch` and the New group rows use its
+`Checkbox` (`1bc70c0`). The switch looks exactly as before; the checkbox is
+drawn by our CSS, close to the native one. The decision is in
+[decisions.md](wiki/decisions.md); details are in
+[the brief](briefs/done/16-base-ui-controls.md). brief-board is down (since
+2026-10-13), so it isn't on the board.

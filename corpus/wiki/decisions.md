@@ -1,6 +1,6 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>. Read before proposing to change any of these.
-updated: 2026-10-22
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls. Read before proposing to change any of these.
+updated: 2026-10-23
 ---
 
 # Decisions
@@ -155,3 +155,12 @@ never deployed, so no link, install or push subscription is lost, and no
 redirect from `/satchel` is kept. Rejected: staying on the apex, which the
 owner chose against for this kind of app. Local dev stays under `/satchel/`:
 the base is the build's `SATCHEL_BASE`, so one build setting covers both.
+
+## Base UI for interactive controls, styled by our own CSS
+_2026-10-23_. The Notifications switch is Base UI's `Switch` and the New group
+rows use its `Checkbox`. They keep Satchel's tokens and key off the attributes
+Base UI sets (`data-checked`, `data-disabled`). The owner asked for this on
+2026-10-23, after a survey showed most of their other apps already on Base UI.
+Rejected: native inputs restyled by hand (what the switch was), and a styled kit
+such as shadcn, which would bring Tailwind. New interactive widgets (a menu, a
+dialog, a popover) start from Base UI rather than being built by hand.
