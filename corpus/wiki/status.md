@@ -1,6 +1,6 @@
 ---
 summary: Snapshot as of 2026-10-22. All 15 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 536 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 # Status
@@ -72,6 +72,8 @@ Phase 2, friends:
   VAPID, subscriptions, the Notifications switch.
 - 15 [Served at the root of satchel.<domain>](../briefs/done/15-served-at-the-root-of-satchel-domain.md).
   done 2026-10-22. Production on its own host; the CLI's default URL follows.
+- 16 [Base UI for the notifications switch and the group picker](../briefs/todo/16-base-ui-controls.md).
+  todo, filed 2026-10-23.
 
 ## Order
 
@@ -90,3 +92,4 @@ Each wave needs the one before it; briefs in one wave own disjoint files.
 11. 13
 12. 14
 13. 15 (with `../vps-deploy` brief 16)
+14. 16

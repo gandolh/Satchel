@@ -223,3 +223,10 @@ were rewritten for the new host, and the step that redeployed Ward's UI for its
 login allowlist went, because Ward retired that allowlist on 2026-10-13.
 Checked: typecheck, lint, 536 tests, and a `SATCHEL_BASE=/` build. brief-board
 is down (since 2026-10-13), so progress is recorded here only.
+
+## [2026-10-23] todo | Brief 16 filed: Base UI for the switch and the group picker
+
+The owner asked for Base UI in the apps that still hand-build their widgets.
+Satchel has two: the Notifications switch and the New group checkboxes.
+[Brief 16](briefs/todo/16-base-ui-controls.md) moves them to Base UI `Switch`
+and `Checkbox`.
