@@ -21,9 +21,10 @@
   font-weight: 600;
 }
 
-/* A native checkbox drawn as a switch, so it keeps the keyboard and screen reader behaviour. */
+/* Base UI's Switch: a role="switch" span over a hidden checkbox, with the state in data attributes. */
 .switch {
   position: relative;
+  display: inline-block;
   flex: none;
   width: 44px;
   height: 26px;
@@ -32,12 +33,10 @@
   border-radius: var(--radius-pill);
   background: var(--sunk);
   cursor: pointer;
-  appearance: none;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.switch::after {
-  content: "";
+.switch__thumb {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -49,16 +48,16 @@
   transition: transform 0.15s ease;
 }
 
-.switch:checked {
+.switch[data-checked] {
   border-color: var(--accent);
   background: var(--accent);
 }
 
-.switch:checked::after {
+.switch[data-checked] .switch__thumb {
   transform: translateX(18px);
 }
 
-.switch:disabled {
+.switch[data-disabled] {
   cursor: default;
   opacity: 0.5;
 }

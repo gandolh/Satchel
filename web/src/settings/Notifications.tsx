@@ -1,3 +1,4 @@
+import { Switch } from "@base-ui/react/switch";
 import { useEffect, useId, useState } from "react";
 import { ApiError, deletePushSubscription, getPushKey, savePushSubscription, SignedOut } from "../api";
 import {
@@ -86,16 +87,15 @@ export function NotificationsCard({ view, busy = false, error = null, note = nul
                 Notify this device when someone writes to you.
               </span>
             </span>
-            <input
-              type="checkbox"
-              role="switch"
+            <Switch.Root
               className="switch"
               checked={view.on}
-              aria-checked={view.on}
               aria-describedby={hintId}
               disabled={busy || view.permission === "denied"}
-              onChange={(event) => onToggle?.(event.currentTarget.checked)}
-            />
+              onCheckedChange={(checked) => onToggle?.(checked)}
+            >
+              <Switch.Thumb className="switch__thumb" />
+            </Switch.Root>
           </label>
           {view.permission === "denied" && <p className="notify-hint">{deniedHelp(view.ios)}</p>}
         </>

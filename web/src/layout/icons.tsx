@@ -19,6 +19,14 @@ export function BackIcon() {
   );
 }
 
+export function CheckIcon() {
+  return (
+    <svg {...base} strokeWidth={3.2}>
+      <path d="M4 12.5l5 5L20 6.5" />
+    </svg>
+  );
+}
+
 export function ChatsIcon() {
   return (
     <svg {...base}>

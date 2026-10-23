@@ -67,10 +67,36 @@
   white-space: nowrap;
 }
 
-.person input[type="checkbox"] {
+/* Base UI's Checkbox: a role="checkbox" span over a hidden input, the state in data attributes. */
+.person__check {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
-  accent-color: var(--accent);
+  border: 2px solid var(--muted);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--surface);
+}
+
+.person__check[data-checked] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.person__check[data-disabled] {
+  opacity: 0.5;
+}
+
+.person__tick {
+  display: flex;
+}
+
+.person__tick svg {
+  width: 18px;
+  height: 18px;
 }
 
 .new-chat__error {
