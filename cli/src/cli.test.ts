@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { CLAUDE_MEMBER } from "@satchel/shared";
 import { startTestApp, type TestApp } from "@satchel/server/testing";
 import { DEFAULT_URL, parseEnvFile, resolveConfig, type Context } from "./config.js";
 import { main } from "./main.js";
@@ -46,10 +47,20 @@ function say(text: string): number {
   return t.store.appendMessage({ conversationId: inbox, sender: OWNER, clientId: randomUUID(), text }).message.seq;
 }
 
-async function run(argv: string[], env: NodeJS.ProcessEnv = { SATCHEL_URL: url, SATCHEL_TOKEN: token }) {
+async function run(
+  argv: string[],
+  env: NodeJS.ProcessEnv = { SATCHEL_URL: url, SATCHEL_TOKEN: token },
+  stdin?: string,
+) {
   const out: string[] = [];
   const err: string[] = [];
-  const ctx: Context = { env, home, out: (l) => out.push(l), err: (l) => err.push(l) };
+  const ctx: Context = {
+    env,
+    home,
+    out: (l) => out.push(l),
+    err: (l) => err.push(l),
+    stdin: () => Promise.resolve(stdin),
+  };
   const code = await main(argv, ctx, PACKAGE_ROOT);
   const res = { code, out: out.join("\n"), err: err.join("\n") };
   // No output of any test may carry a token.
@@ -113,6 +124,89 @@ describe("history", () => {
     expect(later.out).toContain(`#${b}  `);
     expect((await run(["history", "--since", "not a date"])).code).toBe(2);
     expect((await run(["history", "--limit", "x"])).code).toBe(1);
+  });
+});
+
+/** The newest row in the inbox, straight from the store. */
+function newest() {
+  const rows = t.store.listMessages(inbox, { after: 0, limit: 500 });
+  return rows.at(-1);
+}
+
+describe("reply", () => {
+  it("posts 'Re #n: text' into the inbox as Claude and prints the stored number", async () => {
+    const asked = say("can you look at the warmup brief?");
+    const res = await run(["reply", String(asked), "Done, see the brief"]);
+    expect(res.code).toBe(0);
+    const stored = newest();
+    expect(stored).toMatchObject({ sender: CLAUDE_MEMBER, text: `Re #${asked}: Done, see the brief` });
+    expect(res.out).toBe(`Replied as #${stored?.seq}.`);
+    expect(res.err).toBe("");
+  });
+
+  it("joins unquoted words, and reads longer text from stdin", async () => {
+    const asked = say("two questions");
+    expect((await run(["reply", String(asked), "yes,", "both"])).code).toBe(0);
+    expect(newest()?.text).toBe(`Re #${asked}: yes, both`);
+
+    const piped = await run(["reply", String(asked)], undefined, "first line\nsecond line\n");
+    expect(piped.code).toBe(0);
+    expect(newest()?.text).toBe(`Re #${asked}: first line\nsecond line`);
+  });
+
+  it("a reply marks nothing seen: what was unread stays unread", async () => {
+    const asked = say("still unread after the reply");
+    expect((await run(["reply", String(asked), "noted"])).code).toBe(0);
+    const after = await run(["unread"]);
+    expect(after.out).toContain(`#${asked}  `);
+    expect(after.out).not.toContain("noted");
+  });
+
+  it("usage errors are exit 1 and post nothing", async () => {
+    const latest = newest()?.seq;
+    for (const [argv, stdin] of [
+      [["reply"], undefined],
+      [["reply", "abc", "hi"], undefined],
+      [["reply", "-1", "hi"], undefined],
+      [["reply", "0", "hi"], undefined],
+      [["reply", "12"], undefined],
+      [["reply", "12"], "   \n"],
+      [["reply", "12", "   "], undefined],
+    ] as const) {
+      const res = await run([...argv], undefined, stdin);
+      expect(res.code, argv.join(" ")).toBe(1);
+      expect(res.err).toMatch(/^satchel: /);
+    }
+    expect(newest()?.seq).toBe(latest);
+  });
+
+  it("over-long text is exit 2 with Satchel's reason", async () => {
+    const res = await run(["reply", "1", "x".repeat(4000)]);
+    expect(res.code).toBe(2);
+    expect(res.err).toBe("satchel: A message can be at most 4000 characters.");
+  });
+
+  it("a revoked token is exit 2; nothing listening is exit 3", async () => {
+    const other = t.store.createClaudeToken(OWNER);
+    t.store.revokeClaudeToken(OWNER, other.id);
+    const latest = newest()?.seq;
+    const revoked = await run(["reply", "1", "hi"], { SATCHEL_URL: url, SATCHEL_TOKEN: other.token });
+    expect(revoked.code).toBe(2);
+    expect(revoked.err).toContain("unknown or revoked");
+    expect(newest()?.seq).toBe(latest);
+
+    const dead = `http://127.0.0.1:${await freePort()}`;
+    const down = await run(["reply", "1", "hi"], { SATCHEL_URL: dead, SATCHEL_TOKEN: token });
+    expect(down.code).toBe(3);
+    expect(down.err).toBe(`satchel: Satchel isn't reachable at ${dead}. Tell the owner and carry on without it.`);
+  });
+
+  it("history marks Claude's replies instead of seen or unread", async () => {
+    const asked = say("history question");
+    await run(["reply", String(asked), "history answer"]);
+    const res = await run(["history", "--after", String(asked - 1)]);
+    expect(res.out).toMatch(new RegExp(`#${asked}  \\S+ \\S+ \\(unread\\)  history question`));
+    expect(res.out).toMatch(new RegExp(`#${asked + 1}  \\S+ \\S+ \\(Claude's reply\\)  Re #${asked}: history answer`));
   });
 });
 
@@ -231,8 +325,10 @@ describe("guide and flags", () => {
     const res = await run(["guide"], {});
     expect(res.code).toBe(0);
     expect(res.out.split("\n").length).toBeLessThan(40);
-    for (const n of [1, 2, 3, 4, 5, 6, 7]) expect(res.out).toContain(`${n}. `);
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) expect(res.out).toContain(`${n}. `);
     expect(res.out).toContain("satchel seen N");
+    expect(res.out).toContain("satchel reply N");
+    expect(res.out).toContain("A reply marks nothing seen");
   });
 
   it("answers --version and --help, and rejects unknown commands", async () => {

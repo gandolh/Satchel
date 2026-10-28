@@ -8,12 +8,10 @@ import {
 
 /**
  * Who a stored message is pushed to: every member except its sender and
- * Claude. The Ideas inbox has nobody (its members are the owner, who sent it,
- * and Claude), and it is left out explicitly too: Claude never sends, and the
- * owner's own notes are never pushed back to them.
+ * Claude. In the Ideas inbox (the owner and Claude) that is nobody for the
+ * owner's own notes, and the owner for Claude's replies (brief 18).
  */
 export function pushRecipients(conversation: ConversationSummary, sender: string): string[] {
-  if (conversation.kind === "inbox") return [];
   return conversation.members.map((member) => member.id).filter((id) => id !== sender && id !== CLAUDE_MEMBER);
 }
 

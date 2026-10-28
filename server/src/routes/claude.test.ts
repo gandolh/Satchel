@@ -3,10 +3,12 @@ import {
   CLAUDE_MEMBER,
   PAGE_LIMIT_MAX,
   claudeMessagesResponseSchema,
+  claudeReplyResponseSchema,
   claudeUnreadResponseSchema,
   createClaudeTokenResponseSchema,
   errorResponseSchema,
   meResponseSchema,
+  messagesResponseSchema,
   seenResponseSchema,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -75,6 +77,26 @@ async function history(token: string, query = "") {
   const res = await t.app.inject({ method: "GET", url: `/claude/messages${query}`, headers: bearer(token) });
   expect(res.statusCode).toBe(200);
   return claudeMessagesResponseSchema.parse(res.json()).messages;
+}
+
+function replyRequest(token: string, payload: object, url = "/claude/messages") {
+  return t.app.inject({ method: "POST", url, headers: bearer(token), payload });
+}
+
+/** Claude replies; returns the stored message as Claude sees it. */
+async function reply(token: string, text: string, clientId: string = randomUUID()) {
+  const res = await replyRequest(token, { clientId, text });
+  expect(res.statusCode).toBe(201);
+  return claudeReplyResponseSchema.parse(res.json()).message;
+}
+
+/** Every row in a conversation, straight from the table. */
+function rows(conversationId: string) {
+  return t.db
+    .prepare<[string], { seq: number; sender: string; text: string }>(
+      "SELECT seq, sender, text FROM messages WHERE conversation_id = ? ORDER BY seq",
+    )
+    .all(conversationId);
 }
 
 function expectError(res: { statusCode: number; json(): unknown }, status: number, code: string): string {
@@ -167,9 +189,9 @@ describe("GET /claude/messages", () => {
     await seen(token, seqs[1] ?? -1);
 
     expect(await history(token)).toEqual([
-      { seq: seqs[0], sentAt: now.toISOString(), text: "one", seen: true },
-      { seq: seqs[1], sentAt: now.toISOString(), text: "two", seen: true },
-      { seq: seqs[2], sentAt: now.toISOString(), text: "three", seen: false },
+      { seq: seqs[0], sentAt: now.toISOString(), text: "one", seen: true, fromClaude: false },
+      { seq: seqs[1], sentAt: now.toISOString(), text: "two", seen: true, fromClaude: false },
+      { seq: seqs[2], sentAt: now.toISOString(), text: "three", seen: false, fromClaude: false },
     ]);
   });
 
@@ -209,6 +231,143 @@ describe("GET /claude/messages", () => {
       const res = await t.app.inject({ method: "GET", url: `/claude/messages${query}`, headers: bearer(token) });
       expectError(res, 400, "invalid_request");
     }
+  });
+});
+
+describe("POST /claude/messages: Claude replies in the inbox", () => {
+  it("stores the reply in the token's inbox as Claude, and answers without sender or client ID", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const asked = post(a, "can you check the brief?");
+    const clientId = randomUUID();
+
+    const res = await replyRequest(token, { clientId, text: `Re #${asked}: done, see the brief` });
+    expect(res.statusCode).toBe(201);
+    const body = res.json() as { message: Record<string, unknown> };
+    expect(body).toEqual({ message: { seq: expect.any(Number), sentAt: now.toISOString(), text: `Re #${asked}: done, see the brief` } });
+    expect(res.body).not.toContain(clientId);
+    expect(res.body).not.toContain(CLAUDE_MEMBER);
+
+    expect(rows(a.inboxId)).toEqual([
+      { seq: asked, sender: A.subject, text: "can you check the brief?" },
+      { seq: body.message.seq, sender: CLAUDE_MEMBER, text: `Re #${asked}: done, see the brief` },
+    ]);
+    // The owner's thread shows it from Claude, and counts it unread.
+    const thread = await t.app.inject({ method: "GET", url: `/api/conversations/${a.inboxId}/messages`, headers: { cookie: a.cookie } });
+    expect(messagesResponseSchema.parse(thread.json()).messages.at(-1)).toMatchObject({ sender: CLAUDE_MEMBER, clientId });
+    const list = t.store.listConversations(A.subject).find((c) => c.id === a.inboxId);
+    expect(list?.unreadCount).toBe(1);
+  });
+
+  it("a repeated client ID stores one message; the same ID with other text is 409", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const clientId = randomUUID();
+
+    const first = await replyRequest(token, { clientId, text: "once" });
+    expect(first.statusCode).toBe(201);
+    const again = await replyRequest(token, { clientId, text: "once" });
+    expect(again.statusCode).toBe(200);
+    expect(again.json()).toEqual(first.json());
+    expectError(await replyRequest(token, { clientId, text: "twice" }), 409, "client_id_conflict");
+    expect(rows(a.inboxId).map((m) => m.text)).toEqual(["once"]);
+  });
+
+  it("an owner's client ID can't be reused to pass as Claude", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const clientId = randomUUID();
+    t.store.appendMessage({ conversationId: a.inboxId, sender: A.subject, clientId, text: "mine" });
+    expectError(await replyRequest(token, { clientId, text: "mine" }), 409, "client_id_conflict");
+    expect(rows(a.inboxId).map((m) => m.sender)).toEqual([A.subject]);
+  });
+
+  it("over-long or blank text, or a bad client ID, is 400 invalid_request and stores nothing", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    for (const payload of [
+      { clientId: randomUUID(), text: "x".repeat(4001) },
+      { clientId: randomUUID(), text: "   " },
+      { clientId: randomUUID() },
+      { clientId: "1", text: "hi" },
+      { text: "hi" },
+      {},
+    ]) {
+      expectError(await replyRequest(token, payload), 400, "invalid_request");
+    }
+    expect(rows(a.inboxId)).toEqual([]);
+    // 4000 is the limit, not over it.
+    await reply(token, "x".repeat(4000));
+  });
+
+  it("leaves Claude's seen marker where it is: a message sent between reading and replying stays unread", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const read = [post(a, "one"), post(a, "two")];
+    expect((await unread(token)).messages.map((m) => m.seq)).toEqual(read);
+
+    const midway = post(a, "sent while Claude was writing");
+    await reply(token, `Re #${read[1]}: on it`);
+
+    expect(t.store.seenUpTo(a.inboxId, CLAUDE_MEMBER)).toBe(0);
+    expect((await unread(token)).messages.map((m) => m.seq)).toEqual([...read, midway]);
+    // Marking is still `seen`'s job, and the reply is never unread for Claude.
+    await seen(token, read[1] ?? -1);
+    expect((await unread(token)).messages.map((m) => m.text)).toEqual(["sent while Claude was writing"]);
+  });
+
+  it("history tells Claude's replies from the owner's notes", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const asked = post(a, "question");
+    const answer = await reply(token, `Re #${asked}: answer`);
+
+    expect((await history(token)).map(({ seq, fromClaude }) => ({ seq, fromClaude }))).toEqual([
+      { seq: asked, fromClaude: false },
+      { seq: answer.seq, fromClaude: true },
+    ]);
+  });
+
+  it("ignores any conversation id in the body or the query: the reply lands in the token's inbox", async () => {
+    const a = await owner(A);
+    const { token } = await createToken(a);
+    const b = await owner(B);
+    const friend = await t.app.inject({
+      method: "POST",
+      url: "/api/conversations",
+      headers: { cookie: a.cookie },
+      payload: { kind: "direct", with: B.subject },
+    });
+    expect(friend.statusCode).toBe(201);
+    const direct = (friend.json() as { conversation: { id: string } }).conversation.id;
+
+    for (const target of [direct, b.inboxId]) {
+      const steer = { conversationId: target, id: target, conversation: target, inboxId: target };
+      const res = await replyRequest(
+        token,
+        { clientId: randomUUID(), text: `aimed at ${target}`, ...steer },
+        `/claude/messages?id=${target}&conversationId=${target}`,
+      );
+      expect(res.statusCode).toBe(201);
+    }
+
+    expect(rows(a.inboxId).map((m) => [m.sender, m.text])).toEqual([
+      [CLAUDE_MEMBER, `aimed at ${direct}`],
+      [CLAUDE_MEMBER, `aimed at ${b.inboxId}`],
+    ]);
+    expect(rows(direct)).toEqual([]);
+    expect(rows(b.inboxId)).toEqual([]);
+  });
+
+  it("goes to whichever inbox the token is bound to", async () => {
+    const a = await owner(A);
+    const b = await owner(B);
+    const tokenA = (await createToken(a)).token;
+    const tokenB = (await createToken(b)).token;
+    await reply(tokenA, "for ana");
+    await reply(tokenB, "for bogdan");
+    expect(rows(a.inboxId).map((m) => m.text)).toEqual(["for ana"]);
+    expect(rows(b.inboxId).map((m) => m.text)).toEqual(["for bogdan"]);
   });
 });
 
@@ -353,6 +512,7 @@ describe("401 unauthorized", () => {
     { method: "GET", url: "/claude/unread" },
     { method: "POST", url: "/claude/seen", payload: { upTo: 1 } },
     { method: "GET", url: "/claude/messages" },
+    { method: "POST", url: "/claude/messages", payload: { clientId: randomUUID(), text: "a reply" } },
   ] as const;
 
   it("a missing or malformed Authorization header, on every Claude route", async () => {
@@ -408,6 +568,8 @@ describe("401 unauthorized", () => {
       expectUnauthorized(await t.app.inject({ ...request, headers: bearer(token) }));
     }
     expect(t.store.seenUpTo(a.inboxId, CLAUDE_MEMBER)).toBe(0);
+    // Revoked stops posting too: nothing from Claude was stored.
+    expect(rows(a.inboxId).map((m) => m.sender)).toEqual([A.subject]);
   });
 
   it("a session cookie alone, without asking Ward", async () => {
@@ -454,6 +616,7 @@ describe("logging", () => {
     await unread(token);
     await seen(token, seq);
     await history(token);
+    await reply(token, "a reply");
     await t.app.inject({ method: "GET", url: "/claude/unread", headers: bearer(unknown) });
     await t.app.inject({ method: "GET", url: "/claude/unread", headers: { authorization: `Basic ${token}` } });
     await t.app.inject({ method: "POST", url: `/api/claude-tokens/${id}/revoke`, headers: { cookie: a.cookie } });

@@ -9,7 +9,9 @@ import {
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,
   apiError,
+  claudeHistoryMessageSchema,
   claudeMessagesQuerySchema,
+  claudeReplyResponseSchema,
   claudeTokenSummarySchema,
   claudeUnreadMessageSchema,
   createConversationRequestSchema,
@@ -162,7 +164,13 @@ const samples: Record<RouteName, Sample> = {
     route: "GET /claude/messages",
     auth: "claude",
     query: { after: "0", since: "2026-10-01", limit: "10" },
-    response: { messages: [{ seq: 39, sentAt: at, text: "idea", seen: true }] },
+    response: { messages: [{ seq: 39, sentAt: at, text: "idea", seen: true, fromClaude: false }] },
+  },
+  claudeReply: {
+    route: "POST /claude/messages",
+    auth: "claude",
+    body: { clientId, text: "Re #39: done" },
+    response: { message: { seq: 40, sentAt: at, text: "Re #39: done" } },
   },
 };
 
@@ -351,6 +359,19 @@ describe("what Claude and Settings never see", () => {
     expect(
       routes.claudeUnread.response.safeParse({ seenUpTo: 0, messages: [message] }).success,
     ).toBe(false);
+    // Claude's own reply comes back the same way, and history flags Claude's messages without naming senders.
+    expect(claudeReplyResponseSchema.safeParse({ message: view }).success).toBe(true);
+    expect(claudeReplyResponseSchema.safeParse({ message }).success).toBe(false);
+    const history = { ...view, seen: true, fromClaude: true };
+    expect(claudeHistoryMessageSchema.safeParse(history).success).toBe(true);
+    expect(claudeHistoryMessageSchema.safeParse({ ...history, sender: CLAUDE_MEMBER }).success).toBe(false);
+  });
+
+  it("a reply body is an ordinary send's: no conversation to name", () => {
+    expect(routes.claudeReply.body).toBe(sendMessageRequestSchema);
+    const parsed = routes.claudeReply.body.parse({ clientId, text: "hi", conversationId: "friend-chat" });
+    expect(parsed).toEqual({ clientId, text: "hi" });
+    expect(routes.claudeReply.body.safeParse({ clientId, text: "x".repeat(4001) }).success).toBe(false);
   });
 
   it("a token summary carrying the token or its hash fails to parse", () => {

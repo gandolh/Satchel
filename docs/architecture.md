@@ -52,11 +52,14 @@ The server refuses a Claude token on `/api/*` and a session cookie on `/claude/*
 3. The server publishes the message over the WebSocket to every member's open
    tabs. Polling takes over while the socket is down.
 4. In a friend chat with push set up, every member except the sender also
-   gets a notification. The Ideas inbox sends none.
+   gets a notification. In the Ideas inbox only Claude's replies send one,
+   to the owner.
 5. At home, `satchel unread` returns the messages above Claude's marker,
    oldest first. Reading moves no marker.
 6. `satchel seen N` moves Claude's marker forward to `N`, never back. The
    phone gets a live event, and "Seen" moves under message `N`.
+7. `satchel reply N "text"` posts `Re #N: text` into the inbox as Claude, by
+   the same path as step 2, except that it leaves Claude's marker alone.
 
 Reading and marking seen are two separate calls. An idea written between
 them stays unread for next time instead of being skipped.

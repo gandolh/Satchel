@@ -26,11 +26,22 @@ export function renderUnread(seenUpTo: number, messages: { seq: number; sentAt: 
   ].join("\n");
 }
 
-export function renderHistory(messages: { seq: number; sentAt: string; text: string; seen: boolean }[]): string {
+/** Claude's own messages say so instead of seen or unread, which only mean something for the owner's. */
+export const CLAUDE_REPLY_STATE = "Claude's reply";
+
+export function renderHistory(
+  messages: { seq: number; sentAt: string; text: string; seen: boolean; fromClaude: boolean }[],
+): string {
   if (messages.length === 0) return "Ideas inbox · no messages match";
+  const state = (m: { seen: boolean; fromClaude: boolean }) => (m.fromClaude ? CLAUDE_REPLY_STATE : m.seen ? "seen" : "unread");
   return [
     `Ideas inbox · ${messages.length} message${messages.length === 1 ? "" : "s"}`,
     "",
-    messages.map((m) => block(m.seq, m.sentAt, m.text, m.seen ? "seen" : "unread")).join("\n"),
+    messages.map((m) => block(m.seq, m.sentAt, m.text, state(m))).join("\n"),
   ].join("\n");
+}
+
+/** The text `satchel reply <n>` posts: messages have no reply field, so the number goes in front. */
+export function replyText(n: number, text: string): string {
+  return `Re #${n}: ${text}`;
 }

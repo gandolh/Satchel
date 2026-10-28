@@ -99,6 +99,10 @@ node cli.ts satchel deploy   # the web app
 node cli.ts satchel server   # the API container
 ```
 
+The CLI is linked, so `npm run build` in this repo after a pull updates it.
+Do it with each server deploy: a CLI older than the server stops with "Is the
+CLI out of date?" (`satchel history` does after brief 18).
+
 To run the API container on your machine instead, see
 [getting-started.md](getting-started.md#run-the-api-container).
 

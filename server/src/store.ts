@@ -80,6 +80,13 @@ export interface AppendMessageInput {
   clientId: string;
   /** Already normalised by `messageTextSchema`; stored exactly as given. */
   text: string;
+  /**
+   * Move the sender's seen marker to the new message (the default: you have
+   * seen everything up to what you just wrote). Claude's replies pass `false`
+   * (brief 18): Claude marks only what it printed, through `POST /claude/seen`,
+   * so a message the owner sent after Claude's last read stays unread for it.
+   */
+  markSenderSeen?: boolean;
 }
 
 export interface ListMessagesOptions {
@@ -462,7 +469,9 @@ export function createStore(db: Db, clock: Clock) {
       const { conversationId, sender, clientId, text } = input;
       const row = insertMessageStmt.get({ conversationId, sender, clientId, text, sentAt: now() });
       if (row === undefined) throw new Error("INSERT … RETURNING returned no row.");
-      moveMarker(conversationId, sender, row.seq);
+      // Either way a sender who isn't a member throws `NotAMember` and the insert rolls back.
+      if (input.markSenderSeen === false) markerOf(conversationId, sender);
+      else moveMarker(conversationId, sender, row.seq);
       return { message: toMessage(row), created: true };
     },
   );
@@ -580,7 +589,8 @@ export function createStore(db: Db, clock: Clock) {
     latestSeq,
 
     /**
-     * Stores the message and moves the sender's seen marker to it. A repeated
+     * Stores the message and moves the sender's seen marker to it, unless
+     * `markSenderSeen` is false (Claude's replies). A repeated
      * client ID with the same conversation, sender and text returns the stored
      * row with `created: false`; any other reuse throws `ClientIdConflict`.
      * A sender who isn't a member throws `NotAMember` and nothing is stored.

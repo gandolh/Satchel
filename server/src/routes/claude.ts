@@ -16,7 +16,8 @@ import type { ResolvedClaudeToken } from "../store.js";
  *
  * A Claude token reaches its own Ideas inbox and nothing else: every handler
  * takes the conversation id from the resolved token. No route reads a
- * conversation id from the request.
+ * conversation id from the request, for writing (`POST /claude/messages`,
+ * brief 18) as for reading.
  */
 
 /** The one answer for a missing, malformed, unknown or revoked Claude token. */
@@ -41,7 +42,7 @@ function claudeToken(request: FastifyRequest): ResolvedClaudeToken {
   return request.claudeToken;
 }
 
-export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live }) => {
+export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {
   app.decorateRequest("claudeToken", null);
 
   // Scoped to this plugin's routes. `onRequest` runs before the body is
@@ -83,7 +84,45 @@ export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, 
     const seenUpTo = store.seenUpTo(conversationId, CLAUDE_MEMBER);
     const messages = store
       .listMessages(conversationId, { after, since, limit })
-      .map(({ seq, sentAt, text }) => ({ seq, sentAt, text, seen: seq <= seenUpTo }));
+      .map(({ seq, sentAt, text, sender }) => ({
+        seq,
+        sentAt,
+        text,
+        seen: seq <= seenUpTo,
+        fromClaude: sender === CLAUDE_MEMBER,
+      }));
     return routes.claudeMessages.response.parse({ messages });
+  });
+
+  /*
+   * Claude replies in the inbox (brief 18): an ordinary send with the
+   * conversation from the token and `CLAUDE_MEMBER` as the sender. The body
+   * names no conversation; anything extra in it or the query is ignored. The
+   * owner sees it live and gets a push, like any message.
+   *
+   * Unlike a person's send, it leaves Claude's seen marker where it is: only
+   * `POST /claude/seen` moves it, with the number of the last message Claude
+   * printed, so a message the owner sends between Claude's read and its reply
+   * stays unread for Claude (decisions.md, "Reading and marking seen are two
+   * calls").
+   */
+  app.post(routes.claudeReply.path, (request, reply) => {
+    const { conversationId } = claudeToken(request);
+    const { clientId, text } = routes.claudeReply.body.parse(request.body);
+    const { message, created } = store.appendMessage({
+      conversationId,
+      sender: CLAUDE_MEMBER,
+      clientId,
+      text,
+      markSenderSeen: false,
+    });
+    if (created) {
+      live.messageStored(message);
+      push.messageStored(message);
+    }
+    reply.code(created ? 201 : 200);
+    return routes.claudeReply.response.parse({
+      message: { seq: message.seq, sentAt: message.sentAt, text: message.text },
+    });
   });
 };

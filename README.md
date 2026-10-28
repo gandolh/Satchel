@@ -27,11 +27,12 @@ Seen up to #12.
 
 - Keeps ideas written on the go in one chat, in strict order. Nothing is edited or deleted; a correction is a later message.
 - Lets Claude Code catch up when the owner says "check my inbox". `satchel unread` prints every unread idea oldest first, and `satchel seen N` marks them read.
+- Lets Claude answer a question in the inbox with `satchel reply N "text"`. The reply arrives live and as a push, like any message, and marks nothing read.
 - Shows what Claude has read with seen ticks and a "Seen" line, the way WhatsApp does.
 - Runs one-to-one and group chats with friends, with ticks, "Seen by" and unread badges. Claude can't read those chats.
-- Installs to the home screen as a PWA, updates live over a WebSocket, and can send push notifications.
+- Installs to the home screen as a PWA, updates live over a WebSocket, and can send push notifications. On Android it shows in the share sheet: a shared link or text lands in the Ideas inbox's composer.
 
-A notes app would hold the ideas too. Satchel adds an exact read marker, so Claude picks up only what is new, and an idea written while Claude is reading waits for the next read instead of being skipped. It is text only. There are no photos, files, search, editing or deleting, and Claude doesn't reply in the chat.
+A notes app would hold the ideas too. Satchel adds an exact read marker, so Claude picks up only what is new, and an idea written while Claude is reading waits for the next read instead of being skipped. It is text only. There are no photos, files, search, editing or deleting.
 
 ## Screenshots
 
@@ -51,7 +52,7 @@ On a laptop the chat list and the open chat sit side by side:
 
 ## How it works
 
-Four npm workspaces. `shared` holds the zod contract every other part uses. `server` is Fastify with SQLite. It gives each message a server `seq` and keeps one seen marker per member that only moves forward. `web` is the React PWA. It signs in with a local account, or with "Sign in with Ward", and talks to `/api/*`. `cli` is the `satchel` command, which reads only the Ideas inbox through `/claude/*` with a Claude token.
+Four npm workspaces. `shared` holds the zod contract every other part uses. `server` is Fastify with SQLite. It gives each message a server `seq` and keeps one seen marker per member that only moves forward. `web` is the React PWA. It signs in with a local account, or with "Sign in with Ward", and talks to `/api/*`. `cli` is the `satchel` command, which reads and answers in the Ideas inbox only, through `/claude/*` with a Claude token.
 
 ```mermaid
 flowchart LR

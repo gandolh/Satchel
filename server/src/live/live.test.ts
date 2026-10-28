@@ -237,6 +237,37 @@ describe("events reach the members' sockets and nobody else's", () => {
     expect(b1.events.map((e) => e.type)).toEqual(["conversation"]);
   });
 
+  it("Claude's reply reaches A's sockets as a message from Claude, and nobody else's (brief 18)", async () => {
+    const a = await signIn(A);
+    const b = await signIn(B);
+    const tokenRes = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: a.cookie } });
+    const { token } = createClaudeTokenResponseSchema.parse(tokenRes.json());
+    const [a1, a2, b1] = [await connect(a.cookie), await connect(a.cookie), await connect(b.cookie)];
+
+    const res = await t.app.inject({
+      method: "POST",
+      url: "/claude/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { clientId: randomUUID(), text: "Re #1: done" },
+    });
+    expect(res.statusCode).toBe(201);
+    await waitFor(() => a1.events.length === 1 && a2.events.length === 1, "A's sockets");
+    for (const client of [a1, a2]) {
+      expect(client.events).toEqual([
+        {
+          type: "message",
+          conversationId: a.inboxId,
+          message: expect.objectContaining({ sender: CLAUDE_MEMBER, text: "Re #1: done" }),
+        },
+      ]);
+    }
+    // No seen event: the reply leaves Claude's marker alone.
+    await createDirect(a.cookie, B.subject);
+    await waitFor(() => b1.events.length >= 1 && a1.events.length >= 2, "the conversation events");
+    expect(ofType(a1.events, "seen")).toHaveLength(0);
+    expect(b1.events.map((e) => e.type)).toEqual(["conversation"]);
+  });
+
   it("seen from the web reaches every member of the chat", async () => {
     const a = await signIn(A);
     const b = await signIn(B);

@@ -27,10 +27,14 @@ describe("pushRecipients", () => {
     expect(pushRecipients(conversation("direct", null, ["a", "b"]), "b")).toEqual(["a"]);
   });
 
-  it("is nobody for the Ideas inbox, whoever sent", () => {
+  it("is nobody for the owner's own notes in the Ideas inbox", () => {
     const inbox = conversation("inbox", null, ["a", CLAUDE_MEMBER]);
     expect(pushRecipients(inbox, "a")).toEqual([]);
-    expect(pushRecipients(inbox, CLAUDE_MEMBER)).toEqual([]);
+  });
+
+  it("is the owner for Claude's reply in the Ideas inbox (brief 18)", () => {
+    const inbox = conversation("inbox", null, ["a", CLAUDE_MEMBER]);
+    expect(pushRecipients(inbox, CLAUDE_MEMBER)).toEqual(["a"]);
   });
 });
 

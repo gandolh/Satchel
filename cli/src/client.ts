@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import {
   routes,
   type ClaudeMessagesResponse,
+  type ClaudeReplyResponse,
   type ClaudeUnreadResponse,
 } from "@satchel/shared";
 import { Rejected, Unreachable } from "./errors.js";
@@ -65,6 +67,15 @@ export class SatchelClient {
 
   seen(upTo: number): Promise<{ seenUpTo: number }> {
     return this.call("POST", routes.claudeSeen.path, routes.claudeSeen.response, { upTo });
+  }
+
+  /**
+   * Post a message in the inbox as Claude. One client ID per call: the route
+   * stores a repeated ID once, but the CLI doesn't retry, so a rerun after a
+   * timeout is a new message (check `satchel history` first).
+   */
+  reply(text: string): Promise<ClaudeReplyResponse> {
+    return this.call("POST", routes.claudeReply.path, routes.claudeReply.response, { clientId: randomUUID(), text });
   }
 
   history(query: { after?: number; since?: string; limit?: number }): Promise<ClaudeMessagesResponse> {

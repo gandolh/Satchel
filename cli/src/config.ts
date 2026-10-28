@@ -11,6 +11,8 @@ export interface Context {
   home: string;
   out: (line: string) => void;
   err: (line: string) => void;
+  /** Everything piped in, for `satchel reply <n>` with no text; undefined when stdin is a terminal or absent. */
+  stdin?: () => Promise<string | undefined>;
 }
 
 /** Parse `KEY=value` lines: `#` comments, an optional `export`, optional quotes. */

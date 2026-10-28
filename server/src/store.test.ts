@@ -277,6 +277,31 @@ describe("appendMessage", () => {
     expect(marker(inbox, CLAUDE_MEMBER)).toEqual({ seen_up_to: 0, seen_at: null });
     expect(store.getConversation(inbox, A)?.unreadCount).toBe(0);
   });
+
+  it("markSenderSeen: false leaves the sender's marker alone (Claude's replies, brief 18)", () => {
+    const inbox = store.ensureInbox(A);
+    const idea = send(inbox, A, "an idea").message;
+    const { message, created } = store.appendMessage({
+      conversationId: inbox,
+      sender: CLAUDE_MEMBER,
+      clientId: randomUUID(),
+      text: "Re #1: noted",
+      markSenderSeen: false,
+    });
+    expect(created).toBe(true);
+    expect(message).toMatchObject({ sender: CLAUDE_MEMBER, seq: idea.seq + 1 });
+    expect(marker(inbox, CLAUDE_MEMBER)).toEqual({ seen_up_to: 0, seen_at: null });
+    expect(store.unreadFor(inbox, CLAUDE_MEMBER).map((m) => m.text)).toEqual(["an idea"]);
+    expect(store.getConversation(inbox, A)?.unreadCount).toBe(1);
+  });
+
+  it("markSenderSeen: false still refuses a sender outside the conversation", () => {
+    const inbox = store.ensureInbox(A);
+    expect(() =>
+      store.appendMessage({ conversationId: inbox, sender: B, clientId: randomUUID(), text: "x", markSenderSeen: false }),
+    ).toThrow(NotAMember);
+    expect(messageCount()).toBe(0);
+  });
 });
 
 describe("listMessages and latestSeq", () => {

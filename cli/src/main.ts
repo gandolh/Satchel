@@ -4,16 +4,17 @@ import { SatchelClient } from "./client.js";
 import { resolveConfig, type Context } from "./config.js";
 import { renderGuide } from "./commands/guide.js";
 import { Rejected, Unreachable, UsageError } from "./errors.js";
-import { renderHistory, renderUnread } from "./format.js";
+import { renderHistory, renderUnread, replyText } from "./format.js";
 
-/** `satchel`: how Claude reads the owner's Ideas inbox. Exit codes: 0 ok, 1 usage, 2 rejected, 3 unreachable. */
+/** `satchel`: how Claude reads, and replies in, the owner's Ideas inbox. Exit codes: 0 ok, 1 usage, 2 rejected, 3 unreachable. */
 
-const USAGE = `satchel: read the owner's Ideas inbox.
+const USAGE = `satchel: read, and reply in, the owner's Ideas inbox.
 
   guide                                 the rules to follow
   unread                                unread messages, oldest first
   seen <n>                              mark everything up to #n as seen
   history [--after n] [--since date] [--limit n]
+  reply <n> [text]                      answer #n in the inbox (text from stdin when left out)
   --version, --help
 
 Address and token: SATCHEL_URL / SATCHEL_TOKEN in the environment, else in ~/.config/satchel/env.`;
@@ -29,6 +30,15 @@ function parse<O extends NonNullable<ParseArgsConfig["options"]>>(args: string[]
 function nonNegativeInt(value: string, what: string): number {
   if (!/^\d+$/.test(value)) throw new UsageError(`${what} must be a non-negative whole number, got "${value}"`);
   return Number.parseInt(value, 10);
+}
+
+const REPLY_USAGE = 'usage: satchel reply <n> "text", or pipe the text in: satchel reply <n> < file';
+
+/** The reply's text: the arguments after `<n>`, joined with spaces, or else stdin. Trimmed; empty is a usage error. */
+async function replyBody(words: string[], ctx: Context): Promise<string> {
+  const text = (words.length > 0 ? words.join(" ") : ((await ctx.stdin?.()) ?? "")).trim();
+  if (text === "") throw new UsageError(`nothing to send. ${REPLY_USAGE}`);
+  return text;
 }
 
 /** Run one invocation and return its exit code. `packageRoot` is the cli package's directory. */
@@ -77,6 +87,17 @@ export async function main(argv: string[], ctx: Context, packageRoot: URL): Prom
         };
         const res = await client(ctx).history(query);
         ctx.out(renderHistory(res.messages));
+        return 0;
+      }
+      case "reply": {
+        const { positionals } = parse(args, {});
+        const [n, ...words] = positionals;
+        if (n === undefined) throw new UsageError(REPLY_USAGE);
+        const answering = nonNegativeInt(n, "<n>");
+        if (answering === 0) throw new UsageError("<n> is the number of the message you are answering, from #1 up");
+        const text = await replyBody(words, ctx);
+        const { message } = await client(ctx).reply(replyText(answering, text));
+        ctx.out(`Replied as #${message.seq}.`);
         return 0;
       }
       default:

@@ -256,6 +256,27 @@ describe("pushes for a stored message", () => {
     expect(t.sent).toEqual([]);
   });
 
+  it("pushes Claude's reply in the Ideas inbox to the owner (brief 18)", async () => {
+    await subscribe(cookieA, subscription("phone-a"));
+    await subscribe(cookieB, subscription("phone-b"));
+    const me = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie: cookieA } });
+    const inbox = routes.me.response.parse(me.json()).inboxId ?? "";
+    const created = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: cookieA } });
+    const { token } = routes.createClaudeToken.response.parse(created.json());
+
+    const res = await t.app.inject({
+      method: "POST",
+      url: "/claude/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { clientId: randomUUID(), text: "Re #1: done" },
+    });
+    expect(res.statusCode).toBe(201);
+    await t.settle();
+    expect(t.sent).toEqual([
+      { endpoint: endpointOf("phone-a"), payload: { conversationId: inbox, title: "Claude", body: "Re #1: done" } },
+    ]);
+  });
+
   it.each([404, 410])("deletes a subscription the push service answers %i for, and keeps the rest", async (status) => {
     await subscribe(cookieB, subscription("old-phone"));
     await subscribe(cookieB, subscription("new-phone"));
