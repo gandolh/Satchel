@@ -39,8 +39,8 @@ _2026-10-28, brief 18_: for the same reason, Claude's reply in the inbox
 leaves Claude's marker alone, unlike a person's send. Rejected: applying the
 person's rule ("sending marks seen") to Claude, which would mark seen a
 message the owner sent between Claude's read and its reply. The building
-agent made this call against the brief's "follow the existing rule"; it is in
-open-questions.md for the owner to confirm.
+agent made this call against the brief's "follow the existing rule"; the owner
+confirmed it the same day.
 
 ## One forward-only seen marker per member
 _2026-10-09_. Each member of a conversation has one `seen_up_to` number.

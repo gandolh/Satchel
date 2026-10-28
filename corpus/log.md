@@ -286,3 +286,8 @@ scratch API while the owner's thread was open in headless Chrome: the reply
 arrived over the socket in about half a second. Push on the Android phone is
 an owner step, listed in [the brief](briefs/done/18-claude-replies-in-the-inbox.md).
 brief-board is down (since 2026-10-13), so it isn't on the board.
+
+## [2026-10-28] decision | Claude's reply leaves its seen marker alone, confirmed
+
+The owner confirmed brief 18's call: a `satchel reply` does not move Claude's
+seen marker; only `satchel seen` does. open-questions.md is empty again.
