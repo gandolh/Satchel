@@ -1,6 +1,6 @@
 ---
-summary: Snapshot as of 2026-10-22. All 15 briefs built, reviewed and committed; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 536 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
-updated: 2026-10-23
+summary: Snapshot as of 2026-10-28. Briefs 01-16 built, reviewed and committed; 17 (Android share target) and 18 (Claude replies in the inbox) are todo; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 536 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
+updated: 2026-10-28
 ---
 
 # Status
@@ -74,6 +74,10 @@ Phase 2, friends:
   done 2026-10-22. Production on its own host; the CLI's default URL follows.
 - 16 [Base UI for the notifications switch and the group picker](../briefs/done/16-base-ui-controls.md).
   done 2026-10-23. Base UI `Switch` and `Checkbox`; no other hand-built widgets left.
+- 17 [Share into Satchel from Android's share sheet](../briefs/todo/17-android-share-target.md).
+  todo, filed 2026-10-28 (the owner's call: Android first, iPhone kept working).
+- 18 [Claude replies in the Ideas inbox](../briefs/todo/18-claude-replies-in-the-inbox.md).
+  todo, filed 2026-10-28 (the owner's call). Independent of 17.
 
 ## Order
 

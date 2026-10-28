@@ -248,3 +248,12 @@ target; the iPhone must keep working but gets no share sheet (no native
 wrapper). And Claude may reply in the Ideas inbox through a `satchel reply`
 command; its token stays bound to the inbox. Both recorded in decisions.md.
 Briefs for the share target and the reply are to be written.
+
+## [2026-10-28] todo | Briefs 17 and 18: an Android share target, Claude's replies
+
+[17](briefs/todo/17-android-share-target.md) adds a GET `share_target` to the
+manifest and a share route that opens the Ideas inbox with the shared text or
+link in the composer, unsent; Safari ignores it, so the iPhone stays as it is.
+[18](briefs/todo/18-claude-replies-in-the-inbox.md) adds `POST /claude/messages`
+(the conversation from the token, the sender `claude`, live and push like any
+message) and `satchel reply <n> <text>`, with the guide saying when to use it.
