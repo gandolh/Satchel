@@ -4,6 +4,7 @@ import { NewChat } from "../people/NewChat";
 import { useMediaQuery, WIDE_QUERY } from "../polling";
 import { navigate, pathFor, usePathname, useRoute } from "../router";
 import { Settings } from "../settings/Settings";
+import { ShareScreen } from "../share/ShareScreen";
 import { ThreadScreen } from "../thread/ThreadPlaceholder";
 import { TabBar } from "./TabBar";
 
@@ -29,6 +30,8 @@ export function AppShell() {
       <Settings />
     ) : route.name === "new" ? (
       <NewChat />
+    ) : route.name === "share" ? (
+      <ShareScreen />
     ) : null;
   const tab = route.name === "settings" ? "settings" : "chats";
 

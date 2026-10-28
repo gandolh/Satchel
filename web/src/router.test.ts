@@ -4,12 +4,14 @@ import { matchRoute, pathFor, sameRoute, threadRoute, type Route } from "./route
 const BASE = "/satchel/";
 
 describe("matchRoute", () => {
-  it("matches the three routes", () => {
+  it("matches the five routes", () => {
     expect(matchRoute("/satchel/", BASE)).toEqual({ name: "chats" });
     expect(matchRoute("/satchel", BASE)).toEqual({ name: "chats" });
     expect(matchRoute("/satchel/settings", BASE)).toEqual({ name: "settings" });
     expect(matchRoute("/satchel/settings/", BASE)).toEqual({ name: "settings" });
     expect(matchRoute("/satchel/new", BASE)).toEqual({ name: "new" });
+    expect(matchRoute("/satchel/share", BASE)).toEqual({ name: "share" });
+    expect(matchRoute("/satchel/share/", BASE)).toEqual({ name: "share" });
     expect(matchRoute("/satchel/c/abc123", BASE)).toEqual({ name: "thread", id: "abc123" });
     expect(matchRoute("/satchel/c/abc123/", BASE)).toEqual({ name: "thread", id: "abc123" });
   });
@@ -27,6 +29,8 @@ describe("matchRoute", () => {
       "/satchel/c/%E0%A4%A",
       "/satchel/c/%20",
       "/satchel/settings/extra",
+      "/satchel/share/extra",
+      "/share",
       "/satchelx/settings",
       "/atrium/c/abc",
       "/",
@@ -39,6 +43,7 @@ describe("matchRoute", () => {
     expect(matchRoute("/", "/")).toEqual({ name: "chats" });
     expect(matchRoute("/c/x", "/")).toEqual({ name: "thread", id: "x" });
     expect(matchRoute("/apps/satchel/settings", "/apps/satchel/")).toEqual({ name: "settings" });
+    expect(matchRoute("/share", "/")).toEqual({ name: "share" });
   });
 });
 
@@ -48,6 +53,7 @@ describe("pathFor", () => {
       { name: "chats" },
       { name: "settings" },
       { name: "new" },
+      { name: "share" },
       threadRoute("abc"),
       threadRoute("with/slash and space"),
     ];
@@ -62,6 +68,8 @@ describe("pathFor", () => {
     expect(pathFor({ name: "chats" }, BASE)).toBe("/satchel/");
     expect(pathFor({ name: "settings" }, BASE)).toBe("/satchel/settings");
     expect(pathFor(threadRoute("abc"), BASE)).toBe("/satchel/c/abc");
+    expect(pathFor({ name: "share" }, BASE)).toBe("/satchel/share");
+    expect(pathFor({ name: "share" }, "/")).toBe("/share");
   });
 });
 

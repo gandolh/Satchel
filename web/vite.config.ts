@@ -62,6 +62,15 @@ export default defineConfig(({ mode }) => {
           display: "standalone",
           scope: base,
           start_url: base,
+          // Android's share sheet lists Satchel (brief 17). GET, so it is a
+          // plain navigation the worker's fallback already answers; text and
+          // links only. Safari ignores it, and nothing else depends on it.
+          share_target: {
+            action: `${base}share`,
+            method: "GET",
+            enctype: "application/x-www-form-urlencoded",
+            params: { title: "title", text: "text", url: "url" },
+          },
           // Raw hex only here: the manifest can't read CSS tokens. Keep in
           // step with --accent and --bg (light) in src/styles/tokens.css.
           theme_color: "#2A45C4",

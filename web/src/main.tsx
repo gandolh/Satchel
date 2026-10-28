@@ -24,10 +24,13 @@ import "./styles/chats.css";
 import "./styles/settings.css";
 
 import { App } from "./App";
+import { captureShare } from "./share/share";
 import { setUpAuth } from "./ward";
 
 // The auth hooks need the plugin's routes before anything renders.
 setUpAuth();
+// A share from Android's share sheet: keep the text through sign-in, drop it from the address.
+captureShare();
 
 /*
  * The service worker precaches the app shell. A new version waits and is

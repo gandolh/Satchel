@@ -7,9 +7,13 @@ import { canSend, COUNTER_FROM, textLength } from "./model";
 const TOUCH_QUERY = "(pointer: coarse)";
 const MAX_LINES = 5;
 
-/** The text field (grows to five lines) and the Send button. */
-export function Composer({ onSend }: { onSend: (text: string) => void }) {
-  const [text, setText] = useState("");
+/**
+ * The text field (grows to five lines) and the Send button. `initialText`
+ * prefills it, unsent (a share from Android's share sheet); over the limit it
+ * shows the usual counter and Send stays off, nothing is cut.
+ */
+export function Composer({ onSend, initialText = "" }: { onSend: (text: string) => void; initialText?: string }) {
+  const [text, setText] = useState(initialText);
   const field = useRef<HTMLTextAreaElement>(null);
   const touch = useMediaQuery(TOUCH_QUERY);
 

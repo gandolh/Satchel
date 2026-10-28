@@ -2,22 +2,31 @@ import { useMemo, useSyncExternalStore } from "react";
 import { appBase } from "./base";
 
 /**
- * The router, without a library: four routes on the History API, under the
+ * The router, without a library: five routes on the History API, under the
  * app's base (`import.meta.env.BASE_URL`, `/satchel/` by default).
  *
  *   /satchel/            chats
  *   /satchel/c/:id       thread
  *   /satchel/settings    settings
  *   /satchel/new         start a chat
+ *   /satchel/share       Android's share sheet lands here (brief 17); it opens
+ *                        the Ideas inbox with the shared text in the composer
  *
  * Anything else is chats; the shell rewrites the address to `/satchel/`.
  */
 
-export type Route = { name: "chats" } | { name: "thread"; id: string } | { name: "settings" } | { name: "new" };
+export type Route =
+  | { name: "chats" }
+  | { name: "thread"; id: string }
+  | { name: "settings" }
+  | { name: "new" }
+  | { name: "share" };
 
 export const CHATS: Route = { name: "chats" };
 export const SETTINGS: Route = { name: "settings" };
 export const NEW_CHAT: Route = { name: "new" };
+/** The manifest's `share_target` action. Only the share sheet links here; the query is read once at start-up (share/share.ts). */
+export const SHARE: Route = { name: "share" };
 
 export function threadRoute(id: string): Route {
   return { name: "thread", id };
@@ -30,6 +39,7 @@ export function matchRoute(pathname: string, base: string = appBase()): Route {
   const rest = pathname.slice(root.length).replace(/^\/+/, "").replace(/\/$/, "");
   if (rest === "settings") return SETTINGS;
   if (rest === "new") return NEW_CHAT;
+  if (rest === "share") return SHARE;
   const thread = /^c\/([^/]+)$/.exec(rest);
   if (thread?.[1]) {
     try {
@@ -51,6 +61,8 @@ export function pathFor(route: Route, base: string = appBase()): string {
       return `${base}settings`;
     case "new":
       return `${base}new`;
+    case "share":
+      return `${base}share`;
     case "thread":
       return `${base}c/${encodeURIComponent(route.id)}`;
   }

@@ -4,6 +4,7 @@ import { listMessages, markSeen, sendMessage, SignedOut, ApiError } from "../api
 import { useMe } from "../auth/session";
 import { conversationSubtitle, conversationTitle, withNewerMarkers } from "../chats/conversation";
 import { refreshConversations, useConversationSummary, useLiveChats } from "../chats/conversations";
+import { clearDraft, draftFor } from "../share/share";
 import { clockTime } from "../chats/time";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
@@ -39,6 +40,9 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
   const summary = useConversationSummary(conversationId);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
+  // Text shared from Android's share sheet (brief 17): in the composer once, unsent.
+  const [draft] = useState(() => draftFor(conversationId));
+  useEffect(() => clearDraft(conversationId), [conversationId]);
 
   // The thread's own answer, with any marker the (live-updated) list has seen move since.
   const conversation = useMemo(
@@ -282,7 +286,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
           New messages
         </button>
       )}
-      <Composer onSend={send} />
+      <Composer onSend={send} initialText={draft} />
     </section>
   );
 }
