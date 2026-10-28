@@ -1,6 +1,6 @@
 ---
-summary: How Claude reaches the Ideas inbox. The the-board pattern Satchel copies, the satchel CLI's commands and output, where it finds the address and Claude token, how the token is created, bound and revoked, what the guide tells Claude, exit codes, and the one CLAUDE.md line that makes "check my inbox" work.
-updated: 2026-10-09
+summary: How Claude reaches the Ideas inbox. The the-board pattern Satchel copies, the satchel CLI's commands and output (reading, marking seen, and since brief 18 replying), where it finds the address and Claude token, how the token is created, bound and revoked, what the guide tells Claude, exit codes, and the one CLAUDE.md line that makes "check my inbox" work.
+updated: 2026-10-28
 ---
 
 # Claude access
@@ -36,12 +36,13 @@ reads a repo `.env`: the inbox isn't tied to any one project.
   random bytes, shows the token once as `stl_<base64url>`, and stores only its
   SHA-256 hash.
 - Bound to the owner's Ideas inbox (`agent_tokens.conversation_id`). Every
-  `/claude/*` handler takes the conversation from the token.
+  `/claude/*` handler takes the conversation from the token, for posting a
+  reply as for reading; no body or query field can name another.
 - Revocable from the same screen. A revoked or unknown token is a `401`.
 - `last_used_at` is updated on use, so Settings can show "last used 21:40".
 - When an account loses its Satchel grant, its tokens are revoked the next
-  time it makes an `/api` request. Until then they still read that
-  account's own inbox: an accepted risk, since nothing else is exposed.
+  time it makes an `/api` request. Until then they still read, and reply in,
+  that account's own inbox: an accepted risk, since nothing else is exposed.
 - The CLI only sends the token over https, except to a loopback address.
 
 The owner pastes the token into `~/.config/satchel/env`. It never goes in a
@@ -57,7 +58,15 @@ run time; `npm link` links the whole package, so it ships with the CLI.
 | `satchel guide` | nothing | the guide, below |
 | `satchel unread` | `GET /claude/unread` | unread messages oldest first, then the exact `satchel seen N` to run |
 | `satchel seen <n>` | `POST /claude/seen` | `Seen up to #n.` |
-| `satchel history [--after n] [--since date] [--limit n]` | `GET /claude/messages` | older messages, seen or not |
+| `satchel history [--after n] [--since date] [--limit n]` | `GET /claude/messages` | older messages, each `(seen)`, `(unread)` or `(Claude's reply)` |
+| `satchel reply <n> [text]` | `POST /claude/messages` | `Replied as #m.` The text goes in as `Re #n: text`; with no text it is read from stdin |
+
+`satchel reply` (brief 18) posts as the `claude` member, by the same store
+call as a person's send, so the owner sees it live and gets a push. Unlike a
+person's send it leaves Claude's seen marker alone; see
+[messages-and-seen.md](messages-and-seen.md). Each run makes a new client ID.
+The route stores a repeated one once, but the CLI doesn't retry, so after a
+timeout check `satchel history` before running it again.
 
 `unread` output, one message per block:
 
@@ -97,6 +106,11 @@ without it.`
 6. If Satchel can't be reached, tell the owner once and carry on without it.
 7. Never print, copy or write down the token or the contents of
    `~/.config/satchel/env`.
+8. When a message asks something, Claude may answer it in the inbox with
+   `satchel reply N "answer"`: a few lines, never a secret, a password or the
+   token. It still tells the owner in the session, and a reply marks nothing
+   seen, so step 4 still applies. After an exit 3 it checks `satchel history`
+   before sending again.
 
 ## The ping
 

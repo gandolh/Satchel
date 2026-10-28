@@ -254,7 +254,7 @@ Briefs for the share target and the reply are to be written.
 [17](briefs/done/17-android-share-target.md) adds a GET `share_target` to the
 manifest and a share route that opens the Ideas inbox with the shared text or
 link in the composer, unsent; Safari ignores it, so the iPhone stays as it is.
-[18](briefs/todo/18-claude-replies-in-the-inbox.md) adds `POST /claude/messages`
+[18](briefs/done/18-claude-replies-in-the-inbox.md) adds `POST /claude/messages`
 (the conversation from the token, the sender `claude`, live and push like any
 message) and `satchel reply <n> <text>`, with the guide saying when to use it.
 
@@ -270,3 +270,19 @@ and a scratch API: Chrome parsed the manifest with no errors and the share
 target, and the share flows passed. The Android share sheet and the iPhone
 are owner checks, listed in [the brief](briefs/done/17-android-share-target.md).
 554 tests. brief-board is down (since 2026-10-13), so it isn't on the board.
+
+## [2026-10-28] done | Brief 18: Claude replies in the Ideas inbox
+
+`POST /claude/messages` and `satchel reply <n> [text]` (`e03348f`). The
+conversation comes from the token and the sender is `claude`; the owner sees
+the reply live and gets a push (the inbox used to push nothing). `satchel
+history` marks Claude's replies, and the guide has rule 8 on when to reply.
+One call against the brief's wording: a reply leaves Claude's seen marker
+alone, though a person's send moves theirs. Moving it would mark seen a
+message sent while Claude was writing, which the locked two-call read rules
+out. Recorded in decisions.md and left as the open question in
+open-questions.md. Checked with 577 tests, and with the built CLI against a
+scratch API while the owner's thread was open in headless Chrome: the reply
+arrived over the socket in about half a second. Push on the Android phone is
+an owner step, listed in [the brief](briefs/done/18-claude-replies-in-the-inbox.md).
+brief-board is down (since 2026-10-13), so it isn't on the board.

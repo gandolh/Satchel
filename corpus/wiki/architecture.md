@@ -1,6 +1,6 @@
 ---
 summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs) and re-based on local accounts on 2026-10-13 (brief 26). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22, brief 15; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
-updated: 2026-10-13
+updated: 2026-10-28
 ---
 
 # Architecture
@@ -122,8 +122,8 @@ Web Push signed with a VAPID pair (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 `VAPID_SUBJECT`, from `.env` locally and `../vps-deploy/secrets/satchel.env`
 in production). Without all three, the server starts with push off. Each
 device's subscription is stored in `push_subs`. Every newly stored message
-is pushed to the other members' devices after the reply, never to Claude,
-never for the inbox. The service worker
+is pushed to the other members' devices after the reply, never to Claude.
+In the inbox that means only Claude's replies push, to the owner (brief 18). The service worker
 ([web/src/sw.ts](../../web/src/sw.ts)) shows one notification per chat and
 skips it while that chat is focused. Code: [server/src/push/](../../server/src/push/).
 

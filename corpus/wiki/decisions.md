@@ -35,6 +35,13 @@ messages and marks them read. Rejected, because a dropped response or an ended
 session would mark messages seen that Claude never got, which is the loss the
 owner wanted to avoid. `upTo` also keeps a message sent mid-read unread.
 
+_2026-10-28, brief 18_: for the same reason, Claude's reply in the inbox
+leaves Claude's marker alone, unlike a person's send. Rejected: applying the
+person's rule ("sending marks seen") to Claude, which would mark seen a
+message the owner sent between Claude's read and its reply. The building
+agent made this call against the brief's "follow the existing rule"; it is in
+open-questions.md for the owner to confirm.
+
 ## One forward-only seen marker per member
 _2026-10-09_. Each member of a conversation has one `seen_up_to` number.
 Message N is seen by that member when N is at or below it. The marker never

@@ -1,6 +1,6 @@
 ---
-summary: Satchel's vocabulary, one canonical word per concept with the synonyms it replaces. Ideas inbox, conversation, member, message, seq, client ID, seen marker, seen, unread, Claude token, the guide, owner, friend.
-updated: 2026-10-09
+summary: Satchel's vocabulary, one canonical word per concept with the synonyms it replaces. Ideas inbox, conversation, member, message, seq, client ID, seen marker, seen, unread, Claude token, the guide, reply, owner, friend.
+updated: 2026-10-28
 ---
 
 # Glossary
@@ -70,3 +70,8 @@ _Avoid_: API key, access token (Ward's term), MCP token
 **The guide**:
 The rules `satchel guide` prints for Claude. They live only in the CLI.
 _Avoid_: instructions, prompt, help text
+
+**Reply**:
+A message Claude posts in the Ideas inbox with `satchel reply <n>`. It starts
+`Re #n:`, since messages have no reply field.
+_Avoid_: answer, response, comment

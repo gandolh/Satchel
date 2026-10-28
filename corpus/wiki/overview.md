@@ -1,6 +1,6 @@
 ---
-summary: What Satchel is in a paragraph. A small text messenger for the owner and a few friends whose pinned first chat, the Ideas inbox, is with Claude, who reads it at home through a CLI. Who uses it, what it deliberately leaves out, and where the design came from.
-updated: 2026-10-09
+summary: What Satchel is in a paragraph. A small text messenger for the owner and a few friends whose pinned first chat, the Ideas inbox, is with Claude, who reads it at home through a CLI and may answer there. Who uses it, what it deliberately leaves out, and where the design came from.
+updated: 2026-10-28
 ---
 
 # Overview
@@ -25,12 +25,13 @@ naming the repository Satchel on 2026-10-09. It is also the CLI's name.
 - **Friends.** A few people the owner knows. They sign in with a password or with Ward
   and only ever see their own chats.
 - **Claude.** A member of the owner's Ideas inbox and nothing else. It reads
-  and marks messages seen through the CLI. It does not write messages (yet).
+  and marks messages seen through the CLI, and since 2026-10-28 (brief 18)
+  may answer a question there with `satchel reply`.
 
 ## What it deliberately leaves out
 
 Photos, voice and files; tags; an offline outbox; editing or deleting
-messages; Claude replying in the chat; search; calls; federation; public
+messages; search; calls; federation; public
 signup; an MCP server. Each was considered on 2026-10-09 and set aside. The
 locked ones are in [decisions.md](decisions.md); the ones that might come back
 are in [open-questions.md](open-questions.md).

@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-28. Briefs 01-17 built and committed (17, the Android share target, waits on a phone check); 18 (Claude replies in the inbox) is todo; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 554 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-28. Briefs 01-18 built and committed; 17 (Android share target) and 18 (Claude replies in the inbox) wait on phone checks, and 18 left one owner question (should a reply mark seen?); nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 577 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-28
 ---
 
@@ -30,6 +30,14 @@ Android's share sheet a Satchel entry: a GET `share_target` opens the Ideas
 inbox with the shared text or link in the composer, unsent. Checked in
 headless Chrome; the share sheet itself is an owner step on the phone, listed
 in the brief. The test suite is at 554 tests.
+
+The same day [brief 18](../briefs/done/18-claude-replies-in-the-inbox.md)
+let Claude answer in the Ideas inbox: `satchel reply <n> "text"` posts
+`Re #n: text` through `POST /claude/messages`, live and as a push to the
+owner. A reply leaves Claude's seen marker alone, against the brief's "follow
+the existing rule", to keep the two-call read's guarantee; that is the one
+question in [open-questions.md](open-questions.md). After the next deploy,
+`npm run build` here updates the linked CLI. The test suite is at 577 tests.
 
 What's left is the owner's: the steps in
 [docs/owner-setup.md](../../docs/owner-setup.md) (register the app in
@@ -83,8 +91,9 @@ Phase 2, friends:
 - 17 [Share into Satchel from Android's share sheet](../briefs/done/17-android-share-target.md).
   done 2026-10-28, not deployed. GET `share_target`, the share route, the
   inbox composer prefilled once. Owner step: share from the Android phone.
-- 18 [Claude replies in the Ideas inbox](../briefs/todo/18-claude-replies-in-the-inbox.md).
-  todo, filed 2026-10-28 (the owner's call). Independent of 17.
+- 18 [Claude replies in the Ideas inbox](../briefs/done/18-claude-replies-in-the-inbox.md).
+  done 2026-10-28, not deployed. `POST /claude/messages`, `satchel reply`,
+  pushes from the inbox; a reply marks nothing seen (owner to confirm).
 
 ## Order
 
