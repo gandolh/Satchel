@@ -1,6 +1,6 @@
 ---
 summary: How the web app looks and behaves. A conventional messenger (chat list, thread, composer, settings) with no metaphor; the colour and type tokens for light and dark; the tick, "Seen" and failed-send states; phone-first layout and the PWA install. Read before any UI brief.
-updated: 2026-10-09
+updated: 2026-10-28
 ---
 
 # Design
@@ -73,3 +73,8 @@ at 192 and 512 px, `display: standalone`, scope and start URL the build's base:
 `/` in production on `satchel.<domain>`, `/satchel/` in local dev.
 The service worker caches the app shell only. It never caches API responses:
 messages always come from the server.
+
+On Android the manifest's `share_target` (a GET to `<base>share`, brief 17)
+puts Satchel in the share sheet. A share opens the Ideas inbox with the text
+or link in the composer, unsent; a friend's goes to the first chat they open.
+Safari ignores it, so the iPhone has no share entry and loses nothing.

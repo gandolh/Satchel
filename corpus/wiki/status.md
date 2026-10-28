@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-10-28. Briefs 01-16 built, reviewed and committed; 17 (Android share target) and 18 (Claude replies in the inbox) are todo; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 536 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
+summary: Snapshot as of 2026-10-28. Briefs 01-17 built and committed (17, the Android share target, waits on a phone check); 18 (Claude replies in the inbox) is todo; nothing deployed — the owner's steps are in docs/owner-setup.md. Production is the root of satchel.<domain> since brief 15. 554 tests. One line per brief and the waves they ran in (phase 1 Ideas inbox, phase 2 friends).
 updated: 2026-10-28
 ---
 
@@ -24,6 +24,12 @@ On 2026-10-22 [brief 15](../briefs/done/15-served-at-the-root-of-satchel-domain.
 moved production to the root of its own host, `satchel.<domain>`, with the API
 on the same host (`../vps-deploy` brief 16 carries the routes). The test suite
 is at 536 tests.
+
+On 2026-10-28 [brief 17](../briefs/done/17-android-share-target.md) gave
+Android's share sheet a Satchel entry: a GET `share_target` opens the Ideas
+inbox with the shared text or link in the composer, unsent. Checked in
+headless Chrome; the share sheet itself is an owner step on the phone, listed
+in the brief. The test suite is at 554 tests.
 
 What's left is the owner's: the steps in
 [docs/owner-setup.md](../../docs/owner-setup.md) (register the app in
@@ -74,8 +80,9 @@ Phase 2, friends:
   done 2026-10-22. Production on its own host; the CLI's default URL follows.
 - 16 [Base UI for the notifications switch and the group picker](../briefs/done/16-base-ui-controls.md).
   done 2026-10-23. Base UI `Switch` and `Checkbox`; no other hand-built widgets left.
-- 17 [Share into Satchel from Android's share sheet](../briefs/todo/17-android-share-target.md).
-  todo, filed 2026-10-28 (the owner's call: Android first, iPhone kept working).
+- 17 [Share into Satchel from Android's share sheet](../briefs/done/17-android-share-target.md).
+  done 2026-10-28, not deployed. GET `share_target`, the share route, the
+  inbox composer prefilled once. Owner step: share from the Android phone.
 - 18 [Claude replies in the Ideas inbox](../briefs/todo/18-claude-replies-in-the-inbox.md).
   todo, filed 2026-10-28 (the owner's call). Independent of 17.
 
@@ -97,3 +104,4 @@ Each wave needs the one before it; briefs in one wave own disjoint files.
 12. 14
 13. 15 (with `../vps-deploy` brief 16)
 14. 16
+15. 17 and 18 (independent)

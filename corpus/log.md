@@ -251,9 +251,22 @@ Briefs for the share target and the reply are to be written.
 
 ## [2026-10-28] todo | Briefs 17 and 18: an Android share target, Claude's replies
 
-[17](briefs/todo/17-android-share-target.md) adds a GET `share_target` to the
+[17](briefs/done/17-android-share-target.md) adds a GET `share_target` to the
 manifest and a share route that opens the Ideas inbox with the shared text or
 link in the composer, unsent; Safari ignores it, so the iPhone stays as it is.
 [18](briefs/todo/18-claude-replies-in-the-inbox.md) adds `POST /claude/messages`
 (the conversation from the token, the sender `claude`, live and push like any
 message) and `satchel reply <n> <text>`, with the guide saying when to use it.
+
+## [2026-10-28] done | Brief 17: share into Satchel from Android's share sheet
+
+The manifest has a GET `share_target` at `<base>share` (`85b5087`). A share
+becomes one message (the text, then the link on its own line unless the text
+holds it; the title only without text), waits in the tab's sessionStorage
+through sign-in, and lands in the Ideas inbox's composer, unsent. The address
+becomes the thread's, so a reload doesn't paste it again. A friend's share goes
+to the first chat they open. Checked in headless Chrome against the built app
+and a scratch API: Chrome parsed the manifest with no errors and the share
+target, and the share flows passed. The Android share sheet and the iPhone
+are owner checks, listed in [the brief](briefs/done/17-android-share-target.md).
+554 tests. brief-board is down (since 2026-10-13), so it isn't on the board.
