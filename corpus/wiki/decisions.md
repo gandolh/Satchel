@@ -1,6 +1,6 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls. Read before proposing to change any of these.
-updated: 2026-10-23
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls; Android first with the iPhone kept working; Claude may reply in the inbox (2026-10-28). Read before proposing to change any of these.
+updated: 2026-10-28
 ---
 
 # Decisions
@@ -67,6 +67,12 @@ no parameter can point Claude at a friend chat. The server keeps only a hash;
 the token is shown once in Settings. Rejected: a general API token with
 scopes, which would make "Claude never reads friend chats" depend on scope
 checks in every handler.
+
+**Widened 2026-10-28, owner:** Claude may also reply in the Ideas inbox,
+through a `satchel reply` command and a `POST /claude/messages` route. The
+token stays bound to its conversation, so a reply can only land in the inbox;
+it gains the right to post there and nothing else. Rejected: waiting until the
+seen marker had been used for a while (the earlier proposal), and never.
 
 ## The Ideas inbox is owner-only
 _2026-10-09_. Only an account whose Satchel grant includes the `admin` role
@@ -155,6 +161,14 @@ never deployed, so no link, install or push subscription is lost, and no
 redirect from `/satchel` is kept. Rejected: staying on the apex, which the
 owner chose against for this kind of app. Local dev stays under `/satchel/`:
 the base is the build's `SATCHEL_BASE`, so one build setting covers both.
+
+## Android first, iPhone kept working
+_2026-10-28, owner_. Satchel is used on both phones. Android is the main one:
+features are tested there, and Android gets a Web Share Target so Satchel is in
+its share sheet. The iPhone has to keep working (push after Add to Home Screen)
+but gets no share sheet, since only a native wrapper could give it one.
+Rejected: an Expo wrapper for the iPhone, which means a second build and an
+Apple developer account; and no share target on either phone.
 
 ## Base UI for interactive controls, styled by our own CSS
 _2026-10-23_. The Notifications switch is Base UI's `Switch` and the New group

@@ -239,3 +239,12 @@ drawn by our CSS, close to the native one. The decision is in
 [decisions.md](wiki/decisions.md); details are in
 [the brief](briefs/done/16-base-ui-controls.md). brief-board is down (since
 2026-10-13), so it isn't on the board.
+
+## [2026-10-28] decision | Both phones, Android first; Claude may reply in the inbox
+
+The owner answered both open questions. Satchel is used on Android and iPhone:
+Android is the main phone, features are tested there, and it gets a share
+target; the iPhone must keep working but gets no share sheet (no native
+wrapper). And Claude may reply in the Ideas inbox through a `satchel reply`
+command; its token stays bound to the inbox. Both recorded in decisions.md.
+Briefs for the share target and the reply are to be written.
