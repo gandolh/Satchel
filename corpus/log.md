@@ -291,3 +291,7 @@ brief-board is down (since 2026-10-13), so it isn't on the board.
 
 The owner confirmed brief 18's call: a `satchel reply` does not move Claude's
 seen marker; only `satchel seen` does. open-questions.md is empty again.
+
+## [2026-10-31] maintenance | README status counts briefs 01-18
+
+A README refresh pass with the readme-docs standard. The README already described the share target and Claude's replies, but its status still said "all fourteen briefs are done"; it now names briefs 01-18 and what is untested on a phone, as [status.md](wiki/status.md) does. The images were kept: briefs 15-18 moved the deploy to the root of `satchel.<domain>`, put Base UI under the notifications switch and the group picker, and added two features no image shows, so the screens pictured are unchanged. Checked: `npm install`, `npm run seed -w @satchel/server` with `SEED_USERNAME`, `SEED_PASSWORD` and `SEED_ROLE=admin` on a scratch `DATA_DIR`, and `npm run dev` answering on `/satchel/`.
