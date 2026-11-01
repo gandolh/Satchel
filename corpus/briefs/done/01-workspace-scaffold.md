@@ -2,7 +2,7 @@
 
 ## Context
 
-Greenfield. The repository is the owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) on GitHub,
+Greenfield. The repository is the owner's `Satchel` on GitHub,
 already cloned into this directory on `main` (2026-10-09). Its initial commit
 holds GitHub's Node `.gitignore`, an MIT `LICENSE` and a one-line
 `README.md`; besides those there is only `corpus/`. Everything else waits on
@@ -12,7 +12,7 @@ this brief. Keep the LICENSE; extend the existing `.gitignore` and
 Read [architecture.md](../../wiki/architecture.md) for the four workspaces,
 the ports and the local dev wiring, and [decisions.md](../../wiki/decisions.md)
 before choosing anything that could go another way. The closest house stack is
-the-board (`../brief-board`): copy its tooling shape and its pins.
+the-board (`brief-board`): copy its tooling shape and its pins.
 
 ## Files you OWN
 
@@ -62,7 +62,7 @@ create). Don't write the contract, the store, routes, commands or UI. Briefs
      the prefix stripped, and `^/ward(-api)?(/|$)` to `WARD_PUBLIC_ORIGIN`
      (read from the root `.env`, default `http://localhost:8792`), rewriting
      `Origin` to Ward's origin on requests from the dev server itself. Copy
-     that block from `../atrium/apps/web/vite.config.ts`; Ward's `/refresh`
+     that block from `atrium/apps/web/vite.config.ts`; Ward's `/refresh`
      and `/logout` refuse requests without it.
    - `cli/src/index.ts` prints the package version for `--version`.
    - One smoke test in `shared`, so `npm test` runs something.

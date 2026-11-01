@@ -6,7 +6,7 @@ On 2026-10-22 the owner asked for Satchel on its own subdomain,
 `satchel.<domain>`, with the imbatranimOS desktop, Postern and Ward. Satchel
 holds friend chats and the Ideas inbox, and on the shared origin a script in any
 estate app could read them with the session cookie attached. The routing is
-`../vps-deploy` brief 16: the client at the root of the host, built with
+`vps-deploy` brief 16: the client at the root of the host, built with
 `SATCHEL_BASE=/`, and the API at `/satchel-api` on the same host. Satchel was
 never deployed, so there is no redirect from `/satchel`.
 
@@ -39,7 +39,7 @@ needs no code change for the move. What does change:
 
 ## Outcome (2026-10-22)
 
-Done. The CLI defaults to `https://satchel.gandolh.ro/satchel-api`. A build
+Done. The CLI defaults to `https://satchel.<domain>/satchel-api`. A build
 with `SATCHEL_BASE=/` loads from `/assets/`, its manifest's `id`, `scope` and
 `start_url` are `/`, and neither `index.html` nor `sw.js` names `/satchel/`;
 the worker's navigation denylist already excluded `/satchel-api`, and its

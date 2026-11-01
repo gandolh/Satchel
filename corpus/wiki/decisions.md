@@ -103,7 +103,7 @@ live updates and push are phase 2. Rejected: both at once. The inbox is
 useful on day one and has no other users to support.
 
 ## Satchel has its own accounts; Ward is a linked second way in
-_2026-10-13, brief 26; the estate's call is in `../wzd_auth` `decisions-oidc.md`_.
+_2026-10-13, brief 26; the estate's call is in `wzd_auth` `decisions-oidc.md`_.
 Satchel signs people in itself: a users table in its own database
 (`auth_users`, from the vendored `ward-auth` 0.2.0 library), scrypt passwords,
 opaque sessions in the `satchel_session` cookie (`Path=/satchel-api`), and a
@@ -162,7 +162,7 @@ its API at `/satchel-api` on the same host, instead of `/satchel` and
 injected into any estate app could call Satchel's API with the
 `satchel_session` cookie attached and read the friend chats and the Ideas inbox:
 a cookie's `Path` does not stop a same-origin script. The estate's rule, in
-`../vps-deploy`'s decisions: an app that holds a shell, a mailbox or the keys
+`vps-deploy`'s decisions: an app that holds a shell, a mailbox or the keys
 to the others gets a host of its own, and a messenger is a mailbox. Satchel was
 never deployed, so no link, install or push subscription is lost, and no
 redirect from `/satchel` is kept. Rejected: staying on the apex, which the

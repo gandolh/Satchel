@@ -4,10 +4,10 @@
 
 Every `/api/*` route except `/api/health` needs a signed-in Ward account with
 a Satchel grant. Ward's integration contract is
-`../wzd_auth/corpus/wiki/integrating.md`. Read all of it before starting: its
+`wzd_auth/corpus/wiki/integrating.md`. Read all of it before starting: its
 "five things that must be right" are not optional, and it says which files
 of the reference client to copy unchanged. atrium's
-`../atrium/apps/api/src/modules/ward/` is a working integration to compare
+`atrium/apps/api/src/modules/ward` is a working integration to compare
 against. The summary for this repo is the Auth section of
 [architecture.md](../../wiki/architecture.md).
 
@@ -27,8 +27,8 @@ server/src/*.test.ts that test the above
 In other repos, one entry each:
 
 ```
-../wzd_auth/infrastructure/local/seed.mjs   (APPS)
-../wzd_auth/ui/src/lib/estate.ts            (ESTATE_APPS)
+wzd_auth/infrastructure/local/seed.mjs   (APPS)
+wzd_auth/ui/src/lib/estate.ts            (ESTATE_APPS)
 ```
 
 ## Files you must NOT touch
@@ -39,7 +39,7 @@ In other repos, one entry each:
 ## What to do
 
 1. **Copy the Ward client.** Copy `claims.ts`, `verify.ts`, `introspect.ts`
-   and `client.ts` from `../wzd_auth/client/src/` into `server/src/ward/`
+   and `client.ts` from `wzd_auth/client/src` into `server/src/ward/`
    unchanged, as integrating.md says, plus `server/src/ward/testing/fakeWard.ts` for tests.
    Note the source commit in a comment at the top of each copied file.
 2. **The guard** (`server/src/ward/guard.ts`), your own code: an `onRequest` hook on
@@ -68,10 +68,10 @@ In other repos, one entry each:
 6. **Local Ward.** Add `{ slug: "satchel", name: "Satchel", repo: "satchel",
    envFiles: [".env"] }` to `APPS` in seed.mjs and `{ slug: "satchel", root:
    "satchel", name: "Satchel" }` to `ESTATE_APPS` in estate.ts, matching the
-   neighbouring entries. First run `git status` in `../wzd_auth`; if either
+   neighbouring entries. First run `git status` in `wzd_auth`; if either
    file has uncommitted changes, stop and tell the owner. Rebuild the local
    Ward container (`docker compose up -d --build` in
-   `../wzd_auth/infrastructure/local`) and run the seed, so this repo's
+   `wzd_auth/infrastructure/local`) and run the seed, so this repo's
    `.env` gets the Ward trio. Commit the two `wzd_auth` lines as their own
    commit in that repo.
 

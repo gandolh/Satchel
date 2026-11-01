@@ -10,10 +10,10 @@ of it.
 Read [design.md](../../wiki/design.md) first: a conventional messenger, its
 screens, tokens, type and PWA rules. The browser side of Ward is in the Auth
 section of [architecture.md](../../wiki/architecture.md). atrium already does
-this: `../atrium/apps/web/src/lib/ward.ts` (`goToWardLogin`),
-`../atrium/apps/web/src/lib/auth.ts` and
-`../atrium/apps/web/src/auth/AuthGate.tsx`. Ward's own renewal logic is in
-`../wzd_auth/ui/src/lib/session.ts`.
+this: `atrium/apps/web/src/lib/ward.ts` (`goToWardLogin`),
+`atrium/apps/web/src/lib/auth.ts` and
+`atrium/apps/web/src/auth/AuthGate.tsx`. Ward's own renewal logic is in
+`wzd_auth/ui/src/lib/session.ts`.
 
 This brief runs after brief 05, so `/api/me` and `/api/conversations`
 exist for the browser checks, and in parallel with brief 07 (CLI only).

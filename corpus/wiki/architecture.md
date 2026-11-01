@@ -119,7 +119,7 @@ to be shown again instead of reconnecting.
 ## Push
 
 Web Push signed with a VAPID pair (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
-`VAPID_SUBJECT`, from `.env` locally and `../vps-deploy/secrets/satchel.env`
+`VAPID_SUBJECT`, from `.env` locally and `vps-deploy/secrets/satchel.env`
 in production). Without all three, the server starts with push off. Each
 device's subscription is stored in `push_subs`. Every newly stored message
 is pushed to the other members' devices after the reply, never to Claude.
@@ -153,15 +153,15 @@ against the repo root, so local data is `data/satchel.db`.
 ## Changes in other repos
 
 - `wzd_auth`: Satchel added to `APPS` in
-  `../wzd_auth/infrastructure/local/seed.mjs` and to `ESTATE_APPS` in
-  `../wzd_auth/ui/src/lib/estate.ts` (brief 04). Production
+  `wzd_auth/infrastructure/local/seed.mjs` and to `ESTATE_APPS` in
+  `wzd_auth/ui/src/lib/estate.ts` (brief 04). Production
   registration, the service key and the owner's grant are done by hand in
   Ward's console (brief 10).
-- `vps-deploy`: a `SourceRepo` in `../vps-deploy/lib/estate.ts`,
-  `../vps-deploy/stacks/satchel.ts` modelled on
-  `../vps-deploy/stacks/sports-app.ts`, the stack and `useWard` in its
+- `vps-deploy`: a `SourceRepo` in `vps-deploy/lib/estate.ts`,
+  `vps-deploy/stacks/satchel.ts` modelled on
+  `vps-deploy/stacks/sports-app.ts`, the stack and `useWard` in its
   `app.ts`, and the regenerated Caddyfile (brief 10). The OIDC client
-  key goes in `../vps-deploy/secrets/satchel.env`, which only the owner writes.
+  key goes in `vps-deploy/secrets/satchel.env`, which only the owner writes.
 
 ## Deploy
 

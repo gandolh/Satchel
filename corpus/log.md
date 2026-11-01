@@ -27,7 +27,7 @@ repo exists.
 
 ## [2026-10-09] maintenance | Repository wired
 
-The owner's [gandolh/Satchel](https://github.com/gandolh/Satchel) (initial commit: Node `.gitignore`, MIT
+The owner's `Satchel` (initial commit: Node `.gitignore`, MIT
 `LICENSE`, one-line `README.md`) was cloned and its `.git` moved into this
 directory, keeping `corpus/` in place. Brief 01 now extends those files
 instead of checking for a repository.
@@ -217,7 +217,7 @@ old Ward-only sign-in apart from `docs/getting-started.md`'s environment table.
 The owner asked for Satchel on its own host, with the imbatranimOS desktop,
 Postern and Ward: a messenger counts as a mailbox under the estate's rule. The
 app needed no code change, since its base was already the build's
-`SATCHEL_BASE`; `../vps-deploy` brief 16 builds it with `/`. The CLI's default
+`SATCHEL_BASE`; `vps-deploy` brief 16 builds it with `/`. The CLI's default
 URL moved to `https://satchel.<domain>/satchel-api`. The owner's setup steps
 were rewritten for the new host, and the step that redeployed Ward's UI for its
 login allowlist went, because Ward retired that allowlist on 2026-10-13.

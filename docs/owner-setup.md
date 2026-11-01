@@ -30,7 +30,7 @@ The DNS needs nothing: both names already have their A records.
    keep the private half for the next step. Then grant your own account the
    `admin` role on `satchel`, so Ward lets it sign in.
 
-2. **Store the secrets.** In `~/projects/vps-deploy/secrets/satchel.env`
+2. **Store the secrets.** In `vps-deploy/secrets/satchel.env`
    (`chmod 600` it), one per line:
 
    ```
@@ -48,7 +48,7 @@ The DNS needs nothing: both names already have their A records.
    starts the API container, and installs the Caddyfile with Satchel's host):
 
    ```
-   cd ~/projects/vps-deploy && node cli.ts satchel all
+   cd path/to/vps-deploy && node cli.ts satchel all
    ```
 
 4. **Check it.** `https://satchel.<domain>/` loads with a valid certificate,
@@ -74,7 +74,7 @@ The DNS needs nothing: both names already have their A records.
 7. **Install the CLI.**
 
    ```
-   cd ~/projects/satchel && npm install && npm run build
+   cd path/to/satchel && npm install && npm run build
    cd cli && npm link
    satchel --version
    satchel unread
@@ -94,7 +94,7 @@ The DNS needs nothing: both names already have their A records.
 Later updates:
 
 ```
-cd ~/projects/vps-deploy
+cd path/to/vps-deploy
 node cli.ts satchel deploy   # the web app
 node cli.ts satchel server   # the API container
 ```
@@ -137,12 +137,12 @@ works as before.
    lines into `infrastructure/.env`.
 
 3. **Production.** Add `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to
-   `~/projects/vps-deploy/secrets/satchel.env`, next to the Ward settings.
+   `vps-deploy/secrets/satchel.env`, next to the Ward settings.
    `VAPID_SUBJECT` defaults to `mailto:johndoe@example.com` there; set it too
    if you want a different contact. Then redeploy:
 
    ```
-   cd ~/projects/vps-deploy && node cli.ts satchel all
+   cd path/to/vps-deploy && node cli.ts satchel all
    ```
 
    `all` runs `server` (restarts the API with the keys) and `deploy` (ships

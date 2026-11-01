@@ -22,7 +22,7 @@ The test suite is at 538 tests.
 
 On 2026-10-22 [brief 15](../briefs/done/15-served-at-the-root-of-satchel-domain.md)
 moved production to the root of its own host, `satchel.<domain>`, with the API
-on the same host (`../vps-deploy` brief 16 carries the routes). The test suite
+on the same host (`vps-deploy` brief 16 carries the routes). The test suite
 is at 536 tests.
 
 On 2026-10-28 [brief 17](../briefs/done/17-android-share-target.md) gave
@@ -46,7 +46,7 @@ line, and invite friends with the `member` role). Open follow-ups live in
 `todos/` and [open-questions.md](open-questions.md).
 
 The repository is the owner's
-[gandolh/Satchel](https://github.com/gandolh/Satchel). Commits are local on
+`Satchel`. Commits are local on
 `main`; the owner pushes.
 
 ## Briefs
@@ -111,6 +111,6 @@ Each wave needs the one before it; briefs in one wave own disjoint files.
 10. 12
 11. 13
 12. 14
-13. 15 (with `../vps-deploy` brief 16)
+13. 15 (with `vps-deploy` brief 16)
 14. 16
 15. 17 and 18 (independent)

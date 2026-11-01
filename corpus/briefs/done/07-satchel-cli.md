@@ -12,7 +12,7 @@ is in [decisions.md](../../wiki/decisions.md).
 The server side is brief 06 (`/claude/*` routes). This brief tests against
 the real server, so it runs after 06.
 
-For reference, the-board's CLI is in `../brief-board/cli/src/`: argument
+For reference, the-board's CLI is in `brief-board/cli/src`: argument
 parsing with `node:util` `parseArgs`, the address lookup in `context.ts`, the
 guide as a markdown file. Copy its shape; don't import from it.
 

@@ -17,7 +17,7 @@ Satchel has almost no hand-built widgets. There are two controls:
   `<label>` holding a native checkbox. Rows past the member limit are
   disabled.
 
-The pattern to copy is `../newspapper/ui/src/components/ui/Toggle.tsx`
+The pattern to copy is `newspapper/ui/src/components/ui/Toggle.tsx`
 (Base UI with the app's own stylesheet).
 
 ## Files you OWN

@@ -78,7 +78,7 @@ updated: <YYYY-MM-DD>
 
 - Standard relative markdown links. Code links from `wiki/` look like
   `../../server/src/app.ts`. Other repos are named in backticks
-  (`../wzd_auth/client`), never linked.
+  (`wzd_auth/client`), never linked.
 - Absolute dates only (`2026-10-09`), never "last week".
 - One concept per page. Split a page past 200 body lines.
 - Never commit corpus changes unless the owner asks.

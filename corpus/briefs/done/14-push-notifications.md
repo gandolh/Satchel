@@ -24,12 +24,12 @@ server/src/config.ts   (VAPID settings)
 web/src/push/*  web/src/settings/Notifications.tsx  web/src/sw.ts   (push handlers)
 web/vite.config.ts   (only if the service worker strategy must change)
 .env.example
-../vps-deploy/stacks/satchel.ts   (pass the VAPID settings into the container)
+vps-deploy/stacks/satchel.ts   (pass the VAPID settings into the container)
 ```
 
 ## Files you must NOT touch
 
-`cli/`, `corpus/`, `server/src/ward/`, `../vps-deploy/secrets/`.
+`cli/`, `corpus/`, `server/src/ward/`, `vps-deploy/secrets`.
 
 ## What to do
 
@@ -38,7 +38,7 @@ web/vite.config.ts   (only if the service worker strategy must change)
    environment. Without them the server starts with push disabled and logs it
    once. Document generating a pair (`npx web-push generate-vapid-keys`) in
    the README; the owner puts them in `.env` locally and in
-   `../vps-deploy/secrets/satchel.env` for production. Never commit a key.
+   `vps-deploy/secrets/satchel.env` for production. Never commit a key.
 2. **Storage.** A migration adding `push_subs` (`endpoint` unique, `subject`,
    `p256dh`, `auth`, `created_at`, `last_success_at`). Store functions to
    save (upsert by endpoint), delete, and list a member's subscriptions.
@@ -61,7 +61,7 @@ web/vite.config.ts   (only if the service worker strategy must change)
    iOS outside standalone mode: "Add Satchel to your Home Screen first
    (Share → Add to Home Screen), then turn this on there." Turning it off
    unsubscribes and deletes the subscription on the server.
-7. **vps-deploy.** Pass the three VAPID values from `../vps-deploy/secrets/satchel.env`
+7. **vps-deploy.** Pass the three VAPID values from `vps-deploy/secrets/satchel.env`
    into the container environment the way the stack passes other secrets.
    Write the redeploy command into the README; deploying is an owner step.
 
