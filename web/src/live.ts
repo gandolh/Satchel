@@ -12,7 +12,7 @@ import { sessionEnded } from "./ward";
 export type { LiveEvent } from "@satchel/shared";
 
 /**
- * Live updates (brief 12): one WebSocket per tab at `/satchel-api/api/live`,
+ * Live updates: one WebSocket per tab at `/satchel-api/api/live`,
  * which pushes new messages, seen markers and new conversations. Polling
  * stays as the fallback, and runs only while this socket isn't live.
  *

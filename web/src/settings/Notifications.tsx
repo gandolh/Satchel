@@ -142,7 +142,7 @@ async function loadView(): Promise<NotificationsView> {
 }
 
 /**
- * Settings → Notifications (brief 14). A switch that asks for permission only
+ * Settings → Notifications. A switch that asks for permission only
  * when turned on. Turning it on subscribes this browser and saves the
  * subscription on the server; turning it off unsubscribes and deletes it.
  */

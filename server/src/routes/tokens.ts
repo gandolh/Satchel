@@ -8,7 +8,7 @@ import { requireOwner } from "../auth/guard.js";
 export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";
 
 /**
- * The Claude token routes under `/api/claude-tokens` (brief 06).
+ * The Claude token routes under `/api/claude-tokens`.
  *
  * Behind the session guard, and owner-only: every route here is a 403
  * `forbidden` for an account without the `admin` role, before anything else

@@ -1,6 +1,6 @@
 ---
 summary: How the web app looks and behaves. A conventional messenger (chat list, thread, composer, settings) with no metaphor; the colour and type tokens for light and dark; the tick, "Seen" and failed-send states; phone-first layout and the PWA install. Read before any UI brief.
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Design
@@ -74,7 +74,18 @@ at 192 and 512 px, `display: standalone`, scope and start URL the build's base:
 The service worker caches the app shell only. It never caches API responses:
 messages always come from the server.
 
-On Android the manifest's `share_target` (a GET to `<base>share`, brief 17)
+On Android the manifest's `share_target` (a GET to `<base>share`, since 2026-10-28)
 puts Satchel in the share sheet. A share opens the Ideas inbox with the text
 or link in the composer, unsent; a friend's goes to the first chat they open.
 Safari ignores it, so the iPhone has no share entry and loses nothing.
+`web/src/share/share.ts` turns the share's query into one message at start-up
+and keeps it in the tab's sessionStorage, which survives the "Sign in with
+Ward" round trip (that returns to the bare `/share`, since a share can be
+longer than the 512-character `returnTo`). Signed in, it becomes an in-memory
+draft the composer shows once; the text never goes to the server, and the
+composer isn't focused, so Android's keyboard doesn't cover the thread.
+
+The service worker is built with `injectManifest` and registered as `prompt`:
+a new version applies the next time the page is hidden, so nobody is reloaded
+mid-typing. A thread's first load pages forward 200 messages at a time, ten
+pages at most; there is no "load older" control.

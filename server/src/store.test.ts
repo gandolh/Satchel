@@ -278,7 +278,7 @@ describe("appendMessage", () => {
     expect(store.getConversation(inbox, A)?.unreadCount).toBe(0);
   });
 
-  it("markSenderSeen: false leaves the sender's marker alone (Claude's replies, brief 18)", () => {
+  it("markSenderSeen: false leaves the sender's marker alone (Claude's replies)", () => {
     const inbox = store.ensureInbox(A);
     const idea = send(inbox, A, "an idea").message;
     const { message, created } = store.appendMessage({

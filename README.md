@@ -21,7 +21,7 @@ $ satchel seen 12
 Seen up to #12.
 ```
 
-**Status:** Personal project, built but not deployed yet. Briefs 01-18 are done: the Ideas inbox, the `satchel` CLI, Ward sign-in, friend chats, live updates, push notifications, the Android share target and Claude's replies. Push was tried end to end in headless Chrome only; iPhone push, the share target and replies on a phone are untested.
+**Status:** Personal project, built but not deployed yet. Built: the Ideas inbox, the `satchel` CLI, Ward sign-in, friend chats, live updates, push notifications, the Android share target and Claude's replies. Push was tried end to end in headless Chrome only; iPhone push, the share target and replies on a phone are untested.
 
 ## What it does
 

@@ -3,7 +3,7 @@ import type { Store } from "../store.js";
 import type { Hub, HubLog } from "./hub.js";
 
 /**
- * The publish points (brief 12). Routes call these after a store call
+ * The publish points. Routes call these after a store call
  * succeeded; each one works out who may see the event from the
  * conversation's own member list, so nothing reaches a non-member, and
  * Claude never gets one.

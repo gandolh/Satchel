@@ -1,8 +1,8 @@
 import { CLAUDE_MEMBER, LIVE_CLOSE_TOO_MANY_SOCKETS, liveEventSchema, type LiveEvent } from "@satchel/shared";
 
 /**
- * Who has a live socket open, by Ward subject, and sending events to them
- * (brief 12). In-process only: Satchel runs as one container, so there is no
+ * Who has a live socket open, by Ward subject, and sending events to them.
+ * In-process only: Satchel runs as one container, so there is no
  * second process to fan out to.
  */
 
@@ -41,7 +41,7 @@ export interface Hub {
    * twice gets it once. One socket failing doesn't stop the rest.
    *
    * Returns the subjects that had no open socket, in the order given: who
-   * missed the event live (brief 14 pushes to those). Throws only for an event
+   * missed the event live (push reaches those). Throws only for an event
    * that fails `liveEventSchema`, which is a bug in the caller.
    */
   publish(event: LiveEvent, subjects: readonly string[]): string[];

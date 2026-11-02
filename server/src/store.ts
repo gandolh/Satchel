@@ -82,8 +82,8 @@ export interface AppendMessageInput {
   text: string;
   /**
    * Move the sender's seen marker to the new message (the default: you have
-   * seen everything up to what you just wrote). Claude's replies pass `false`
-   * (brief 18): Claude marks only what it printed, through `POST /claude/seen`,
+   * seen everything up to what you just wrote). Claude's replies pass `false`:
+   * Claude marks only what it printed, through `POST /claude/seen`,
    * so a message the owner sent after Claude's last read stays unread for it.
    */
   markSenderSeen?: boolean;

@@ -190,7 +190,7 @@ describe("every route in the contract sits behind the right door", () => {
       }
     }
 
-    // At least /api/health and /api/me today; briefs 05 and 06 add the rest.
+    // At least /api/health and /api/me; the conversation and Claude routes add the rest.
     expect(checked).toBeGreaterThanOrEqual(2);
   });
 });

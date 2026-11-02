@@ -46,7 +46,7 @@ export interface LogOptions {
   stream?: { write(line: string): void };
 }
 
-/** Web Push (brief 14). Absent means push is off. */
+/** Web Push. Absent means push is off. */
 export interface PushOptions {
   vapid: VapidKeys;
   /** Default: web-push with `vapid`. Tests pass a stub. */
@@ -109,13 +109,13 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *   `/claude/*` takes a Claude token instead and never has a session.
  * - Route plugins (`routes/*.ts`) take `RouteDeps`, so later briefs fill them
  *   in without editing this file.
- * - Live updates (brief 12): `@fastify/websocket` serves `GET /api/live`
+ * - Live updates: `@fastify/websocket` serves `GET /api/live`
  *   behind the same guard, and re-checks it while open (`live/socket.ts`).
  *   A WebSocket upgrade must carry the app's own
  *   `Origin`; that check is a root hook ahead of the guard
  *   (`live/origin.ts`). The hub knows who has a socket open; route plugins
  *   publish through `RouteDeps.live`.
- * - Web Push (brief 14): `RouteDeps.push` notifies the other members' devices
+ * - Web Push: `RouteDeps.push` notifies the other members' devices
  *   of a stored message, after the reply; off unless `push` is passed. Closing
  *   the app waits for pushes already started.
  * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).

@@ -23,7 +23,7 @@ function devProxy(env: Record<string, string>): Record<string, ProxyOptions> {
     "/satchel-api": {
       target: `http://127.0.0.1:${env.PORT || 8807}`,
       rewrite: (url) => url.replace(/^\/satchel-api/, ""),
-      // Pass WebSocket upgrades through too (brief 12), prefix stripped the same way.
+      // Pass WebSocket upgrades through too, prefix stripped the same way.
       ws: true,
     },
   };
@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        // Our own worker, src/sw.ts, so it can show pushes (brief 14). It
+        // Our own worker, src/sw.ts, so it can show pushes. It
         // precaches the app shell exactly as the generated one did; workbox
         // only injects the file list. The navigation fallback and the
         // API/Ward denylist live in sw.ts now.
@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
           display: "standalone",
           scope: base,
           start_url: base,
-          // Android's share sheet lists Satchel (brief 17). GET, so it is a
+          // Android's share sheet lists Satchel. GET, so it is a
           // plain navigation the worker's fallback already answers; text and
           // links only. Safari ignores it, and nothing else depends on it.
           share_target: {

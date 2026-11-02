@@ -16,7 +16,7 @@ export interface LiveRouteDeps {
 }
 
 /**
- * `GET /api/live`: one WebSocket per open tab, for live updates (brief 12).
+ * `GET /api/live`: one WebSocket per open tab, for live updates.
  *
  * Before this route runs, the upgrade has passed the root `Origin` check
  * (`live/origin.ts`) and the session guard, exactly like every other `/api/*`
@@ -24,7 +24,7 @@ export interface LiveRouteDeps {
  * cookie's path (`/satchel-api`) covers it. A Claude token is no session, so it
  * can't open a socket.
  *
- * **The socket re-checks its session while it is open** (brief 26). A tab with
+ * **The socket re-checks its session while it is open**. A tab with
  * a live socket makes no HTTP requests (the web client stops polling while
  * live), so without this the guard's 30-second Ward check would never run for
  * it and a revoked Ward session would go on receiving messages for the whole

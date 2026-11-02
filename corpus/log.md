@@ -228,7 +228,7 @@ is down (since 2026-10-13), so progress is recorded here only.
 
 The owner asked for Base UI in the apps that still hand-build their widgets.
 Satchel has two: the Notifications switch and the New group checkboxes.
-[Brief 16](briefs/done/16-base-ui-controls.md) moves them to Base UI `Switch`
+Brief 16 moves them to Base UI `Switch`
 and `Checkbox`.
 
 ## [2026-10-23] done | Brief 16: Base UI for the switch and the group picker
@@ -237,7 +237,7 @@ The Notifications switch is Base UI's `Switch` and the New group rows use its
 `Checkbox` (`1bc70c0`). The switch looks exactly as before; the checkbox is
 drawn by our CSS, close to the native one. The decision is in
 [decisions.md](wiki/decisions.md); details are in
-[the brief](briefs/done/16-base-ui-controls.md). brief-board is down (since
+brief 16. brief-board is down (since
 2026-10-13), so it isn't on the board.
 
 ## [2026-10-28] decision | Both phones, Android first; Claude may reply in the inbox
@@ -251,10 +251,10 @@ Briefs for the share target and the reply are to be written.
 
 ## [2026-10-28] todo | Briefs 17 and 18: an Android share target, Claude's replies
 
-[17](briefs/done/17-android-share-target.md) adds a GET `share_target` to the
+17 adds a GET `share_target` to the
 manifest and a share route that opens the Ideas inbox with the shared text or
 link in the composer, unsent; Safari ignores it, so the iPhone stays as it is.
-[18](briefs/done/18-claude-replies-in-the-inbox.md) adds `POST /claude/messages`
+18 adds `POST /claude/messages`
 (the conversation from the token, the sender `claude`, live and push like any
 message) and `satchel reply <n> <text>`, with the guide saying when to use it.
 
@@ -268,7 +268,7 @@ becomes the thread's, so a reload doesn't paste it again. A friend's share goes
 to the first chat they open. Checked in headless Chrome against the built app
 and a scratch API: Chrome parsed the manifest with no errors and the share
 target, and the share flows passed. The Android share sheet and the iPhone
-are owner checks, listed in [the brief](briefs/done/17-android-share-target.md).
+are owner checks, listed in brief 17.
 554 tests. brief-board is down (since 2026-10-13), so it isn't on the board.
 
 ## [2026-10-28] done | Brief 18: Claude replies in the Ideas inbox
@@ -284,7 +284,7 @@ out. Recorded in decisions.md and left as the open question in
 open-questions.md. Checked with 577 tests, and with the built CLI against a
 scratch API while the owner's thread was open in headless Chrome: the reply
 arrived over the socket in about half a second. Push on the Android phone is
-an owner step, listed in [the brief](briefs/done/18-claude-replies-in-the-inbox.md).
+an owner step, listed in brief 18.
 brief-board is down (since 2026-10-13), so it isn't on the board.
 
 ## [2026-10-28] decision | Claude's reply leaves its seen marker alone, confirmed
@@ -295,3 +295,20 @@ seen marker; only `satchel seen` does. open-questions.md is empty again.
 ## [2026-10-31] maintenance | README status counts briefs 01-18
 
 A README refresh pass with the readme-docs standard. The README already described the share target and Claude's replies, but its status still said "all fourteen briefs are done"; it now names briefs 01-18 and what is untested on a phone, as [status.md](wiki/status.md) does. The images were kept: briefs 15-18 moved the deploy to the root of `satchel.<domain>`, put Base UI under the notifications switch and the group picker, and added two features no image shows, so the screens pictured are unchanged. Checked: `npm install`, `npm run seed -w @satchel/server` with `SEED_USERNAME`, `SEED_PASSWORD` and `SEED_ROLE=admin` on a scratch `DATA_DIR`, and `npm run dev` answering on `/satchel/`.
+
+## [2026-11-02] maintenance | Briefs reset
+
+Part of an estate-wide reset. The eighteen briefs in `briefs/done/` are folded
+into the wiki and deleted; brief numbering restarts at 01. The old briefs read
+like the grilling that fed the first corpus. The last commit that held them is
+`6671a58`: read one with
+`git show 6671a58:corpus/briefs/done/12-live-updates.md`. Brief numbers in the
+entries above refer to that set.
+
+Most was already in the wiki. [architecture.md](wiki/architecture.md) gained
+the push endpoint rule and its known gaps, [design.md](wiki/design.md) the
+share target's hand-off and the service worker's update rule, and the pages
+cite dates instead of Satchel's, Ward's or vps-deploy's brief numbers.
+[status.md](wiki/status.md) is a per-area snapshot instead of a brief list.
+Code comments no longer cite brief numbers.
+

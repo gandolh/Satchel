@@ -2,7 +2,7 @@ import type { SavePushSubscriptionRequest } from "@satchel/shared";
 import { appBase } from "../base";
 
 /**
- * This browser's side of Web Push (brief 14): can it, and its subscription.
+ * This browser's side of Web Push: can it, and its subscription.
  * The pure parts are exported for tests; the rest touches `navigator`.
  */
 

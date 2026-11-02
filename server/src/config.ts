@@ -1,7 +1,7 @@
 import { createECDH } from "node:crypto";
 import { z } from "zod";
 
-/** The server's Web Push identity (brief 14), from `npx web-push generate-vapid-keys`. */
+/** The server's Web Push identity, from `npx web-push generate-vapid-keys`. */
 export interface VapidKeys {
   /** base64url, a 65-byte P-256 point. Browsers subscribe with it. */
   publicKey: string;

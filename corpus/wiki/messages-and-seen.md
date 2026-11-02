@@ -1,6 +1,6 @@
 ---
 summary: How messages are numbered, stored and marked seen. The server seq and why gaps are normal, client IDs and safe retries, the forward-only seen marker, how unread counts, ticks, "Seen" lines and group "Seen by" are derived from it, and the race the two-call read protects against.
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Messages and seen
@@ -49,7 +49,7 @@ Every member of a conversation has `members.seen_up_to`, a seq (0 at join).
   latest seq, so a member can't pre-mark messages that don't exist yet.
 - **Sending marks seen.** When a member sends a message, their own marker moves
   to that message's seq. You have seen everything up to what you just wrote.
-- **Except Claude's replies** (brief 18, 2026-10-28). A reply from
+- **Except Claude's replies** (2026-10-28). A reply from
   `satchel reply` leaves Claude's marker where it is; only `POST /claude/seen`
   moves it. Claude reads through a CLI, not an open thread, so a message the
   owner sends between Claude's `unread` and its reply hasn't been read, and

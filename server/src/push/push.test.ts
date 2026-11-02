@@ -32,7 +32,7 @@ describe("pushRecipients", () => {
     expect(pushRecipients(inbox, "a")).toEqual([]);
   });
 
-  it("is the owner for Claude's reply in the Ideas inbox (brief 18)", () => {
+  it("is the owner for Claude's reply in the Ideas inbox", () => {
     const inbox = conversation("inbox", null, ["a", CLAUDE_MEMBER]);
     expect(pushRecipients(inbox, CLAUDE_MEMBER)).toEqual(["a"]);
   });

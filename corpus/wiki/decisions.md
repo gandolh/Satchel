@@ -1,6 +1,6 @@
 ---
 summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls; Android first with the iPhone kept working; Claude may reply in the inbox (2026-10-28). Read before proposing to change any of these.
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Decisions
@@ -35,7 +35,7 @@ messages and marks them read. Rejected, because a dropped response or an ended
 session would mark messages seen that Claude never got, which is the loss the
 owner wanted to avoid. `upTo` also keeps a message sent mid-read unread.
 
-_2026-10-28, brief 18_: for the same reason, Claude's reply in the inbox
+_2026-10-28_: for the same reason, Claude's reply in the inbox
 leaves Claude's marker alone, unlike a person's send. Rejected: applying the
 person's rule ("sending marks seen") to Claude, which would mark seen a
 message the owner sent between Claude's read and its reply. The building
@@ -84,7 +84,7 @@ seen marker had been used for a while (the earlier proposal), and never.
 ## The Ideas inbox is owner-only
 _2026-10-09_. Only an account whose Satchel grant includes the `admin` role
 gets an Ideas inbox and may create Claude tokens. Friends see only their
-chats with people. The owner chose this when asked before brief 11.
+chats with people. The owner chose this when asked, before friends were built.
 Rejected: an inbox for everyone (friends would see a pinned Claude chat
 nobody reads), and an inbox that appears after Connect Claude (more
 states, for friends nobody expects to use Claude Code). Opening it up later
@@ -103,7 +103,7 @@ live updates and push are phase 2. Rejected: both at once. The inbox is
 useful on day one and has no other users to support.
 
 ## Satchel has its own accounts; Ward is a linked second way in
-_2026-10-13, brief 26; the estate's call is in `wzd_auth` `decisions-oidc.md`_.
+_2026-10-13; the estate's call is in `wzd_auth` `decisions-oidc.md`_.
 Satchel signs people in itself: a users table in its own database
 (`auth_users`, from the vendored `ward-auth` 0.2.0 library), scrypt passwords,
 opaque sessions in the `satchel_session` cookie (`Path=/satchel-api`), and a

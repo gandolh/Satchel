@@ -7,8 +7,8 @@ import { Notifications } from "./Notifications";
 import { SignInMethods } from "./SignInMethods";
 
 /**
- * The Connect Claude slot. Brief 09 adds `./ConnectClaude.tsx` exporting
- * `ConnectClaude` (no props; it calls the API client itself) and it appears
+ * The Connect Claude slot. `./ConnectClaude.tsx` exports `ConnectClaude`
+ * (no props; it calls the API client itself), and it appears
  * under the account card with no change here. Until then the glob matches
  * nothing and the slot stays empty. Once the file exists, a plain
  * `import { ConnectClaude } from "./ConnectClaude"` can replace this.

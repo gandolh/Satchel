@@ -4,7 +4,7 @@ import { NavigationRoute, registerRoute } from "workbox-routing";
 import { clickPath, isShowingConversation, notificationFor, parsePushPayload, windowForClick } from "./push/notify";
 
 /*
- * Satchel's service worker (vite-plugin-pwa, injectManifest; brief 14).
+ * Satchel's service worker (vite-plugin-pwa, injectManifest).
  *
  * The first half is what the generated worker did before push: precache the
  * app shell, answer navigations with index.html, and never touch the API or

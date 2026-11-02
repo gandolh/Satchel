@@ -9,7 +9,7 @@ export interface PushLog {
 }
 
 /**
- * Web Push for stored messages (brief 14). Routes call `messageStored` after
+ * Web Push for stored messages. Routes call `messageStored` after
  * the store call succeeded, the same place they publish live events.
  */
 export interface PushNotifier {

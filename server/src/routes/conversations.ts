@@ -6,7 +6,7 @@ import { InactiveAccount, UnknownAccount } from "../store.js";
 import { signedIn } from "../auth/guard.js";
 
 /**
- * The conversation routes (briefs 05 and 11). Behind the session guard. A
+ * The conversation routes. Behind the session guard. A
  * conversation the caller is not a member of is a 404, the same as one that
  * does not exist.
  *
@@ -15,10 +15,10 @@ import { signedIn } from "../auth/guard.js";
  * body's `kind` is `direct` or `group` only, and Claude is never an account,
  * so no friend conversation has Claude as a member.
  *
- * Live events (brief 12) go out after the store call succeeded and only when
+ * Live events go out after the store call succeeded and only when
  * something changed: a stored message (not a repeated client ID), a marker
  * that moved, a conversation that was created (not an existing direct one).
- * A stored message also goes out as Web Push (brief 14) to the other members'
+ * A stored message also goes out as Web Push to the other members'
  * devices, after the reply; a push failure never touches the response.
  */
 export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {

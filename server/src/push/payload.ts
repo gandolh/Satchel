@@ -9,7 +9,7 @@ import {
 /**
  * Who a stored message is pushed to: every member except its sender and
  * Claude. In the Ideas inbox (the owner and Claude) that is nobody for the
- * owner's own notes, and the owner for Claude's replies (brief 18).
+ * owner's own notes, and the owner for Claude's replies.
  */
 export function pushRecipients(conversation: ConversationSummary, sender: string): string[] {
   return conversation.members.map((member) => member.id).filter((id) => id !== sender && id !== CLAUDE_MEMBER);

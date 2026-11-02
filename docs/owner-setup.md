@@ -13,7 +13,7 @@ writes a secret for you. Commands run on your machine; the deploy builds the
 API image on the VPS.
 
 Satchel lives at the root of its own host, `satchel.<domain>`, with its API at
-`/satchel-api` on that host (brief 15, 2026-10-22). Ward is at `ward.<domain>`.
+`/satchel-api` on that host (since 2026-10-22). Ward is at `ward.<domain>`.
 The DNS needs nothing: both names already have their A records.
 
 1. **Register Satchel as a client in production Ward.** Open
@@ -101,7 +101,7 @@ node cli.ts satchel server   # the API container
 
 The CLI is linked, so `npm run build` in this repo after a pull updates it.
 Do it with each server deploy: a CLI older than the server stops with "Is the
-CLI out of date?" (`satchel history` does after brief 18).
+CLI out of date?" (`satchel history` does since 2026-10-28).
 
 To run the API container on your machine instead, see
 [getting-started.md](getting-started.md#run-the-api-container).

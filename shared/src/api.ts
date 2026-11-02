@@ -260,7 +260,7 @@ export const claudeHistoryMessageSchema = z.strictObject({
   sentAt: timestamp,
   text: z.string(),
   seen: z.boolean(),
-  /** Claude's own reply (brief 18), so history can tell it from the owner's notes. A flag, never the sender. */
+  /** Claude's own reply, so history can tell it from the owner's notes. A flag, never the sender. */
   fromClaude: z.boolean(),
 });
 export type ClaudeHistoryMessage = z.infer<typeof claudeHistoryMessageSchema>;
@@ -270,7 +270,7 @@ export const claudeMessagesResponseSchema = z.strictObject({
 });
 export type ClaudeMessagesResponse = z.infer<typeof claudeMessagesResponseSchema>;
 
-// --- POST /claude/messages: Claude replies in the inbox (brief 18) ------------------
+// --- POST /claude/messages: Claude replies in the inbox ------------------
 // The body is an ordinary send's, `sendMessageRequestSchema`. It names no
 // conversation: the token's is the only one. 201 when stored; 200 when the
 // client ID was already stored with the same text.
@@ -330,7 +330,7 @@ export type LiveMessageEvent = z.infer<typeof liveMessageEventSchema>;
 export type LiveSeenEvent = z.infer<typeof liveSeenEventSchema>;
 export type LiveConversationEvent = z.infer<typeof liveConversationEventSchema>;
 
-// --- Push notifications (brief 14) -----------------------------------------------------
+// --- Push notifications -----------------------------------------------------
 // One subscription per browser (its endpoint), bound to the account that saved
 // it last. The server pushes `PushPayload` to every member of a conversation
 // except the sender (and Claude) when a message is stored.

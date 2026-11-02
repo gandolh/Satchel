@@ -5,7 +5,7 @@ import type { PushTarget, SendPush } from "../push/sender.js";
 import { startTestApp, type TestApp } from "../testing/testApp.js";
 
 /**
- * The push routes and the pushes a stored message sends (brief 14), with
+ * The push routes and the pushes a stored message sends, with
  * web-push stubbed: `send` records every push instead of encrypting it.
  * `settle()` closes the app, which waits for every push already started, so
  * a test can then assert what was (and wasn't) sent.
@@ -256,7 +256,7 @@ describe("pushes for a stored message", () => {
     expect(t.sent).toEqual([]);
   });
 
-  it("pushes Claude's reply in the Ideas inbox to the owner (brief 18)", async () => {
+  it("pushes Claude's reply in the Ideas inbox to the owner", async () => {
     await subscribe(cookieA, subscription("phone-a"));
     await subscribe(cookieB, subscription("phone-b"));
     const me = await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie: cookieA } });

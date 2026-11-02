@@ -1,12 +1,13 @@
 ---
-summary: How Satchel is put together, as built on 2026-10-09 (all 14 briefs) and re-based on local accounts on 2026-10-13 (brief 26). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22, brief 15; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
-updated: 2026-10-28
+summary: How Satchel is put together, as built on 2026-10-09 and re-based on local accounts on 2026-10-13 (Ward's move to local accounts). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
+updated: 2026-11-02
 ---
 
 # Architecture
 
-Built on 2026-10-09 by briefs 01 to 14 and two review rounds; the sign-in half
-was replaced on 2026-10-13 by brief 26. Verify against the code before relying
+Built on 2026-10-09, with two review rounds; the sign-in half
+was replaced on 2026-10-13, when the estate moved apps to local accounts with
+a "Sign in with Ward" button (`wzd_auth`'s `decisions-oidc.md`). Verify against the code before relying
 on a detail.
 
 ## Pieces
@@ -123,9 +124,16 @@ Web Push signed with a VAPID pair (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 in production). Without all three, the server starts with push off. Each
 device's subscription is stored in `push_subs`. Every newly stored message
 is pushed to the other members' devices after the reply, never to Claude.
-In the inbox that means only Claude's replies push, to the owner (brief 18). The service worker
+In the inbox that means only Claude's replies push, to the owner (since 2026-10-28). The service worker
 ([web/src/sw.ts](../../web/src/sw.ts)) shows one notification per chat and
 skips it while that chat is focused. Code: [server/src/push/](../../server/src/push/).
+A subscription's endpoint must be a public https push service (`isPushEndpoint`
+in `shared/src/api.ts`): IP literals, `localhost` and single-label names are
+refused, so a member can't aim the server's pushes into its own network. An
+endpoint saved again moves to the account saving it; an account keeps ten; a
+404 or 410 from the push service deletes it. Known: a shared browser keeps the
+previous account's pushes until someone opens Settings, and after a VAPID key
+change old rows stay until their devices turn notifications back on.
 
 ## Ports
 
@@ -154,13 +162,13 @@ against the repo root, so local data is `data/satchel.db`.
 
 - `wzd_auth`: Satchel added to `APPS` in
   `wzd_auth/infrastructure/local/seed.mjs` and to `ESTATE_APPS` in
-  `wzd_auth/ui/src/lib/estate.ts` (brief 04). Production
+  `wzd_auth/ui/src/lib/estate.ts` (2026-10-09). Production
   registration, the service key and the owner's grant are done by hand in
-  Ward's console (brief 10).
+  Ward's console.
 - `vps-deploy`: a `SourceRepo` in `vps-deploy/lib/estate.ts`,
   `vps-deploy/stacks/satchel.ts` modelled on
   `vps-deploy/stacks/sports-app.ts`, the stack and `useWard` in its
-  `app.ts`, and the regenerated Caddyfile (brief 10). The OIDC client
+  `app.ts`, and the regenerated Caddyfile (2026-10-09). The OIDC client
   key goes in `vps-deploy/secrets/satchel.env`, which only the owner writes.
 
 ## Deploy
@@ -170,6 +178,6 @@ modelled on Ward's because both build better-sqlite3) and
 `infrastructure/docker-compose.yml` (modelled on sports-app's: loopback port,
 `env_file: .env`, `/data` bind mount, healthcheck on `/api/health`). vps-deploy
 builds the image on the box and builds the client with `SATCHEL_BASE=/` for
-`satchel.<domain>` (its brief 16). Deploying is an owner step:
+`satchel.<domain>` (since 2026-10-22). Deploying is an owner step:
 `node cli.ts satchel all` the first time, then `deploy` for the client and
 `server` for the container.

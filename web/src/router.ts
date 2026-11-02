@@ -9,7 +9,7 @@ import { appBase } from "./base";
  *   /satchel/c/:id       thread
  *   /satchel/settings    settings
  *   /satchel/new         start a chat
- *   /satchel/share       Android's share sheet lands here (brief 17); it opens
+ *   /satchel/share       Android's share sheet lands here; it opens
  *                        the Ideas inbox with the shared text in the composer
  *
  * Anything else is chats; the shell rewrites the address to `/satchel/`.

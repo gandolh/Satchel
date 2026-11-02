@@ -2,7 +2,7 @@ import { appBase } from "../base";
 import { matchRoute, pathFor, SHARE } from "../router";
 
 /*
- * Sharing into Satchel from Android's share sheet (brief 17).
+ * Sharing into Satchel from Android's share sheet.
  *
  * The manifest's `share_target` is a GET to `<base>share?title=&text=&url=`,
  * so a share is an ordinary navigation and the service worker needs no

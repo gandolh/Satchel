@@ -237,7 +237,7 @@ describe("events reach the members' sockets and nobody else's", () => {
     expect(b1.events.map((e) => e.type)).toEqual(["conversation"]);
   });
 
-  it("Claude's reply reaches A's sockets as a message from Claude, and nobody else's (brief 18)", async () => {
+  it("Claude's reply reaches A's sockets as a message from Claude, and nobody else's", async () => {
     const a = await signIn(A);
     const b = await signIn(B);
     const tokenRes = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: a.cookie } });

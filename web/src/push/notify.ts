@@ -2,7 +2,7 @@ import type { PushPayload } from "@satchel/shared";
 
 /**
  * The service worker's decisions, as pure functions so they can be tested
- * without a worker (brief 14). `sw.ts` is the thin part that calls them.
+ * without a worker. `sw.ts` is the thin part that calls them.
  * Nothing here imports React, the router or zod: all of it ends up in sw.js.
  */
 

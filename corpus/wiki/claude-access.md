@@ -1,6 +1,6 @@
 ---
-summary: How Claude reaches the Ideas inbox. The the-board pattern Satchel copies, the satchel CLI's commands and output (reading, marking seen, and since brief 18 replying), where it finds the address and Claude token, how the token is created, bound and revoked, what the guide tells Claude, exit codes, and the one CLAUDE.md line that makes "check my inbox" work.
-updated: 2026-10-28
+summary: How Claude reaches the Ideas inbox. The the-board pattern Satchel copies, the satchel CLI's commands and output (reading, marking seen, and since 2026-10-28 replying), where it finds the address and Claude token, how the token is created, bound and revoked, what the guide tells Claude, exit codes, and the one CLAUDE.md line that makes "check my inbox" work.
+updated: 2026-11-02
 ---
 
 # Claude access
@@ -61,7 +61,7 @@ run time; `npm link` links the whole package, so it ships with the CLI.
 | `satchel history [--after n] [--since date] [--limit n]` | `GET /claude/messages` | older messages, each `(seen)`, `(unread)` or `(Claude's reply)` |
 | `satchel reply <n> [text]` | `POST /claude/messages` | `Replied as #m.` The text goes in as `Re #n: text`; with no text it is read from stdin |
 
-`satchel reply` (brief 18) posts as the `claude` member, by the same store
+`satchel reply` posts as the `claude` member, by the same store
 call as a person's send, so the owner sees it live and gets a push. Unlike a
 person's send it leaves Claude's seen marker alone; see
 [messages-and-seen.md](messages-and-seen.md). Each run makes a new client ID.

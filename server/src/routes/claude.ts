@@ -5,7 +5,7 @@ import { sendError } from "../errors.js";
 import type { ResolvedClaudeToken } from "../store.js";
 
 /**
- * The Claude routes under `/claude/*` (brief 06).
+ * The Claude routes under `/claude/*`.
  *
  * Outside the session guard: `wardAuth` is told these routes are public, so
  * nothing here reads the session cookie or calls Ward, and `request.account`
@@ -16,8 +16,8 @@ import type { ResolvedClaudeToken } from "../store.js";
  *
  * A Claude token reaches its own Ideas inbox and nothing else: every handler
  * takes the conversation id from the resolved token. No route reads a
- * conversation id from the request, for writing (`POST /claude/messages`,
- * brief 18) as for reading.
+ * conversation id from the request, for writing (`POST /claude/messages`)
+ * as for reading.
  */
 
 /** The one answer for a missing, malformed, unknown or revoked Claude token. */
@@ -73,7 +73,7 @@ export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, 
     const { upTo } = routes.claudeSeen.body.parse(request.body);
     const before = store.seenUpTo(conversationId, CLAUDE_MEMBER);
     const seenUpTo = store.markSeen(conversationId, CLAUDE_MEMBER, upTo);
-    // The owner's sockets, so the ticks turn blue while they watch (brief 12).
+    // The owner's sockets, so the ticks turn blue while they watch.
     if (seenUpTo !== before) live.seenMoved(conversationId, CLAUDE_MEMBER);
     return routes.claudeSeen.response.parse({ seenUpTo });
   });
@@ -95,7 +95,7 @@ export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, 
   });
 
   /*
-   * Claude replies in the inbox (brief 18): an ordinary send with the
+   * Claude replies in the inbox: an ordinary send with the
    * conversation from the token and `CLAUDE_MEMBER` as the sender. The body
    * names no conversation; anything extra in it or the query is ignored. The
    * owner sees it live and gets a push, like any message.

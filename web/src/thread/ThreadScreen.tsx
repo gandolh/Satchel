@@ -28,7 +28,7 @@ const PAGE = 200;
 const MAX_PAGES = 10;
 
 /**
- * Live events (brief 12) dispatch `received` and `seenMoved`; every
+ * Live events dispatch `received` and `seenMoved`; every
  * (re)connect fetches `after=<cursor>`; `usePolling` runs only while the
  * tab's socket is down. All state is the reducer in model.ts.
  */
@@ -40,7 +40,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
   const summary = useConversationSummary(conversationId);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
-  // Text shared from Android's share sheet (brief 17): in the composer once, unsent.
+  // Text shared from Android's share sheet: in the composer once, unsent.
   const [draft] = useState(() => draftFor(conversationId));
   useEffect(() => clearDraft(conversationId), [conversationId]);
 

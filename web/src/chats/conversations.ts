@@ -10,7 +10,7 @@ import { applyLiveEvent, sortConversations } from "./conversation";
  * (on a phone the list goes away while a thread is open) and so other screens
  * can read a conversation's summary before their own request answers.
  *
- * Kept current by live events while the socket is up (brief 12), refetched on
+ * Kept current by live events while the socket is up, refetched on
  * every (re)connect, and polled by the chat list only while the socket is down.
  */
 
