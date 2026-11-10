@@ -8,12 +8,9 @@
   - brief 16, *The Fastify servers adopt the code structure*: Satchel's row and the method;
   - brief 15, *Enforce the base-ui and code-structure skills in every repo*: `check-structure` runs `--warn-only` until this brief is done.
 - The owner's grilling of 2026-11-10:
-  - Q1 (how vps-deploy starts the service);
-  - Q23 (`server/src/features/`);
-  - Q24 (plugin options, explicit registration);
-  - Q25 (response schemas everywhere);
-  - Q27 (the test runner);
-  - the new questions in decisions 1, 4 and 5.
+  - Q1 (how services start: the Dockerfile's `CMD`);
+  - Q23 (`server/src/features/`), Q24 (plugin options, explicit registration), Q25 (response schemas everywhere), Q27 (the test runner);
+  - Q43 (the error handler), Q52 (validation before authorisation), Q53 (streams exempt), Q54 (the store), Q55 (where a schema lives), Q56 (`ApiError`, no decorator seam).
 
 **Order:** after 01. It touches no file that 02 or 03 touch except `package-lock.json`, so it may run before them, but never at the same time as either.
 
@@ -77,7 +74,7 @@ A bare file name in the table sits at the root of `server/src/`.
 | (new) | | `server/src/plugins/json-body.ts` | `fastify-plugin`: the empty-body JSON parser. |
 | `server/src/db/open.ts` | 28 | the same | |
 | `server/src/db/migrations.ts` | 107 | the same | |
-| `store.ts`, `store.test.ts` | 714, 828 | `server/src/db/store.ts`, `store.test.ts` | **Decision 1.** |
+| `store.ts`, `store.test.ts` | 714, 828 | `server/src/db/store.ts`, `store.test.ts` | **Decision 1** (kept whole). |
 | `server/src/live/hub.ts`, `socket.ts`, `publish.ts` | 110, 102, 85 | `server/src/features/live/` (same names) | |
 | `server/src/live/hub.test.ts`, `live.test.ts` | 355, 470 | `server/src/features/live/` (same names) | |
 | `server/src/routes/live.ts` | 64 | `server/src/features/live/routes.ts` | The WebSocket route (decision 6). |
@@ -98,7 +95,7 @@ Every file one folder deeper needs its relative imports updated, the vendored Wa
 
 **Feature boundaries after the move** (rule 5: only through `index.ts`): conversations and claude import `LivePublisher` and `PushNotifier` only as the types in `RouteDeps`, which stays in `app.ts` as `FeatureContext` does in Almanac. Features import `RouteDeps` from `app.ts` as a type; confirm the dependency-cruiser preset treats type-only imports as erased, or move `RouteDeps` to a file under `plugins/` in the same step. `server/src/features/push/` imports `store` types from `db/`, and `server/src/features/live/` imports the conversation lookup through the store it is handed, so no feature imports another.
 
-### Decision on the store (Satchel's one real design call)
+### Decision on the store (Satchel's one real design call, settled by Q54)
 
 `server/src/store.ts` is one 714-line factory, `createStore(db, clock)`, returning 24 methods over six tables (`accounts`, `conversations`, `members`, `messages`, `agent_tokens`, `push_subs`, in `server/src/db/migrations.ts`). Its methods group by feature, but the groups share state:
 
@@ -116,7 +113,7 @@ Options:
 1. **Keep the store whole**, moved to `server/src/db/store.ts` as the data layer. Features keep one `routes.ts`, and `db/` holds all SQL. Rule 11's 400-line warning stays on `store.ts` (as Almanac leaves `scopes.ts` at 567). Nothing about the transaction or the shared internals changes.
 2. **Split it into `features/<name>/store.ts`**, as the skill's tree has, with the cross-table `lockOutAccount` moved to a service that composes three stores inside one transaction.
 
-Default: option 1. Satchel's evidence is that the split cannot be settled mechanically: it needs a decision on where `lockOutAccount` and the shared internals live. *New question for the grilling.* If the owner picks 2, it is a separate brief after this one (the move map above stays valid for everything but the store, and `server/src/db/store.ts` is the file it would carve up).
+Decided: option 1 (Q54, decision 1). The split cannot be settled mechanically: it needs a decision on where `lockOutAccount` and the shared internals live. If the owner ever wants option 2, it is a separate brief after this one (the move map stays valid for everything but the store).
 
 ### Every reader of the environment
 
@@ -164,7 +161,7 @@ The vendored `wardAuth` plugin's `/auth/*` routes are generated code and out of 
 
 **Two behaviour changes the schemas bring, both to test and record:**
 
-1. **Order.** Today a handler checks who may call before it parses: `requireOwner` precedes `routes.revokeClaudeToken.params.parse` (`routes/tokens.ts:36-38`), and `if (push.publicKey === null) throw pushOff()` precedes the body parse (`routes/push.ts:27-29`). With schemas, Fastify validates first, so a malformed request to those routes answers **400** where a friend or a push-off server answered 403 or 404. The session guard is a root hook and still answers 401 first. Decision 5.
+1. **Order.** Today a handler checks who may call before it parses: `requireOwner` precedes `routes.revokeClaudeToken.params.parse` (`routes/tokens.ts:36-38`), and `if (push.publicKey === null) throw pushOff()` precedes the body parse (`routes/push.ts:27-29`). With schemas, Fastify validates first, so a malformed request to those routes answers **400** where a friend or a push-off server answered 403 or 404. The session guard is a root hook and still answers 401 first. Decision 5 (accepted).
 2. **A bug is now a 500.** Today a handler whose `response.parse` fails throws a `ZodError`, which `errors.ts:60-62` answers as **400 `invalid_request`**: a server bug dressed as the client's fault. With the provider it is a response serialization error, answered 500 `internal` and logged. No existing test depends on the old answer (check in step 1).
 
 ### The error plugin
@@ -200,7 +197,7 @@ The 404 handler stays. It isn't rate-limited: `@fastify/rate-limit` is not a dep
 
 `infrastructure/docker-compose.yml` has no `command:`, so the `CMD` is the only in-repo start. No code imports `@satchel/server` by its `exports` except `cli/src/cli.test.ts:8`, which uses `./testing`. `exports["./app"]` and `["./store"]` have no importer; point them at the new paths (the store at `dist/db/store.js`), or drop them if knip (brief 01) calls them unused, and record which.
 
-vps-deploy builds and runs this image (`node cli.ts satchel all`, [docs/owner-setup.md](../../../docs/owner-setup.md)), so the `CMD` is the likely start command, but its Satchel stack may also name the file. That is Q1; vps-deploy wasn't readable here. See decision 3.
+The container starts that file path, so the `CMD` is the one place that names it (Q1; decision 3).
 
 ### Test impact
 
@@ -215,13 +212,13 @@ vps-deploy builds and runs this image (`node cli.ts satchel all`, [docs/owner-se
 
 ## Owner decisions (defaults this brief builds)
 
-1. **The store** (see above). Default: keep it whole in `server/src/db/store.ts`. *New question for the grilling.*
-2. **`server/src/features/<name>/`** (Q23), **typed plugin options** (Q24) and **a response schema on every route** (Q25). Default: yes, as in the move map. `RouteDeps` stays the typed options and keeps its name (renaming it `FeatureContext` would touch 8 files for nothing); decorators stay for request-scoped values only, and Satchel already has exactly two, `request.account` and `request.claudeToken` (`declare module "fastify"`, `auth/guard.ts:51`, `routes/claude.ts:30`).
-3. **The entry file** (Q1). Default: rename to `server.ts`, and change the Dockerfile, the scripts and `exports` in the same commit. If vps-deploy's Satchel stack names `dist/index.js`, change it there in the same session as an owner step (the exact edit handed over), or keep `index.ts` and record the exception in `scripts/conventions.json`.
-4. **The error body.** The code-structure skill's rule 8 names `{ error, message, issues? }`, and Satchel sends `{ error: { code, message } }`, which its web and CLI parse. Default: keep Satchel's shape; the rule's substance (one handler, no 5xx detail, a validation code) holds. *New question for the grilling*, shared with Almanac's: does the skill prescribe a shape or only the handler?
-5. **Validation before authorization on three routes.** Default: accept it. A malformed request to the token revoke route, the push routes or `/claude/*` is a 400 before the owner or push-off check, which is the usual REST order and leaks nothing the 401 guard doesn't already gate. The alternative is to keep the old order by moving the owner and push-off checks into a `preValidation` hook on those routes. *New question for the grilling.*
-6. **The WebSocket route.** Default: `GET /api/live` declares no response schema (an upgrade has no body), and its plain-GET 400 stays a handler answer. Record it in `scripts/conventions.json` if `check-structure` flags a route without a `schema`. Its `wsHandler` typechecked in the spike.
-7. **The test runner and helper** (Q27). Default: vitest stays, and `startTestApp` keeps its name (renaming it to the skill's `buildTestApp` would touch 9 files for nothing). Record it in `conventions.json` if the checker looks for the name.
+1. **The store** (Q54, decided 2026-11-10, technical call). A big `store.ts` stays whole, in `server/src/db/store.ts`. A split by feature would need a decision on where the cross-table `lockOutAccount` lives, and nothing forces it.
+2. **`server/src/features/<name>/`** (Q23), **typed plugin options** (Q24) and **a response schema on every route** (Q25). Decided 2026-11-10 (technical calls), as in the move map. `RouteDeps` stays the typed options and keeps its name (renaming it `FeatureContext` would touch 8 files for nothing); decorators stay for request-scoped values only, and Satchel already has exactly two, `request.account` and `request.claudeToken` (`declare module "fastify"`, `auth/guard.ts:51`, `routes/claude.ts:30`). No decorators as a test seam (Q56): tests pass dependencies as plugin options.
+3. **The entry file and the deploy** (Q1, fact). Services run in a container built from `infrastructure/Dockerfile`, which starts a file path. Rename to `server.ts`, and change the Dockerfile's `CMD`, the scripts and `exports` in the same commit. The repo owns that file, and the build runs `npm ci` and `tsc -b` only, so there is no vps-deploy edit and the deploy is left alone.
+4. **The error handler** (Q43, decided 2026-11-10, technical call). One handler, keeping Satchel's body `{ error: { code, message } }`, which its web and CLI parse. It passes Fastify's own 4xx through and never echoes a thrown message to the client. One `ApiError` class stays (Q56).
+5. **Validation before authorization on three routes** (Q52, decided 2026-11-10, technical call). Accepted. A malformed request to the token revoke route, the push routes or `/claude/*` is a 400 before the owner or push-off check, which is the usual REST order and leaks nothing the 401 guard doesn't already gate.
+6. **The WebSocket route** (Q53, decided 2026-11-10, technical call). `GET /api/live` is exempt from the response-schema rule, as streams and binary routes are, with its own `scripts/conventions.json` entry and reason (an upgrade has no body). Its plain-GET 400 stays a handler answer. Its `wsHandler` typechecked in the spike.
+7. **The test runner and helper** (Q27, Q56, decided 2026-11-10, technical calls). vitest stays, and `startTestApp` keeps its name (renaming it to the skill's `buildTestApp` would touch 9 files for nothing). Record it in `conventions.json` if the checker looks for the name.
 8. **Timeouts and proxy.** Defaults:
    - `connectionTimeout: 10_000`;
    - `requestTimeout: 30_000`; no route runs long, and a push fan-out starts after the reply;
@@ -235,12 +232,12 @@ vps-deploy builds and runs this image (`node cli.ts satchel all`, [docs/owner-se
 
 - `server/src/**`: the moves, the new plugins, the schemas wired in.
 - `server/package.json` (scripts, `main`, `exports`, the new dependencies pinned: `@fastify/type-provider-zod` 1.0.3, `@fastify/swagger`, `openapi-types`, `fastify-plugin` 6.0.1, `close-with-grace` 2.5.0) and `package-lock.json`.
-- `shared/src/**`, only if a schema needs an output-safe twin (none is expected) or `healthResponseSchema` needs a test.
+- `shared/src/**`, only if a schema needs an output-safe twin (none is expected) or `healthResponseSchema` needs a test. A schema the web or CLI imports stays in `shared/`; one only the server uses lives in its feature folder (Q55).
 - `infrastructure/Dockerfile`: the `CMD` line.
 - The root `package.json`: `start`, and `check:conventions` (dependency-cruiser added, `check-structure`'s `--warn-only` dropped).
 - `.dependency-cruiser.cjs` (new, from the skill's preset).
 - `eslint.config.js`: `eslint-plugin-n`'s `no-process-env`, from warning to error.
-- `scripts/conventions.json`, for any exception from decisions 3, 6 or 7.
+- `scripts/conventions.json`, for the live socket (decision 6), any exception from decision 7, and the roots (`server/src`, `shared/src`).
 - `.claude/rules/server.md`: the structure lines.
 - Corpus:
   - [wiki/architecture.md](../../wiki/architecture.md): the layout and the request paths that name `routes/`, `auth/`, `live/` and `push/`;
@@ -255,7 +252,7 @@ vps-deploy builds and runs this image (`node cli.ts satchel all`, [docs/owner-se
 - `web/` and `cli/`. A response schema that drops a field the web or the CLI reads is a finding: fix the schema, not them.
 - `shared/` schemas and their behaviour.
 - `server/vendor/`: generated.
-- The deploy beyond the `CMD` line. vps-deploy edits are handed to the owner.
+- The deploy beyond the Dockerfile's `CMD` line. There is no vps-deploy edit (decision 3).
 - Behaviour: status codes, error codes and messages, and every route's JSON apart from the two changes listed (validation order and a serialization failure's 500) and any field the comparison shows was a leak.
 - The hard rules: messages stay append-only (no `UPDATE` or `DELETE` on `messages` appears in any moved or new code), and no `/claude/*` handler gains a way to name a conversation.
 
@@ -279,7 +276,7 @@ Follow `migrating-a-server.md`. One commit per step; after each, `npm run check`
 6. **After.** Save the same JSON again and diff it against step 1's. A field that disappeared is a leak (keep it dropped and list it) or a missing schema field (add it). The two known differences (decision 5's order, and a serialization failure's 500) are expected; anything else is a finding. Put the diff's summary in the `log.md` entry.
 7. **Strict.** Drop `check-structure`'s `--warn-only` and make dependency-cruiser part of `check:conventions`.
 8. **Corpus.**
-   - Add an entry to `corpus/wiki/decisions-tooling.md` adopting the structure, with what was rejected (the layer split Satchel had, autoload, TypeBox) and why.
+   - Add an entry to `corpus/wiki/decisions-tooling.md` adopting the structure, with what was rejected (the layer split Satchel had, autoload, TypeBox, splitting the store) and why.
    - Update the pages listed under Files you OWN, `.claude/rules/server.md`, [wiki/status.md](../../wiki/status.md) and [log.md](../../log.md).
    - Run `bash corpus/lint.sh` until it is clean.
 
@@ -290,7 +287,7 @@ Follow `migrating-a-server.md`. One commit per step; after each, `npm run check`
 - [ ] `grep -rn "process\.env" server/src --include=*.ts | grep -v "\.test\.ts"` prints only `config.ts`, and ESLint's `no-process-env` (from `eslint-plugin-n`) is an error. `grep -rn "NODE_ENV" server/src` prints nothing.
 - [ ] The stripped-field test, the serialization-500 test, the two ordering tests, the health test and the `startTestApp` logging test pass, along with every existing test unchanged (577 plus the new ones).
 - [ ] The before and after JSON comparison is in `log.md`, with every dropped field named and the two known differences recorded.
-- [ ] `npm run build` writes `server/dist/server.js`. `docker build -f infrastructure/Dockerfile --target prod .` succeeds, and the container answers its health check. The vps-deploy step, if any, is handed to the owner as exact commands.
+- [ ] `npm run build` writes `server/dist/server.js`. `docker build -f infrastructure/Dockerfile --target prod .` succeeds, and the container answers its health check.
 - [ ] `npm test` still passes with `shared/dist`, `server/dist` and `cli/dist` deleted first (brief 01's `pretest`), and `cli/src/cli.test.ts` still imports `@satchel/server/testing`.
 - [ ] dependency-cruiser fails on a deliberate cross-feature import and passes clean.
 - [ ] `npm run check` passes, and `bash corpus/lint.sh` ends clean.
@@ -299,5 +296,5 @@ Follow `migrating-a-server.md`. One commit per step; after each, `npm run check`
 
 - If brief 01 has dropped `server/package.json`'s `exports` as unused, step 2 has two fewer lines to change.
 - If brief 01 removed `jose` and `ws`, the provider's install adds no overlap with them; if it kept them, `knip.json` carries the reason.
-- The skills library should hear about the validation-order change (decision 5) and the 400-to-500 change for a failed response parse before the other servers run brief 16: both apply to any server that parses by hand inside its handlers.
+- The skills library should hear about the 400-to-500 change for a failed response parse before the other servers run brief 16: it applies to any server that parses by hand inside its handlers. The validation-order change is accepted (decision 5).
 - Brief 03 doesn't touch `server/`. If both are open at once, they conflict only in `package-lock.json`, so don't run them at the same time.

@@ -6,7 +6,7 @@
 - In the owner's skills library:
   - brief 02, *A base-ui skill, styled with Tailwind*: rules 1-13, the references and `check-base-ui.mjs`;
   - brief 15, *Enforce the base-ui and code-structure skills in every repo*: the checker runs `--warn-only` until brief 03 here is done.
-- The owner's grilling of 2026-11-10: Q15 (Base UI only under `ui/`) and Q16 (where native controls stay), plus the two new questions below.
+- The owner's grilling of 2026-11-10: Q15 and Q59 (Base UI only under `ui/`), Q16 (where native controls stay), Q19 (parity), Q58 (confirms stay inline), Q60 and Q62 (tests).
 
 **Runs before:** 03. This brief changes structure; brief 03 then changes only the styling, so its before and after screenshots compare like with like.
 
@@ -40,14 +40,14 @@ Base UI is imported in two files (`grep -rn "@base-ui/react" web/src`), both sub
 | 10. `Select.Root` with `items` | n/a | No `Select`, no `<select>`. |
 | 11. No `window.confirm`, `alert` or `prompt` | 0 | `grep -rnE "window\.(confirm\|alert\|prompt)\|\bconfirm\(" web/src` finds nothing. |
 | 12. Dialogs | n/a | No dialog. |
-| 13. Base UI over hand-built widgets | **0 required, 2 to decide** | See below. |
+| 13. Base UI over hand-built widgets | **0 required, 2 left alone** | See below. |
 
-**Rule 13's two to decide.** Both are an inline two-step confirm: the action button turns into a red "confirm" button and a "Cancel", in the same row.
+**Rule 13's two (decided: they stay).** Both are an inline two-step confirm: the action button turns into a red "confirm" button and a "Cancel", in the same row.
 
 1. **Revoke a Claude token**, `web/src/settings/ConnectClaude.tsx:187-205`: `confirming` holds the token id (line 43), and "Confirm revoke" is `button--danger`.
 2. **Unlink Ward**, `web/src/settings/SignInMethods.tsx:172-192`: a `confirming` boolean (line 159), and "Unlink Ward" turns into a danger button with a "Cancel".
 
-Rule 13 lists a menu, dialog, popover, switch, checkbox, tabs, toast and slider. An inline confirm is none of those, so the rule does not require a change. The skill's `confirm` pattern is an `AlertDialog` with a pending state, which is a visible redesign of two settings rows. Decision 2.
+Rule 13 lists a menu, dialog, popover, switch, checkbox, tabs, toast and slider. An inline confirm is none of those, so the rule does not require a change. The skill's `confirm` pattern is an `AlertDialog` with a pending state, which is a visible redesign of two settings rows. Decision 2 keeps them inline (the owner, Q58).
 
 **Considered and left:**
 
@@ -65,12 +65,16 @@ The static-markup tests assert on the markup Base UI produces, so the wrappers p
 
 Neither file has a class-name assertion (`grep -n "className\|class=" web/src/**/*.test.ts` finds none), so the move breaks no test by itself.
 
-## Owner decisions (defaults this brief builds)
+## Owner decisions
 
-1. **Base UI only under `ui/`** (Q15). Default: yes. A new `web/src/components/ui/` holds a `Switch.tsx` and a `Checkbox.tsx`, and the two feature files import them. The folder name follows the skill; the alternative is `web/src/layout/ui/`, to sit beside the existing shared pieces. Nothing else changes.
-2. **The two inline confirms.** Default: they stay as they are, and `scripts/conventions.json` records nothing for them, because no rule flags them. The alternative is the skill's `ConfirmDialog` (an `AlertDialog` that cannot be dismissed while its action runs, with a "Revoking…" or "Unlinking…" label). *New question for the grilling:* does the owner want that redesign in the estate's apps, or is an inline confirm on a settings row fine? The answer applies to any app with the same pattern.
-3. **Native controls** (Q16). Default: text inputs, the textarea and buttons stay native, as listed.
-4. **The `Switch` and `Checkbox` wrappers' API.** Default: the wrapper takes Base UI's own props (`checked`, `onCheckedChange`, `disabled`, the ARIA props) and a `className`, and renders the part markup itself (`Switch.Root` with `Switch.Thumb`, `Checkbox.Root` with `Checkbox.Indicator`). Callers pass no part class names. Brief 03 puts the Tailwind classes inside the wrappers, so the call sites stay free of styling.
+1. **Base UI only under `ui/`** (Q15 and Q59, decided 2026-11-10, technical calls). A new `web/src/components/ui/` holds a `Switch.tsx` and a `Checkbox.tsx`, and the two feature files import them. Wrappers stay in `components/ui/` in feature-folder repos.
+2. **The two inline confirms stay** (Q58, decided 2026-11-10, owner). "Delete? Yes / No" in place stays the pattern in Satchel and Shelfmark. No move to `AlertDialog`, no `ConfirmDialog` wrapper, and `scripts/conventions.json` records nothing for them, because no rule flags them. Satchel has no dialog, so the rule that a form dialog sets `disablePointerDismissal` has nothing to apply to here; a future dialog holding a form sets it.
+3. **Native controls** (Q16, decided 2026-11-10, technical call). Text inputs, the textarea and buttons stay native, as listed.
+4. **The `Switch` and `Checkbox` wrappers' API** (default). The wrapper takes Base UI's own props (`checked`, `onCheckedChange`, `disabled`, the ARIA props) and a `className`, and renders the part markup itself (`Switch.Root` with `Switch.Thumb`, `Checkbox.Root` with `Checkbox.Indicator`). Callers pass no part class names. Brief 03 puts the Tailwind classes inside the wrappers, so the call sites stay free of styling.
+5. **Visual parity** (Q19, decided 2026-11-10, owner). Close enough: no visible change to layout or colour at 1280 and 390 px. A few pixels of drift needn't be fixed or listed.
+6. **Tests** (Q60 and Q62, decided 2026-11-10, technical calls). The two wrappers hold no logic, so their tests stay static-markup (`renderToStaticMarkup`), not jsdom. Tests select by role, and `data-testid` only where no role fits.
+7. **No phone menu panel.** Satchel's navigation is a `<nav>` of two links, so the owner's `Drawer` call (Q40) has nothing to move here.
+8. **The theme switch** is not here. Light / Dark / System (Q18) is brief 03's, where the tokens move.
 
 ## The wrapper set: `web/src/components/ui/`
 
@@ -110,7 +114,7 @@ One commit per numbered step. After each, `npm run check` passes, with `check-ba
 2. **`Switch.tsx`.** Move the switch out of `Notifications.tsx`, with the same props and the `<label>` kept in the caller. Add a test that renders it with `renderToStaticMarkup` and asserts `role="switch"`, `aria-checked` and `disabled`. Rule 3 drops to 1.
 3. **`Checkbox.tsx`.** Move the checkbox out of `NewChat.tsx`, with the indicator and icon. Add the same kind of test (`role="checkbox"`, `aria-checked`). Rule 3 reaches 0.
 4. **After.**
-   - Take the screenshots again. List every difference with its reason; expect none.
+   - Take the screenshots again and compare them (decision 5: no visible change to layout or colour; a few pixels of drift needn't be fixed or listed).
    - Run `check-base-ui` strict: rules 1-3 and 9-11 report 0.
    - Update [wiki/design.md](../../wiki/design.md), [wiki/decisions.md](../../wiki/decisions.md), [wiki/status.md](../../wiki/status.md) and [log.md](../../log.md), and run `bash corpus/lint.sh`.
 
@@ -119,12 +123,11 @@ One commit per numbered step. After each, `npm run check` passes, with `check-ba
 - [ ] `grep -rn "@base-ui/react" web/src --include=*.tsx --include=*.ts | grep -v "components/ui/"` prints nothing.
 - [ ] `check-base-ui` strict reports 0 for rules 1, 2, 3, 9, 10 and 11. Rules 4-7 are left for brief 03, and their counts are in the outcome note.
 - [ ] `npx vitest run web/src/settings/Notifications.test.ts` passes unchanged, and each wrapper has its own test.
-- [ ] The before and after screenshots match, with any difference listed and explained.
-- [ ] The outcome note says what was decided about the two inline confirms (decision 2).
+- [ ] The before and after screenshots at 1280 and 390 px show no visible change to layout or colour.
+- [ ] The two inline confirms are unchanged (decision 2).
 - [ ] `npm run check` passes, and `bash corpus/lint.sh` ends clean.
 
 ## Interplay
 
 - Brief 03 styles `web/src/components/ui/` with Tailwind on the parts, and removes the CSS rules this brief renamed.
-- If the owner picks the `ConfirmDialog` branch of decision 2, it becomes a third wrapper here: `AlertDialog` with a pending label, and both rows move onto it before brief 03.
-- The skills library's `check-base-ui` rule 13 has no check for hand-built confirms; the two here are a case for it to say so.
+- The skills library's `check-base-ui` rule 13 has no check for hand-built confirms; the owner decided inline confirms stay (Q58), so the checker should not flag them.

@@ -10,11 +10,8 @@
   - brief 27, *A house style, and a quality harness that enforces it*: the `better-tailwindcss` lint;
   - brief 10, *Satchel's web app to Tailwind*, the estate draft this brief replaces.
 - The owner's grilling of 2026-11-10:
-  - Q17 (token names);
-  - Q18 (dark mode);
-  - Q19 (visual parity);
-  - Q20 (the order of the migrations);
-  - the new questions in decisions 4 and 5.
+  - Q17 (token names), Q18 (dark mode), Q19 (visual parity), Q20 (the order of the migrations);
+  - Q44 (the root font size), Q60 and Q62 (tests, the type scale).
 
 **Before you start:** run `brief-board guide` ([corpus/CLAUDE.md](../../CLAUDE.md)); if it is still down (since 2026-10-13), say so in the outcome note.
 
@@ -25,8 +22,8 @@ The owner's call of 2026-11-09: Base UI is styled with Tailwind v4, and whole ap
 ### Corrections to the estate draft
 
 - **Tokens.** `web/src/styles/tokens.css` has 38 custom-property definitions, but **27 distinct tokens**: 11 of them (`--bg`, `--surface`, `--sunk`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--accent-soft`, `--ok`, `--bad`) are defined twice, once in `:root` (lines 9-19) and once in the dark block (lines 42-56). All 27 are read somewhere (`var(--…)` over `web/src`).
-- **Dark mode switches tokens, not utilities.** The dark values are one `@media (prefers-color-scheme: dark)` block on `:root` (`web/src/styles/tokens.css:42`), plus `color-scheme: light dark` (`tokens.css:8`) and `<meta name="color-scheme" content="light dark">` (`web/index.html:6`). No component CSS has a dark rule. So no `@custom-variant dark` and no `dark:` class is needed (decision 2).
-- **The root font size is not 15 px.** `body` sets `font-size: 15px` (`web/src/styles/base.css:18`); `html` stays at the browser's 16 px, and no CSS uses `rem` (`grep -rn "rem" web/src --include=*.css` finds only `em` letter-spacing, `layout.css:85, 179`). So Tailwind's rem-based scale lands on exact pixels: `--spacing` stays `0.25rem`, which is 4 px. The estate's "non-16 px root" gotcha does not apply here.
+- **Dark mode switches tokens, not utilities.** The dark values are one `@media (prefers-color-scheme: dark)` block on `:root` (`web/src/styles/tokens.css:42`), plus `color-scheme: light dark` (`tokens.css:8`) and `<meta name="color-scheme" content="light dark">` (`web/index.html:6`). No component CSS has a dark rule. Today no `@custom-variant dark` and no `dark:` class is needed. The owner's call of 2026-11-10 (Q18) replaces the media query with a `data-theme` switch (decision 2).
+- **The root font size is not 15 px** (Q44's rule is already met). `body` sets `font-size: 15px` (`web/src/styles/base.css:18`); `html` stays at the browser's 16 px, and no CSS uses `rem` (`grep -rn "rem" web/src --include=*.css` finds only `em` letter-spacing, `layout.css:85, 179`). So Tailwind's rem-based scale lands on exact pixels: `--spacing` stays `0.25rem`, which is 4 px. The estate's "non-16 px root" gotcha does not apply here.
 - **The layout switch is JavaScript.** The two-pane shell is `shell--wide`, picked by `useMediaQuery(WIDE_QUERY)` (`web/src/layout/AppShell.tsx`, `web/src/polling.ts:79`, `"(min-width: 900px)"`). The only CSS media query on width is `web/src/styles/settings.css:15`. So the 900 px breakpoint exists in two places (decision 7).
 
 ### The stylesheets today (2026-11-10)
@@ -65,7 +62,7 @@ Tailwind 4.3.5's theme namespaces take most of Satchel's names unchanged. The va
 
 | Group (`tokens.css` lines) | Count | Today | In `@theme` | Utility example |
 |---|---|---|---|---|
-| Colour (9-19) | 11 | `--bg`, `--surface`, `--sunk`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--accent-soft`, `--ok`, `--bad` | `--color-<same name>`, light values; the dark values reassign the same `--color-*` in `@layer base` under `prefers-color-scheme: dark` | `bg-surface`, `text-ink`, `border-line`, `bg-bg` |
+| Colour (9-19) | 11 | `--bg`, `--surface`, `--sunk`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--accent-soft`, `--ok`, `--bad` | `--color-<same name>`, light values; the dark values reassign the same `--color-*` in `@layer base` under `[data-theme="dark"]` | `bg-surface`, `text-ink`, `border-line`, `bg-bg` |
 | Derived (new) | 6 | six inline `color-mix(…)`: four backgrounds (`web/src/styles/chats.css:24` row hover, `:36` pinned-row hover, `:45` pinned current row; `web/src/styles/layout.css:250` button hover) and two shadows (`web/src/thread/thread.css:164`, `web/src/push/notifications.css:47`) | `--color-row-hover`, `--color-row-pinned-hover`, `--color-row-pinned-current`, `--color-accent-press`, and two `--shadow-*` (names to settle in step 2) | `bg-row-hover`, `shadow-thumb` |
 | Font (21-23) | 3 | `--font-title`, `--font-body`, `--font-mono` | `--font-title`, `-body`, `-mono`; Tailwind's `--font-*` cleared first | `font-title`, `font-body` |
 | Spacing (25-30) | 6 | `--space-1` … `--space-6` = 4, 8, 12, 16, 24, 32 px | **none**: Tailwind's own scale, `--spacing: 0.25rem`. `--space-1` is `1`, `-2` is `2`, `-3` is `3`, `-4` is `4`, **`-5` is `6`** and **`-6` is `8`**. | `p-4`, `gap-3` |
@@ -74,7 +71,7 @@ Tailwind 4.3.5's theme namespaces take most of Satchel's names unchanged. The va
 
 The six spacing steps cover the gaps and paddings; the other pixel values (44 and 22 px controls, the 56 px bar, 88, 84 and 72 px, `max-width`s of 340, 360, 560 and 640) become the scale where they are multiples of 4 (`size-11`, `h-14`, `w-22`) or arbitrary values where not (`size-5.5`, `max-w-[340px]`).
 
-Not mapped, on purpose: **type sizes.** `tokens.css` has no type scale, and the CSS uses 13 distinct sizes (13 px ×8, 12 px ×8, 14 px ×7, 16 px ×6, 22 px ×3, 18 px ×3, 15 px ×3, and six used once or twice). Default: keep every size exact as `text-[13px]`, with Tailwind's `--text-*` cleared so `text-sm` yields nothing. A named scale would round these sizes and change the looks; it is a design call (decision 6).
+**Type sizes** are mapped in step 2, not copied from `tokens.css`, which has no type scale. The CSS uses 13 distinct sizes (13 px ×8, 12 px ×8, 14 px ×7, 16 px ×6, 22 px ×3, 18 px ×3, 15 px ×3, and six used once or twice). They become a named `--text-*` scale (decision 6), with Tailwind's default `--text-*` cleared so `text-sm` yields nothing.
 
 The names that change are referenced in these places beyond the CSS files being deleted:
 
@@ -104,20 +101,21 @@ None. `grep -rn "querySelector\|classList\|getElementsByClassName" web/src` find
 - **The 900 px breakpoint.** Tailwind's `md:` is 768 px, not Satchel's 900. Define `--breakpoint-wide: 900px` in `@theme` and use `wide:` (decision 7).
 - **Preflight against `base.css`.** Preflight resets margins, `list-style` and heading sizes. That is safe here: every heading sets its own size (`.bar__title`, `.card__title`, `.gate__title`), and the four `list-style: none` rules become redundant. `base.css` adds what preflight lacks and goes to `@layer base`: body type, link colour, `:focus-visible`, `-webkit-tap-highlight-color`, `-webkit-font-smoothing`, `text-rendering`, the heading family, the reduced-motion override.
 - **Unlayered vendor CSS.** The only third-party CSS is the 11 `@fontsource` files, which hold `@font-face` only: no rule in them can outrank a layered utility. Import them in `index.css` before Tailwind's layers.
-- **`tailwind-merge` doesn't know custom names.** `web/src/lib/cn.ts` uses `extendTailwindMerge` with `rounded-pill`, `w-list`, `h-bar` and the `font-title` family, and a test for exactly that case. With type sizes as arbitrary values, `cn("text-ink", "text-[13px]")` must keep both.
+- **`tailwind-merge` doesn't know custom names.** `web/src/lib/cn.ts` uses `extendTailwindMerge` with `rounded-pill`, `w-list`, `h-bar` and the `font-title` family, and a test for exactly that case. With the named type scale, `cn("text-ink", "text-body")` must keep both, so `extendTailwindMerge` also lists the `text-*` size names.
 
-## Owner decisions (defaults this brief builds)
+## Owner decisions
 
-1. **Token names** (Q17). Default: Satchel's names, put in Tailwind's namespaces (`--surface` becomes `--color-surface`, used as `bg-surface`). The cost is `bg-bg` for the page background. No estate vocabulary.
-2. **Dark mode** (Q18). Default: `prefers-color-scheme`, by switching the 11 tokens in `@layer base`, as today. No `dark:` classes, no toggle (the design says "no toggle in phase 1", [wiki/design.md](../../wiki/design.md)).
-3. **Visual parity** (Q19). Default: screenshots at 1280 and 390 px, light and dark, plus 899, 900 and 901 px for the breakpoint. Every difference is fixed or listed with its reason.
-4. **Fonts on the first paint.** Default: the 11 `@fontsource` imports move from `main.tsx` into `web/src/styles/index.css`, and nothing about when they load changes: they were already in the one CSS chunk. *Not a question.*
-5. **Tailwind's scale against Satchel's pixels.** Default: `--spacing: 0.25rem` (Tailwind's own, 4 px, since the root is 16 px), with the default colour, text, radius, shadow and font scales cleared, so only Satchel's tokens exist. No question; the estate-wide note is that this repo has no root-size problem.
-6. **Type sizes.** Default: keep the 13 exact sizes as arbitrary values (`text-[13px]`). The alternative is a named scale (`--text-caption: 13px` …), which means choosing names and probably merging 9/10/11/12/13 px, so it changes the looks. *New question for the grilling:* does the owner want a type scale for Satchel, and does it come with a visual change?
-7. **The 900 px breakpoint, two copies.** Default: `--breakpoint-wide: 900px` in `index.css`, `WIDE_QUERY` left as the JS string, and a test that reads `index.css` and fails if the two numbers differ. The alternative is to drop the CSS copy: `settings.css:15` is the only CSS use, and a `wide:` variant could be replaced by a prop from `AppShell`. *New question for the grilling:* one source of truth for a breakpoint that JavaScript and CSS both need.
+1. **Token names** (Q17, decided 2026-11-10, technical call). Satchel's names, put in Tailwind's namespaces (`--surface` becomes `--color-surface`, used as `bg-surface`). The cost is `bg-bg` for the page background. Satchel keeps its names until its redesign (brief 05); only the small-tools family converges on `surface`, `ink`, `accent`, `line`, `danger`.
+2. **Dark mode: a Light / Dark / System switch, light by default** (Q18, decided 2026-11-10, owner). A first visit shows the light theme, not the system's. Tailwind's `dark:` keys off a `data-theme` attribute through `@custom-variant dark`, not `prefers-color-scheme`. Satchel still switches its 11 colour tokens rather than writing `dark:` classes, so the dark values move from the `@media (prefers-color-scheme: dark)` block to `[data-theme="dark"]` in `@layer base`, and the variant is declared for any case a token can't cover. The choice is kept on the device in `localStorage`: Satchel keeps no per-device settings on the server, and a theme is a per-device preference. Step 6 builds it, and this revisits "Theme follows the system. No toggle in phase 1" in [wiki/design.md](../../wiki/design.md).
+3. **Visual parity** (Q19, decided 2026-11-10, owner). Close enough: screenshots at 1280 and 390 px, in light, plus 899, 900 and 901 px for the breakpoint, show no visible change to layout or colour. A few pixels of drift in spacing or rounding needn't be fixed or listed. Dark is checked for unreadable text and for the derived tokens' dark pair, since dark was system-following and is now the switch's.
+4. **Fonts on the first paint** (default, not a question). The 11 `@fontsource` imports move from `main.tsx` into `web/src/styles/index.css`, and nothing about when they load changes: they were already in the one CSS chunk.
+5. **Tailwind's scale against Satchel's pixels** (Q44, decided 2026-11-10, technical call). `html` stays at the browser's default and `body` carries the 15 px, which is already the case, so Q44 needs no change here. `--spacing: 0.25rem` (Tailwind's own, 4 px), with the default colour, text, radius, shadow and font scales cleared, so only Satchel's tokens exist.
+6. **Type sizes** (Q62, decided 2026-11-10, technical call). The 13 type sizes become a named scale in `@theme` (`--text-*`), not arbitrary `text-[13px]` values. Step 2 names each size by its role and lists the table (size, name, uses). Sizes within a pixel of one another may merge where the screenshots show no visible change (Q19); the rest stay exact. The default `--text-*` is cleared, so `text-sm` yields nothing.
+7. **The 900 px breakpoint, two copies** (default). `--breakpoint-wide: 900px` in `index.css`, `WIDE_QUERY` left as the JS string, and a test that reads `index.css` and fails if the two numbers differ. The alternative is to drop the CSS copy: `settings.css:15` is the only CSS use, and a `wide:` variant could be replaced by a prop from `AppShell`. *Still a question for the owner.* Q62's "no `phone` variant, `max-sm:` is used" doesn't apply: Satchel's switch is at 900 px, not a phone edge.
 8. **Preflight.** Default: Tailwind's preflight, with what `base.css` adds beyond it ported to `@layer base`. The fallback, if the native form controls or the safe-area padding shift: import Tailwind's `theme.css` and `utilities.css` without its preflight, and keep `base.css`'s resets.
 9. **Motion** (rule 7). Default: parity. The switch's two transitions become `transition-[…] duration-150` under `motion-safe:`, and the global reduced-motion override (`base.css:71-77`) stays as the one `@layer base` rule that keeps `!important`, with its comment. No new enter or exit animations.
-10. **Where Satchel falls in the estate's order** (Q20). Default: fifth, after wicket, the-board and lantern, as the owner's order has it. This brief doesn't depend on any other app's migration.
+10. **Order** (Q20, decided 2026-11-10, technical call). Fifth, after the todo app, wicket, the-board and lantern. This brief doesn't depend on any other app's migration.
+11. **Tests** (Q60 and Q62, decided 2026-11-10, technical calls). The wrappers' tests stay static-markup, since they hold no logic. Tests select by role, and `data-testid` only where no role fits.
 
 ## Files you OWN
 
@@ -130,6 +128,7 @@ None. `grep -rn "querySelector\|classList\|getElementsByClassName" web/src` find
   - the root devDependencies: `eslint-plugin-better-tailwindcss` 4.10.0 (peers `eslint` up to 10, `tailwindcss` `^4.1.17`);
   - `package-lock.json`.
 - `web/vite.config.ts`: the plugin, and the comment above `theme_color` that names `tokens.css`.
+- The theme switch (step 6): a theme module and its control in `web/src/settings/`, the theme script in `web/index.html`, and their tests.
 - `eslint.config.js`: the `better-tailwindcss` block only, with `entryPoint: "web/src/styles/index.css"`.
 - `scripts/conventions.json`: only if an exception is needed (none is expected).
 - `.claude/rules/web.md`: the Tailwind lines.
@@ -161,7 +160,7 @@ Follow the skill's `migrating-from-plain-css.md`. One commit per numbered step; 
    - **Freeze the clock** at one instant: the seed backdates messages relative to the day it runs, so times and day separators move otherwise.
    - **Copy the seeded data folder**, so the after pass starts from the same rows.
 
-   Keep the images out of git. Take each state at 1280 × 800 and 390 × 844 (iPhone 14), each in light and dark (`prefers-color-scheme` emulation), and the shell at 899, 900 and 901 px wide:
+   Keep the images out of git. Take each state at 1280 × 800 and 390 × 844 (iPhone 14), each in light and dark (`prefers-color-scheme` emulation, which is what the app follows today), and the shell at 899, 900 and 901 px wide:
 
    | Area | States |
    |---|---|
@@ -177,10 +176,11 @@ Follow the skill's `migrating-from-plain-css.md`. One commit per numbered step; 
    - Add the dependencies and `@tailwindcss/vite`, and register the plugin.
    - Write `web/src/styles/index.css`:
      - the 11 `@fontsource` imports first, then the layer order and `@import "tailwindcss"`;
-     - `@theme` with the default colour, font, text, radius, shadow and breakpoint namespaces cleared, the 27 tokens mapped (spacing left to Tailwind), the derived tokens, `--breakpoint-wide: 900px`;
-     - the dark block in `@layer base`.
+     - `@theme` with the default colour, font, text, radius, shadow and breakpoint namespaces cleared, the 27 tokens mapped (spacing left to Tailwind), the derived tokens, the named type scale (decision 6), `--breakpoint-wide: 900px`;
+     - `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));`;
+     - the dark block in `@layer base`, under `[data-theme="dark"]`, with `color-scheme: dark` there.
    - Keep `tokens.css`, **as aliases only**, such as `--surface: var(--color-surface)`, so the files not yet migrated keep working.
-   - Add `web/src/lib/cn.ts` and its tests (`cn("text-ink", "text-[13px]")` keeps both; the breakpoint test of decision 7).
+   - Add `web/src/lib/cn.ts` and its tests (`cn("text-ink", "text-body")` keeps both; the breakpoint test of decision 7).
    - Import `index.css` from `main.tsx` in place of the font and token imports.
 3. **Migrate one stylesheet at a time**, in this order, deleting each when it is empty:
    1. `web/src/styles/base.css`: preflight plus `@layer base` (decision 8). `.visually-hidden` becomes `sr-only`.
@@ -194,21 +194,27 @@ Follow the skill's `migrating-from-plain-css.md`. One commit per numbered step; 
 4. **Lint.** Turn on `better-tailwindcss`'s correctness rules and its class order as errors, and fix what they find.
 5. **Screenshots after.**
    - Take the same states again from the copied data folder and the same frozen clock.
-   - Compare each pair pixel by pixel, with Playwright's comparison or pixelmatch at its default threshold.
-   - Fix every difference, or list it in the outcome note with its reason.
+   - Compare each pair with Playwright's comparison or pixelmatch.
+   - Fix any difference a person would see in layout or colour (decision 3). Drift of a few pixels needn't be fixed or listed.
    - Expected: hover not sticking after a tap on a phone. Record the CSS and JS sizes.
    - Check each derived token's dark screenshot (the trap above), and the notched-phone padding.
-6. **Corpus.**
+6. **The theme switch** (decision 2), in its own commit after the screenshots:
+   1. A theme module reads the stored choice (`light`, `dark` or `system`, in `localStorage` inside a `try`, since storage can be blocked) and sets `data-theme` on `<html>`.
+   2. A small inline script in `web/index.html`'s `<head>` does the same before first paint: the stored choice, else `light`. With `system` it follows `prefers-color-scheme` and listens for changes. The `color-scheme` meta and `theme-color` follow the theme. The manifest's `theme_color` stays the light accent, as it has no dark variant.
+   3. A Light / Dark / System control on the Settings page, on a Base UI `RadioGroup` wrapper in `web/src/components/ui/` (a small addition to brief 02's set). Tests select it by role.
+   4. Tests: each stored value maps to the attribute; `system` follows a changed media query.
+7. **Corpus.**
    - In [wiki/decisions.md](../../wiki/decisions.md), revisit **"Base UI for interactive controls, styled by our own CSS"**, by heading, with a dated line and a `log.md` entry: it says "styled by our own CSS" and rejects "a styled kit such as shadcn, which would bring Tailwind". The first half changes: Base UI is now styled with Tailwind, by the owner's call of 2026-11-09. shadcn stays rejected for a reason of its own to record: Base UI is used directly, with no styled kit on top. "New interactive widgets start from Base UI" stands. Rename the heading to match. This entry grew a line in brief 02 and must still fit the page (see brief 01's note on [wiki/decisions.md](../../wiki/decisions.md)).
-   - Update the Tokens section of [wiki/design.md](../../wiki/design.md): the tokens live in `@theme` in `web/src/styles/index.css`, dark by switching them; the values table stays.
+   - Update [wiki/design.md](../../wiki/design.md): the Tokens section (the tokens live in `@theme` in `web/src/styles/index.css`, dark by switching them under `data-theme`; the values table stays, with the type scale added), and the line "Theme follows the system. No toggle in phase 1" (now a Light / Dark / System switch, light on a first visit).
    - Update [wiki/status.md](../../wiki/status.md) and [log.md](../../log.md).
    - Add to `.claude/rules/web.md`:
      - tokens only from `@theme`;
      - no arbitrary colours;
-     - dark by switching tokens, no `dark:`;
+     - dark by switching tokens under `data-theme`; `dark:` only where a token can't cover it;
+     - type sizes from the named scale, no `text-[13px]`;
      - the `wide:` breakpoint and its test.
    - Run `bash corpus/lint.sh --index`, then `bash corpus/lint.sh`, until it is clean.
-7. **The gate.** Drop `check-base-ui`'s `--warn-only` from `check:conventions`.
+8. **The gate.** Drop `check-base-ui`'s `--warn-only` from `check:conventions`.
 
 ## Acceptance
 
@@ -216,14 +222,15 @@ Follow the skill's `migrating-from-plain-css.md`. One commit per numbered step; 
 - [ ] `check-base-ui` passes **strict**, with nothing in `scripts/conventions.json` unless it carries a reason.
 - [ ] `grep -rnE "(bg|text|border|fill|stroke|ring|outline|shadow)-\[(#|rgb|hsl)" web/src` prints nothing, and so does `grep -rn "style={" web/src`.
 - [ ] `index.css`'s `@theme` defines exactly the mapped tokens. The default colour, text, radius and shadow scales are cleared: `bg-red-500` or `text-sm` in a component produces no CSS (checked with a throwaway class on a scratch build).
-- [ ] A `cn` test proves `cn("text-ink", "text-[13px]")` keeps both classes, and the breakpoint test proves `--breakpoint-wide` equals `WIDE_QUERY`.
-- [ ] `grep -rn "dark:" web/src` prints nothing, and the dark screenshots match their pairs.
-- [ ] The screenshot pairs match, with every difference listed and explained in the outcome note, alongside the before and after CSS and JS sizes.
+- [ ] `grep -rn "text-\[" web/src` prints nothing: every size is named. A `cn` test proves `cn("text-ink", "text-body")` keeps both classes, and the breakpoint test proves `--breakpoint-wide` equals `WIDE_QUERY`.
+- [ ] The switch has three choices. A first visit with no stored choice is light even when the system is dark; "Dark" and "System" (with a dark system) set `data-theme="dark"` before first paint, with no flash; the choice survives a reload. A Playwright test covers all three, and dark screenshots of each main screen show no unreadable text and the right derived-token colours. `grep -rn "prefers-color-scheme" web/src` finds only the "System" code and the theme script.
+- [ ] The light screenshot pairs at 1280 and 390 px, and at 899, 900 and 901 px, show no visible change to layout or colour, and the before and after CSS and JS sizes are in the outcome note.
 - [ ] `npm run check` (with `better-tailwindcss`) and `npm run build` pass; the 577 tests (and the new ones) pass; `npm run build -w @satchel/web` still reports a service worker with a precache.
-- [ ] The "Base UI for interactive controls" decision is revisited in [wiki/decisions.md](../../wiki/decisions.md), with a `log.md` entry. `bash corpus/lint.sh` ends clean.
+- [ ] The "Base UI for interactive controls" decision is revisited in [wiki/decisions.md](../../wiki/decisions.md), the design page's "no toggle in phase 1" line is revisited, and both have a `log.md` entry. `bash corpus/lint.sh` ends clean.
 
 ## Interplay
 
 - Brief 02's two wrappers are styled here like any other part; its renamed `.switch*` and `.person__check*` rules are deleted.
+- Brief 05 (the redesign) builds on this brief's tokens, the type scale and the theme switch.
 - Brief 04 doesn't touch `web/`. If both are open at once, they conflict only in `package-lock.json`, so don't run them at the same time.
 - The service worker precaches `**/*.css`, so the new CSS file's hash changes the precache list. That is expected, and the next deploy updates installed copies through the worker's prompt flow ([wiki/design.md](../../wiki/design.md), PWA).

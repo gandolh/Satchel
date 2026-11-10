@@ -325,3 +325,21 @@ The owner's estate calls of 2026-11-09 (Base UI 1.9.0 everywhere, whole apps on 
 - `web/` is 10 stylesheets, 1,290 lines, 27 tokens (11 switch for dark mode), and builds to 20,195 bytes of CSS.
 
 Open questions for the grilling are in the briefs' decision lists: the store's split, validation before authorization on three routes, a type scale, the 900 px breakpoint kept in two places, and the two inline confirms.
+
+## [2026-11-10] revise | Briefs 01-05 follow the owner's grilling
+
+The owner's answers and the technical calls of 2026-11-10 are folded into the
+briefs. 01: `house-style` is vendored (a copy with a version header and a
+`house-style:sync` script), so no git dependency and no Dockerfile change;
+Prettier width 120 (231 lines in 49 files, already measured) is the estate
+width and Satchel's own least; `!` is a warning in tests; `switch-exhaustiveness-check`
+sets `considerDefaultExhaustiveForUnions`, so the four `messages.ts` findings
+should fall away. 02: the two inline confirms stay (Q58); parity is "close
+enough" (Q19). 03: a Light / Dark / System switch, light on a first visit, the
+dark tokens under `data-theme`, kept on the device (Q18); the 13 type sizes
+become a named scale (Q62); Satchel is fifth in the order. 04: the store
+stays whole in `db/` (Q54); validation before authorisation is accepted
+(Q52); the entry rename changes the Dockerfile's `CMD` and needs no
+vps-deploy edit (Q1); the live socket is a recorded exemption (Q53); the error
+handler keeps Satchel's body (Q43). New brief 05, a redesign with Hallmark on
+the estate board (Q39). No measurement changed.

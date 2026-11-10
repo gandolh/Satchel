@@ -4,13 +4,13 @@
 
 - In Satchel: nothing. This brief runs first.
 - In the owner's skills library:
-  - brief 27, *A house style, and a quality harness that enforces it*: the `house-style` package at `v1.0.0`, the `house-style` skill, and the plugin's `Stop` and `PostToolUse` hooks;
+  - brief 27, *A house style, and a quality harness that enforces it*: the vendored `house-style` copy at `v1.0.0`, the `house-style` skill, and the plugin's `Stop` and `PostToolUse` hooks;
   - brief 15, *Enforce the base-ui and code-structure skills in every repo*: how the convention checkers are wired and when they run `--warn-only`.
-- The owner's grilling of 2026-11-10, questions Q5-Q14 of the skills library's open questions.
+- The owner's grilling of 2026-11-10, questions Q1, Q5-Q14 and Q45-Q51 of the skills library's open questions.
 
 **Runs before:** 02, 03 and 04. The reformat touches 49 of 113 source files, and those three briefs rewrite or move most of them. Formatting first gives one clean reformat commit, and the formatter hook keeps every later diff formatted.
 
-**Before you start:** run `brief-board guide` ([corpus/CLAUDE.md](../../CLAUDE.md)). brief-board has been down since 2026-10-13 ([log.md](../../log.md)); if it still is, say so in the outcome note and carry on.
+**Before you start:** run `brief-board guide` ([corpus/CLAUDE.md](../../CLAUDE.md)). If the board is down, say so in the outcome note and carry on.
 
 ## Context
 
@@ -67,7 +67,7 @@ Taken on a scratch copy of the tracked files (`git ls-files`), after `npm ci --i
 | 135 | 376 (2.4%) | 595 | 46 |
 | 140 | 457 (2.9%) | 676 | 53 |
 
-For Satchel, 120 touches the fewest old lines and 125 the fewest files and new lines. The two are 13 lines apart. Almanac's least churn is at 130 (333 lines), where Satchel pays 315, so no width is the cheapest for both, and all three are under 2.1% of the code. 127 lines are longer than 120 characters and 43 longer than 130. The longest is 264.
+For Satchel, 120 touches the fewest old lines and 125 the fewest files and new lines. The two are 13 lines apart. The owner's estate width is 120 (Q8, Q51), so the 120 row is the one-off cost: 231 lines in 49 files, under 1.5% of the code. 127 lines are longer than 120 characters and 43 longer than 130. The longest is 264.
 
 The other file types:
 
@@ -126,44 +126,37 @@ The other file types:
 
 **Not measured here:** lint time on Node 24, and the `better-tailwindcss` rules (brief 03's).
 
-## Owner decisions (defaults this brief builds)
+## Owner decisions
 
-1. **Where the configs come from** (skills library Q6, brief 27 decision 1). Default: the `house-style` package, extended from Satchel's configs.
-
-   Satchel adds a constraint. The Docker image runs `npm ci` in two stages with no `git` (`infrastructure/Dockerfile:42, 66`), and `server/tsconfig.json` would extend the package's base. A `github:` dependency needs git there.
-
-   Default within that: depend on the tagged GitHub tarball URL, which npm fetches without git. If the owner prefers `github:`, add `git` to both `apk add` lines in the same commit. If Q6 goes the other way (configs copied into the repo), the same rules land as local files with a version header. Steps 4-6 don't change.
-2. **Width** (Q8). Default: the estate's one width. If it isn't settled when this runs, use 120, Satchel's least by lines touched (231, 49 files), and record it. The measured costs at 120, 125 and 130 are in the table above, for the grilling.
-3. **Markdown stays out of Prettier.** Default: `.prettierignore` lists `*.md`. The corpus is prose that `corpus/lint.sh` governs, and `cli/src/guide.md` is text Claude reads at run time. *New question for the grilling.*
-4. **tsconfig** (Q11). Default: add `verbatimModuleSyntax` and `erasableSyntaxOnly`, and not `exactOptionalPropertyTypes`. The ten parameter properties are fixed, not excepted.
-5. **Typed lint** (Q12). Default: the six rules through `projectService`. `project` was not faster.
-6. **The house shapes as errors** (Q13). Default: all of them are errors.
-   - The 13 `!` are fixed, not excepted.
-   - `web/src/live.ts:169`'s `console.error` is the one browser `console` call. Default: keep it with a single `eslint-disable-next-line no-console` and a reason (a listener that throws must not stop the others, and the browser console is the only place to say so). The alternative is to drop the call. Settle it when step 5 reaches it.
-   - `no-process-env` (from `eslint-plugin-n`) starts as a **warning**, because its six findings are brief 04's work, and brief 04 turns it into an error.
-7. **`check:fast`** (Q10). Default: a typecheck plus ESLint on the changed files, under about 15 s warm with one changed file. The parts measure about 7 s (3.1 s typecheck, 3.1 s one typed file, 0.5 s Prettier).
-8. **The Claude Code layer** (Q7). Default: the plugin's hooks. If the owner chooses committed hooks instead, add them to `.claude/settings.json` here.
-9. **A root `CLAUDE.md`.** Default: create one, and move the repo-wide **Hard rules** and **brief-board** sections out of [corpus/CLAUDE.md](../../CLAUDE.md) into it, because they apply outside the corpus. *New question for the grilling.*
-10. **`pretest`.** Default: `"pretest": "tsc -b"`, so `shared/dist`, `server/dist` and `cli/dist` are current before the tests run. No question: it is the gate failing to reach what it names.
+1. **Vendored `house-style`** (Q6, decided 2026-11-10, technical call). Satchel holds a copy with a version header, refreshed by a `house-style:sync` script that finds the checkout by name, the way Ward's library is shared today. No git, `github:` or tarball dependency, so the image's two `npm ci` stages need no `git` and the Dockerfile stays untouched. Steps 4-6 extend the vendored configs.
+2. **Prettier at width 120** (Q8 and Q51, decided 2026-11-10, technical call). Double quotes, semicolons, `trailingComma: "all"` (Q9). 120 is also Satchel's least by lines touched: 231 lines in 49 files, the one-off cost, in one reformat commit.
+3. **Markdown stays out of Prettier** (Q45, decided 2026-11-10, technical call). `.prettierignore` lists `*.md`. The corpus is prose that `corpus/lint.sh` governs, and `cli/src/guide.md` is text Claude reads at run time.
+4. **tsconfig** (Q11, decided 2026-11-10, technical call). Add `verbatimModuleSyntax` and `erasableSyntaxOnly` now. The ten parameter properties (eight constructors) become declared fields assigned in the constructor, not exceptions. `exactOptionalPropertyTypes` waits for a later brief, after a count. `noUncheckedIndexedAccess` is already on (Q50). TypeScript is 6.0.3, past 5.8.
+5. **Typed lint** (Q12 and Q48, decided 2026-11-10, technical calls). The six rules through `projectService`; `project` was not faster. `no-floating-promises` names `describe`, `it` and `test` in `allowForKnownSafeCalls`. `switch-exhaustiveness-check` sets `considerDefaultExhaustiveForUnions: true`, so the four switches in `web/src/auth/messages.ts`, which have a `default`, are expected to stop being findings; step 1 confirms.
+6. **The house shapes** (Q13, Q47, technical calls). `!` is an error in source and a warning in tests: the 3 in `cli/src` are errors, the 10 in tests are warnings. Fix all 13 anyway, since each is a one-line change. `console` is allowed in the CLIs and the entry. `web/src/live.ts:169`'s `console.error` is the one browser call: keep it with a single `eslint-disable-next-line no-console` and a reason (a listener that throws must not stop the others, and the browser console is the only place to say so); settle it when step 5 reaches it. A default export is allowed in config files. `no-process-env` (from `eslint-plugin-n`) starts as a **warning**, because its six findings are brief 04's work, and brief 04 turns it into an error.
+7. **`check:fast`** (Q10, decided 2026-11-10, technical call). A typecheck plus ESLint on the changed files, built incrementally (`tsc -b`). Target 15 s; the parts measure about 7 s (3.1 s typecheck, 3.1 s one typed file, 0.5 s Prettier).
+8. **The Claude Code layer** (Q7, decided 2026-11-10, technical call). It lives in the plugin: `Stop` runs `check:fast`, `PostToolUse` formats the saved file. Nothing is committed to `.claude/settings.json`.
+9. **A root `CLAUDE.md`** (Q46, decided 2026-11-10, technical call). A short root `CLAUDE.md` with the commands. The repo-wide **Hard rules** and **brief-board** sections move out of [corpus/CLAUDE.md](../../CLAUDE.md) into it, because they apply outside the corpus.
+10. **`pretest`.** `"pretest": "tsc -b"`, so `shared/dist`, `server/dist` and `cli/dist` are current before the tests run. No question: it is the gate failing to reach what it names.
 11. **`jose` and `ws`.** Default: remove both if the build, the tests and a container start still pass without them. Otherwise keep them under `ignoreDependencies` in `knip.json`, with the reason.
+12. **Deploy** (Q1, fact). The deploy runs `npm ci` and `tsc -b`, no tests or lint, and stays as it is. `npm run check` and the `Stop` hook are the gate.
 
 ## Files you OWN
 
 - `tsconfig.base.json`, and `web/tsconfig.json` (only to add `incremental` with a `tsBuildInfoFile`).
 - `eslint.config.js`.
-- New: the Prettier config, `.prettierignore` and `.git-blame-ignore-revs`.
+- New: the Prettier config, `.prettierignore` and `.git-blame-ignore-revs`, the vendored `house-style` copy (with its version header) and the `house-style:sync` script.
 - The root `package.json` (scripts, devDependencies) and `package-lock.json`.
 - The reformat itself: whitespace-only changes to every file Prettier covers.
 - The fixes the new rules ask for:
   - the eight constructors in `server/src/errors.ts`, `server/src/store.ts`, `cli/src/client.ts`, `cli/src/errors.ts` and `web/src/live.test.ts`;
   - `cli/src/config.ts`, `cli/src/main.ts` and the five test files with the 13 `!`;
-  - the two floating promises, the four switches, the nine test assertions, and the twelve Vitest findings;
+  - the two floating promises, the nine test assertions, the twelve Vitest findings, and any switch finding left under Q48;
   - anything else a typed rule finds, fixed or listed in step 5.
 - `server/package.json`, only to drop `jose` and `ws` under decision 11.
 - New: `.claude/rules/web.md`, `.claude/rules/server.md`, `CLAUDE.md`, `knip.json`.
 - [corpus/CLAUDE.md](../../CLAUDE.md): its Hard rules and brief-board sections move out.
 - `scripts/conventions.json` (new, brief 15's exceptions file), if an exception is needed.
-- `infrastructure/Dockerfile`: only the `apk add` lines, and only under decision 1's `github:` branch.
 - Corpus:
   - a new `corpus/wiki/decisions-tooling.md` for this brief's decision, because [wiki/decisions.md](../../wiki/decisions.md) is at 183 of its 200 body lines and the three briefs add about 25;
   - [wiki/status.md](../../wiki/status.md);
@@ -175,6 +168,7 @@ The other file types:
 - Behaviour. Apart from the fixes listed above, every change is formatting or configuration.
 - `server/vendor/` and `web/vendor/`. They are generated copies of the Ward library, and both are ignored by ESLint and Prettier.
 - `cli/src/guide.md`: it is run-time text, and Markdown stays out of Prettier.
+- `infrastructure/Dockerfile`: vendoring needs no `git` in the image.
 - The layout of `server/src` and the CSS, which are briefs 04 and 03.
 - The skills library and the `house-style` repo. A rule that seems wrong for Satchel is reported back, not patched locally.
 
@@ -182,16 +176,16 @@ The other file types:
 
 One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` green.
 
-1. **Measure first**, in the repo's own `node_modules` this time. Record these in the `log.md` entry, and compare them with the numbers above:
+1. **Vendor `house-style`, then measure**, in the repo's own `node_modules` this time. Copy `house-style` with its version header and add the `house-style:sync` script, which finds the checkout by name; commit that alone. Record these in the `log.md` entry, and compare them with the numbers above:
    - the six typed rules' counts, `projectService` against `project`;
-   - `npx knip` from the `house-style` preset;
+   - `npx knip` from the vendored `house-style` preset;
    - the `tsc` counts with the two new flags;
    - `@vitest/eslint-plugin` recommended's count, with `assertFunctionNames: ["expect", "expectError", "expectUnauthorized"]`.
 
-   Any rule that finds more than about 20 real problems, or mostly false ones, goes back to the owner before it is turned on (brief 27's rule: bring it, don't loosen it). None of today's counts is over 20 except the `!` (13) and `expect-expect` (18 without the helper names), so expect no stop.
+   Any rule that finds more than about 20 real problems, or mostly false ones, goes back to the owner before it is turned on (brief 27's rule: bring it, don't loosen it). None of today's counts is over 20 except `expect-expect` (18 without the helper names), so expect no stop.
 2. **`pretest`.** Add `"pretest": "tsc -b"` to the root `package.json`. Check it by deleting `shared/dist`, `server/dist` and `cli/dist` and running `npm test`: it must build and pass, 29 files and 577 tests.
 3. **Prettier, and the reformat.**
-   1. Add `prettier` (pinned) and the config: `printWidth` per decision 2, `trailingComma: "all"`, and the rest default.
+   1. Add `prettier` (pinned) and the config: `printWidth: 120`, `trailingComma: "all"`, and the rest default.
    2. Add `.prettierignore`:
       - `*.md`;
       - `server/vendor/` and `web/vendor/`;
@@ -207,7 +201,7 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
    - Expect zero from `verbatimModuleSyntax`; if tsc reports any, use inline `type` imports, the house's `import { type X }`.
    - Add `"incremental": true` and a `tsBuildInfoFile` under `node_modules/.tmp/` to `web/tsconfig.json`, so the web typecheck is fast on a second run.
    - The Dockerfile's `npx tsc -b server` must still build.
-5. **ESLint.** Extend the house config (decision 1), passing Satchel's roots:
+5. **ESLint.** Extend the vendored house config (decision 1), passing Satchel's roots:
    - web is `web/src`;
    - server is `server/src`;
    - the CLIs are `cli/src/index.ts`, `server/src/seed.ts`, `server/src/index.ts` (later `server.ts`) and `docs/images/*.mjs`.
@@ -216,8 +210,8 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
 
    | Rule | Today | After | Findings today |
    |---|---|---|---|
-   | the six typed rules above | off | error, through `projectService` | 15 (2 + 0 + 0 + 4 + 9 + 0) |
-   | `@typescript-eslint/no-non-null-assertion` | off | error | 13 (fix them) |
+   | the six typed rules above (`considerDefaultExhaustiveForUnions: true` on the switch rule) | off | error, through `projectService` | 11 expected (2 + 0 + 0 + 0 + 9 + 0): the 4 switch findings have a `default`, which Q48 counts as exhaustive; step 1 confirms |
+   | `@typescript-eslint/no-non-null-assertion` | off | error in source, warn in tests (Q47) | 13: 3 in source, 10 in tests (fix them all) |
    | `no-restricted-syntax` on `TSEnumDeclaration` | off | error | 0 |
    | `no-warning-comments` (`todo`, `fixme`), pointing at `corpus/todos/` | off | error | 0 |
    | `no-console` outside the CLIs | off | error | 1 (`web/src/live.ts:169`, decision 6) |
@@ -237,8 +231,8 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
      - `check:conventions`;
      - `test`.
 
-     `check:conventions` is knip, plus the two convention checkers from the `house-style` package (or `scripts/`, under brief 15's copied-files plan). `check-base-ui` runs `--warn-only` until brief 03 is done, and `check-structure` `--warn-only` until brief 04 is done. dependency-cruiser joins in brief 04, where the layout it checks appears.
-   - `check:fast` runs `typecheck`, then ESLint on the files changed against `HEAD` plus untracked ones (`*.ts`, `*.tsx`, `*.js`, `*.mjs` that exist). Use the package's script for the changed-file list if it ships one, or a small Node script in `scripts/`. No shell-only syntax: the owner works on Windows under WSL.
+     `check:conventions` is knip, plus the two convention checkers from the vendored `house-style` copy. `check-base-ui` runs `--warn-only` until brief 03 is done, and `check-structure` `--warn-only` until brief 04 is done. dependency-cruiser joins in brief 04, where the layout it checks appears.
+   - `check:fast` runs `typecheck`, then ESLint on the files changed against `HEAD` plus untracked ones (`*.ts`, `*.tsx`, `*.js`, `*.mjs` that exist). Use the vendored copy's script for the changed-file list if it ships one, or a small Node script in `scripts/`. No shell-only syntax: the owner works on Windows under WSL.
    - `lint` stays `eslint .`, the fast subset.
    - Add `knip.json` with the four workspaces and the `entry` for `docs/images/demo-seed.mjs`, and settle `jose` and `ws` (decision 11).
 
@@ -248,7 +242,7 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
      - read the `base-ui` skill, and for UI work [wiki/design.md](../../wiki/design.md);
      - Base UI only through `web/src/components/ui/` wrappers, from subpaths (brief 02);
      - tokens only, no raw colours in components (the first lines of `web/src/styles/tokens.css` say it today);
-     - light and dark both, by switching tokens: no `dark:` variants;
+     - Light / Dark / System, light on a first visit (brief 03 builds the switch); colours come from tokens, which switch with the theme;
      - the 900 px breakpoint is `WIDE_QUERY` in `web/src/polling.ts` and the CSS's `wide:` variant, kept in step;
      - self-hosted fonts, never Google at runtime;
      - the service worker (`web/src/sw.ts`) caches the app shell only, never the API;
@@ -290,7 +284,7 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
 
    There is no "Conventions" section. Brief 15 first planned one, and brief 27 replaced it with `.claude/rules/`.
 9. **Corpus.**
-   - Add `corpus/wiki/decisions-tooling.md` with frontmatter, and its entry "The house style, formatted and checked": the width, the config source, what was rejected and why. Run `bash corpus/lint.sh --index`.
+   - Add `corpus/wiki/decisions-tooling.md` with frontmatter, and its entry "The house style, formatted and checked": the width (120), the vendored config source, what was rejected and why. Run `bash corpus/lint.sh --index`.
    - Update [wiki/status.md](../../wiki/status.md) and [log.md](../../log.md).
    - Drop `.claude` and `scripts` from [.planned-roots](../../.planned-roots) once they exist.
    - Run `bash corpus/lint.sh` until it is clean.
