@@ -312,3 +312,16 @@ cite dates instead of Satchel's, Ward's or vps-deploy's brief numbers.
 [status.md](wiki/status.md) is a per-area snapshot instead of a brief list.
 Code comments no longer cite brief numbers.
 
+
+## [2026-11-10] todo | Four briefs queued: house style, Base UI conventions, Tailwind, code structure
+
+The owner's estate calls of 2026-11-09 (Base UI 1.9.0 everywhere, whole apps on Tailwind v4, the researched conventions enforced) became four briefs, 01-04, in `briefs/todo/`. Satchel needs no Base UI bump: `web/package.json` pins 1.9.0 and the lockfile resolves it. Measured on a scratch copy on 2026-11-10 (no file in the repo was touched):
+
+- Prettier 3.8.1 churn over 113 files: 120 columns touches 231 old lines in 49 files, 125 touches 244 in 40, 130 touches 315 in 40.
+- `verbatimModuleSyntax` costs 0 errors; `erasableSyntaxOnly` costs 10, all constructor parameter properties.
+- The six typed lint rules find 15 (2 floating promises, 4 switches, 9 test assertions); `!` appears 13 times; six `process.env` reads sit outside `config.ts`.
+- `npm test` has no `pretest`, and `cli` tests import `@satchel/server/testing` from `server/dist`: with `server/dist` removed that file fails at import, and with a stale one it tests old code.
+- No response schema has a zod `.transform()`, so the provider's serializer trap doesn't apply; the one transform is in a query schema.
+- `web/` is 10 stylesheets, 1,290 lines, 27 tokens (11 switch for dark mode), and builds to 20,195 bytes of CSS.
+
+Open questions for the grilling are in the briefs' decision lists: the store's split, validation before authorization on three routes, a type scale, the 900 px breakpoint kept in two places, and the two inline confirms.

@@ -1,12 +1,14 @@
 ---
 summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. 577 tests. What waits on the owner and what is still open.
-updated: 2026-11-02
+updated: 2026-11-10
 ---
 
 # Status
 
 _2026-11-02_. Everything is on `main` and pushed through `14e9dc5`
-(2026-11-01). Nothing is deployed. No brief is open; brief numbering
+(2026-11-01). Nothing is deployed. Four briefs are queued (2026-11-10): the house style and
+quality harness, Base UI by the conventions, the web app to Tailwind, and the
+server in the house code structure, in `corpus/briefs/todo/`. Brief numbering
 restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 577 tests;
 typecheck and lint clean.
 
