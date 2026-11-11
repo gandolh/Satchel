@@ -18,7 +18,7 @@ import { pathToFileURL } from "node:url";
 const [repo, dataDir, tokenFile] = process.argv.slice(2);
 const mod = (p) => import(pathToFileURL(join(repo, p)).href);
 const { openDb, databasePath } = await mod("server/dist/db/open.js");
-const { createStore } = await mod("server/dist/store.js");
+const { createStore } = await mod("server/dist/db/store.js");
 
 let now = new Date();
 const at = (daysAgo, hh, mm) => {
