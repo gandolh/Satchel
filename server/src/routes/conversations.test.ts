@@ -28,7 +28,12 @@ async function inboxOf(cookie: string): Promise<string> {
 }
 
 function send(cookie: string, id: string, payload: unknown) {
-  return t.app.inject({ method: "POST", url: `/api/conversations/${id}/messages`, headers: { cookie }, payload: payload as object });
+  return t.app.inject({
+    method: "POST",
+    url: `/api/conversations/${id}/messages`,
+    headers: { cookie },
+    payload: payload as object,
+  });
 }
 
 function read(cookie: string, id: string, query = "") {
@@ -92,7 +97,9 @@ describe("messages", () => {
     expect(first.statusCode).toBe(201);
     expect(second.statusCode).toBe(200);
     expect(second.json()).toEqual(first.json());
-    const count = t.db.prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM messages WHERE client_id = ?").get(clientId);
+    const count = t.db
+      .prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM messages WHERE client_id = ?")
+      .get(clientId);
     expect(count?.n).toBe(1);
   });
 

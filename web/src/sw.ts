@@ -1,5 +1,10 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute, type PrecacheEntry } from "workbox-precaching";
+import {
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+  precacheAndRoute,
+  type PrecacheEntry,
+} from "workbox-precaching";
 import { NavigationRoute, registerRoute } from "workbox-routing";
 import { clickPath, isShowingConversation, notificationFor, parsePushPayload, windowForClick } from "./push/notify";
 

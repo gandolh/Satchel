@@ -289,10 +289,7 @@ export function createStore(db: Db, clock: Clock) {
     `INSERT INTO agent_tokens (id, owner_subject, conversation_id, token_hash, created_at)
      VALUES (@id, @ownerSubject, @conversationId, @tokenHash, @createdAt)`,
   );
-  const resolveTokenStmt = db.prepare<
-    [string, string],
-    { id: string; owner_subject: string; conversation_id: string }
-  >(
+  const resolveTokenStmt = db.prepare<[string, string], { id: string; owner_subject: string; conversation_id: string }>(
     `UPDATE agent_tokens SET last_used_at = ?
      WHERE token_hash = ? AND revoked_at IS NULL
      RETURNING id, owner_subject, conversation_id`,
@@ -310,8 +307,16 @@ export function createStore(db: Db, clock: Clock) {
     "UPDATE agent_tokens SET revoked_at = ? WHERE owner_subject = ? AND revoked_at IS NULL",
   );
 
-  const pushSubOwnerStmt = db.prepare<[string], { subject: string }>("SELECT subject FROM push_subs WHERE endpoint = ?");
-  const insertPushSubStmt = db.prepare<{ endpoint: string; subject: string; p256dh: string; auth: string; now: string }>(
+  const pushSubOwnerStmt = db.prepare<[string], { subject: string }>(
+    "SELECT subject FROM push_subs WHERE endpoint = ?",
+  );
+  const insertPushSubStmt = db.prepare<{
+    endpoint: string;
+    subject: string;
+    p256dh: string;
+    auth: string;
+    now: string;
+  }>(
     `INSERT INTO push_subs (endpoint, subject, p256dh, auth, created_at)
      VALUES (@endpoint, @subject, @p256dh, @auth, @now)`,
   );
@@ -448,33 +453,29 @@ export function createStore(db: Db, clock: Clock) {
       .map(({ summary }) => summary);
   });
 
-  const getConversationTx = db.transaction(
-    (id: string, subject: string): ConversationSummary | null => {
-      const row = conversationOfStmt.get(id, subject);
-      return row === undefined ? null : summarize(row, subject);
-    },
-  );
+  const getConversationTx = db.transaction((id: string, subject: string): ConversationSummary | null => {
+    const row = conversationOfStmt.get(id, subject);
+    return row === undefined ? null : summarize(row, subject);
+  });
 
-  const appendMessageTx = db.transaction(
-    (input: AppendMessageInput): { message: Message; created: boolean } => {
-      const existing = messageByClientIdStmt.get(input.clientId);
-      if (existing !== undefined) {
-        const sameMessage =
-          existing.conversation_id === input.conversationId &&
-          existing.sender === input.sender &&
-          existing.text === input.text;
-        if (!sameMessage) throw new ClientIdConflict(input.clientId);
-        return { message: toMessage(existing), created: false };
-      }
-      const { conversationId, sender, clientId, text } = input;
-      const row = insertMessageStmt.get({ conversationId, sender, clientId, text, sentAt: now() });
-      if (row === undefined) throw new Error("INSERT … RETURNING returned no row.");
-      // Either way a sender who isn't a member throws `NotAMember` and the insert rolls back.
-      if (input.markSenderSeen === false) markerOf(conversationId, sender);
-      else moveMarker(conversationId, sender, row.seq);
-      return { message: toMessage(row), created: true };
-    },
-  );
+  const appendMessageTx = db.transaction((input: AppendMessageInput): { message: Message; created: boolean } => {
+    const existing = messageByClientIdStmt.get(input.clientId);
+    if (existing !== undefined) {
+      const sameMessage =
+        existing.conversation_id === input.conversationId &&
+        existing.sender === input.sender &&
+        existing.text === input.text;
+      if (!sameMessage) throw new ClientIdConflict(input.clientId);
+      return { message: toMessage(existing), created: false };
+    }
+    const { conversationId, sender, clientId, text } = input;
+    const row = insertMessageStmt.get({ conversationId, sender, clientId, text, sentAt: now() });
+    if (row === undefined) throw new Error("INSERT … RETURNING returned no row.");
+    // Either way a sender who isn't a member throws `NotAMember` and the insert rolls back.
+    if (input.markSenderSeen === false) markerOf(conversationId, sender);
+    else moveMarker(conversationId, sender, row.seq);
+    return { message: toMessage(row), created: true };
+  });
 
   const markSeenTx = db.transaction(moveMarker);
 
@@ -491,24 +492,22 @@ export function createStore(db: Db, clock: Clock) {
     return { id, token, createdAt };
   });
 
-  const savePushSubscriptionTx = db.transaction(
-    (subject: string, sub: PushSubscriptionInput): { created: boolean } => {
-      const params = { subject, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
-      const holder = pushSubOwnerStmt.get(sub.endpoint)?.subject;
-      if (holder === subject) {
-        // The same browser and account again: new keys, same place in line.
-        rebindPushSubStmt.run(params);
-      } else {
-        // New here, or moving from another account: a fresh row, so it is this
-        // account's newest and the trim below can't drop it.
-        if (holder !== undefined) deletePushSubStmt.run(sub.endpoint);
-        insertPushSubStmt.run({ ...params, now: now() });
-      }
-      // The cap keeps the newest, so the one just saved always stays.
-      trimPushSubsStmt.run(subject, subject, PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
-      return { created: holder === undefined };
-    },
-  );
+  const savePushSubscriptionTx = db.transaction((subject: string, sub: PushSubscriptionInput): { created: boolean } => {
+    const params = { subject, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
+    const holder = pushSubOwnerStmt.get(sub.endpoint)?.subject;
+    if (holder === subject) {
+      // The same browser and account again: new keys, same place in line.
+      rebindPushSubStmt.run(params);
+    } else {
+      // New here, or moving from another account: a fresh row, so it is this
+      // account's newest and the trim below can't drop it.
+      if (holder !== undefined) deletePushSubStmt.run(sub.endpoint);
+      insertPushSubStmt.run({ ...params, now: now() });
+    }
+    // The cap keeps the newest, so the one just saved always stays.
+    trimPushSubsStmt.run(subject, subject, PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
+    return { created: holder === undefined };
+  });
 
   const lockOutAccountTx = db.transaction((subject: string): LockedOut => {
     deactivateAccountStmt.run(subject);

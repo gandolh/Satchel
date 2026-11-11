@@ -83,10 +83,14 @@ export function NewChat() {
           loadError ? (
             <div className="list-note" role="alert">
               <p>{loadError}</p>
-              <button type="button" className="button button--quiet" onClick={() => {
+              <button
+                type="button"
+                className="button button--quiet"
+                onClick={() => {
                   setLoadError(null);
                   setAttempt((n) => n + 1);
-                }}>
+                }}
+              >
                 Try again
               </button>
             </div>

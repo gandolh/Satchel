@@ -3,13 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createWardIdentities } from "../../vendor/ward/ward-auth.js";
 import { SESSION_COOKIE } from "../app.js";
 import { FAKE_ISSUER } from "../testing/fakeWard.js";
-import {
-  TEST_API_PREFIX,
-  TEST_PASSWORD,
-  TEST_WEB_BASE,
-  startTestApp,
-  type TestApp,
-} from "../testing/testApp.js";
+import { TEST_API_PREFIX, TEST_PASSWORD, TEST_WEB_BASE, startTestApp, type TestApp } from "../testing/testApp.js";
 import { OWNER_ROLE, signedIn, type SignedInAccount } from "./guard.js";
 
 /**
@@ -172,16 +166,16 @@ describe("the guard over HTTP", () => {
 
   it("a write a browser sent from another origin is 403 forbidden before any handler", async () => {
     const cookie = await t.signIn(A);
-    for (const headers of [
-      { origin: "https://evil.example" },
-      { origin: "null" },
-      { "sec-fetch-site": "same-site" },
-    ]) {
+    for (const headers of [{ origin: "https://evil.example" }, { origin: "null" }, { "sec-fetch-site": "same-site" }]) {
       const res = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie, ...headers } });
       expect(res.statusCode).toBe(403);
       expect(errorResponseSchema.parse(res.json()).error.code).toBe("forbidden");
     }
-    const own = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie, origin: t.origin } });
+    const own = await t.app.inject({
+      method: "POST",
+      url: "/api/claude-tokens",
+      headers: { cookie, origin: t.origin },
+    });
     expect(own.statusCode).toBe(201);
     // A caller that sends neither header is not a browser page and passes.
     const none = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie } });
@@ -192,7 +186,11 @@ describe("the guard over HTTP", () => {
     const cookie = await t.signIn(A);
     const made = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie } });
     const { token } = createClaudeTokenResponseSchema.parse(made.json());
-    const res = await t.app.inject({ method: "GET", url: "/claude/unread", headers: { authorization: `Bearer ${token}` } });
+    const res = await t.app.inject({
+      method: "GET",
+      url: "/claude/unread",
+      headers: { authorization: `Bearer ${token}` },
+    });
     expect(res.statusCode).toBe(200);
   });
 });
@@ -306,7 +304,12 @@ describe("a session that began with Ward", () => {
   it("is refused with ward_unavailable when this app has no Ward configured", async () => {
     await t.close();
     t = await startTestApp({ ward: false });
-    const user = await t.accounts.createUser({ username: "ana", password: TEST_PASSWORD, role: "admin", id: A.subject });
+    const user = await t.accounts.createUser({
+      username: "ana",
+      password: TEST_PASSWORD,
+      role: "admin",
+      id: A.subject,
+    });
     const { token } = await t.accounts.startSession(user.id, { origin: "ward", wardSid: "family_x" });
 
     const res = await me(`${SESSION_COOKIE}=${token}`);

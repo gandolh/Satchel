@@ -32,19 +32,31 @@ describe("checkSession", () => {
 
   it("is signed in with the account", async () => {
     const me = { subject: "s", displayName: "owner", inboxId: "i" };
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json(me)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(me)),
+    );
     await expect(checkSession()).resolves.toEqual({ kind: "signed-in", me });
   });
 
   it("stays checking when the API says the session ended, since the login page is taking over", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: "unauthorized" }, { status: 401 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ error: "unauthorized" }, { status: 401 })),
+    );
     await expect(checkSession()).resolves.toEqual({ kind: "checking" });
   });
 
   it("is unreachable when Satchel does not answer", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("offline"))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new TypeError("offline"))),
+    );
     await expect(checkSession()).resolves.toEqual({ kind: "unreachable" });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>502</html>", { status: 502 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("<html>502</html>", { status: 502 })),
+    );
     await expect(checkSession()).resolves.toEqual({ kind: "unreachable" });
   });
 
@@ -85,10 +97,12 @@ describe("LoginView", () => {
   });
 
   it("says why a Ward session ended, and points to the password", () => {
-    expect(renderLogin({ reason: "ward_unavailable" })).toContain("Ward is unreachable right now. Sign in with your password.");
+    expect(renderLogin({ reason: "ward_unavailable" })).toContain(
+      "Ward is unreachable right now. Sign in with your password.",
+    );
     expect(renderLogin({ reason: "ward_session_ended" })).toContain("Your Ward session ended. Sign in again.");
     // A plain sign-out says nothing.
-    expect(renderLogin({})).not.toContain("role=\"status\"");
+    expect(renderLogin({})).not.toContain('role="status"');
   });
 
   it("shows Satchel's own words for a Ward refusal, not a code", () => {
@@ -98,18 +112,31 @@ describe("LoginView", () => {
   });
 
   it("shows a failed password sign-in", () => {
-    expect(renderLogin({ error: { code: "invalid_credentials" } })).toContain("That username and password don’t match.");
+    expect(renderLogin({ error: { code: "invalid_credentials" } })).toContain(
+      "That username and password don’t match.",
+    );
   });
 });
 
 describe("messages", () => {
   it("says how long to wait after too many tries", () => {
-    expect(loginMessage({ code: "too_many_attempts", retryAfterSeconds: 45 })).toBe("Too many tries. Wait 45 seconds, then try again.");
-    expect(loginMessage({ code: "too_many_attempts", retryAfterSeconds: 600 })).toBe("Too many tries. Wait 10 minutes, then try again.");
+    expect(loginMessage({ code: "too_many_attempts", retryAfterSeconds: 45 })).toBe(
+      "Too many tries. Wait 45 seconds, then try again.",
+    );
+    expect(loginMessage({ code: "too_many_attempts", retryAfterSeconds: 600 })).toBe(
+      "Too many tries. Wait 10 minutes, then try again.",
+    );
   });
 
   it("covers every code the Ward round trip can come back with", () => {
-    for (const code of ["access_denied", "ward_unavailable", "ward_misconfigured", "invalid_callback", "network", "something_new"]) {
+    for (const code of [
+      "access_denied",
+      "ward_unavailable",
+      "ward_misconfigured",
+      "invalid_callback",
+      "network",
+      "something_new",
+    ]) {
       expect(wardSignInMessage({ code }).length).toBeGreaterThan(10);
     }
     expect(wardSignInMessage({ code: "something_new" })).toBe("Couldn’t sign in with Ward. Try again.");

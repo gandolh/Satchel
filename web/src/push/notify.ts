@@ -55,7 +55,10 @@ export interface NotificationData {
  * notification that the newest message replaces; `renotify` makes that
  * replacement buzz again, as a new message should.
  */
-export function notificationFor(payload: PushPayload, base: string): { title: string; options: SatchelNotificationOptions } {
+export function notificationFor(
+  payload: PushPayload,
+  base: string,
+): { title: string; options: SatchelNotificationOptions } {
   return {
     title: payload.title,
     options: {

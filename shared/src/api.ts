@@ -14,12 +14,7 @@ const id = z.string().min(1);
 const seq = z.number().int().positive();
 const seqOrZero = z.number().int().nonnegative();
 const after = z.coerce.number<number>().int().nonnegative().default(0);
-const limit = z.coerce
-  .number<number>()
-  .int()
-  .min(1)
-  .max(PAGE_LIMIT_MAX)
-  .default(PAGE_LIMIT_DEFAULT);
+const limit = z.coerce.number<number>().int().min(1).max(PAGE_LIMIT_MAX).default(PAGE_LIMIT_DEFAULT);
 
 // Normalised to a UTC `toISOString()` value so the server can compare it with
 // `sentAt` as text. A bare date means midnight UTC.
@@ -356,7 +351,9 @@ export function isPushEndpoint(value: string): boolean {
   if (url.protocol !== "https:" || url.username !== "" || url.password !== "") return false;
   const host = url.hostname.toLowerCase().replace(/\.+$/, "");
   if (host.startsWith("[") || IPV4_HOST.test(host) || !host.includes(".")) return false;
-  return host !== "localhost" && !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal");
+  return (
+    host !== "localhost" && !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal")
+  );
 }
 
 const pushEndpointSchema = z
@@ -375,7 +372,10 @@ const pushKeysSchema = z.object(
     auth: z
       .string()
       .regex(base64url, "keys.auth must be base64url.")
-      .refine((value) => value.replace(/=+$/, "").length >= 22 && value.length <= 64, "keys.auth must be 16 bytes or more."),
+      .refine(
+        (value) => value.replace(/=+$/, "").length >= 22 && value.length <= 64,
+        "keys.auth must be 16 bytes or more.",
+      ),
   },
   { error: "A push subscription needs keys.p256dh and keys.auth." },
 );

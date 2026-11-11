@@ -10,8 +10,7 @@ export type TickState = "sent" | "seen";
  * member. `seenBy`: "Seen by Maria, Andrei" under my last message, in a group.
  */
 export type SeenLine =
-  | { kind: "seen"; seq: number; seenAt: string | null }
-  | { kind: "seenBy"; seq: number; names: string[] };
+  { kind: "seen"; seq: number; seenAt: string | null } | { kind: "seenBy"; seq: number; names: string[] };
 
 // Equal to min(max(current, requested), latestSeq) whenever current <= latestSeq,
 // which always holds; written this way it stays forward-only even if it didn't.
@@ -26,16 +25,10 @@ export function isSeenBy(member: Pick<Member, "seenUpTo">, seq: number): boolean
 /** Seen once every member other than the sender (and me, the one looking) has it. */
 export function tickState(message: SeenMessage, members: readonly SeenMarker[], me: string): TickState {
   const others = members.filter((member) => member.id !== message.sender && member.id !== me);
-  return others.length > 0 && others.every((member) => isSeenBy(member, message.seq))
-    ? "seen"
-    : "sent";
+  return others.length > 0 && others.every((member) => isSeenBy(member, message.seq)) ? "seen" : "sent";
 }
 
-export function seenLine(
-  messages: readonly SeenMessage[],
-  members: readonly Member[],
-  me: string,
-): SeenLine | null {
+export function seenLine(messages: readonly SeenMessage[], members: readonly Member[], me: string): SeenLine | null {
   const others = members.filter((member) => member.id !== me);
   const mine = messages.filter((message) => message.sender === me);
 
@@ -52,8 +45,7 @@ export function seenLine(
 }
 
 export function unreadCount(messages: readonly SeenMessage[], member: SeenMarker): number {
-  return messages.filter((message) => message.sender !== member.id && !isSeenBy(member, message.seq))
-    .length;
+  return messages.filter((message) => message.sender !== member.id && !isSeenBy(member, message.seq)).length;
 }
 
 function newestSeq(messages: readonly SeenMessage[]): number {

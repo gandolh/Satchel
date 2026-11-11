@@ -85,13 +85,13 @@ export function createPushNotifier({ store, publicKey, send, log }: PushNotifier
     // An account that lost its grant gets nothing, whatever subscriptions it
     // still has. The guard deletes them when it marks the account; this is
     // the second lock.
-    const recipients = pushRecipients(conversation, message.sender).filter((subject) =>
-      store.isAccountActive(subject),
-    );
+    const recipients = pushRecipients(conversation, message.sender).filter((subject) => store.isAccountActive(subject));
     if (recipients.length === 0) return;
     const payload = JSON.stringify(pushPayloadFor(conversation, message));
     await Promise.all(
-      recipients.flatMap((subject) => store.listPushSubscriptions(subject).map((sub) => deliver(subject, sub, payload))),
+      recipients.flatMap((subject) =>
+        store.listPushSubscriptions(subject).map((sub) => deliver(subject, sub, payload)),
+      ),
     );
   }
 

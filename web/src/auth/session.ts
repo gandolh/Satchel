@@ -11,10 +11,7 @@ import { getMe, SignedOut } from "../api";
  * - `signed-in`: the account; the app renders.
  * - `unreachable`: no answer from Satchel at all (offline, API down).
  */
-export type GateState =
-  | { kind: "checking" }
-  | { kind: "signed-in"; me: MeResponse }
-  | { kind: "unreachable" };
+export type GateState = { kind: "checking" } | { kind: "signed-in"; me: MeResponse } | { kind: "unreachable" };
 
 /**
  * Ask the API who is signed in. Never throws. A 401 (the session ended

@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLAUDE_MEMBER, MAX_TEXT_LENGTH } from "./limits.js";
-import {
-  conversationSummarySchema,
-  memberSchema,
-  messageSchema,
-  messageTextSchema,
-  personSchema,
-} from "./model.js";
+import { conversationSummarySchema, memberSchema, messageSchema, messageTextSchema, personSchema } from "./model.js";
 
 const message = {
   seq: 41,

@@ -96,10 +96,7 @@ export function mergeMessages(existing: readonly Message[], incoming: readonly M
 }
 
 /** Drop pending bubbles whose client ID is now a stored message. */
-export function reconcilePending(
-  pending: readonly PendingMessage[],
-  messages: readonly Message[],
-): PendingMessage[] {
+export function reconcilePending(pending: readonly PendingMessage[], messages: readonly Message[]): PendingMessage[] {
   if (pending.length === 0) return [];
   const stored = new Set(messages.map((message) => message.clientId));
   return pending.filter((bubble) => !stored.has(bubble.clientId));
@@ -126,7 +123,9 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
         ...state,
         loaded: true,
         // An answer can be older than a live event already applied; markers only move forward.
-        conversation: state.conversation ? withNewerMarkers(action.conversation, state.conversation) : action.conversation,
+        conversation: state.conversation
+          ? withNewerMarkers(action.conversation, state.conversation)
+          : action.conversation,
         messages,
         cursor: last ? Math.max(state.cursor, last.seq) : state.cursor,
         pending: reconcilePending(state.pending, messages),
@@ -213,7 +212,11 @@ export function buildTimeline(
   let previous: Date | null = null;
   const separate = (date: Date) => {
     if (previous === null || calendarDaysBetween(previous, date) !== 0) {
-      items.push({ kind: "day", key: `day-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`, label: dayLabel(date, now) });
+      items.push({
+        kind: "day",
+        key: `day-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
+        label: dayLabel(date, now),
+      });
     }
     previous = date;
   };

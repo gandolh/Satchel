@@ -113,11 +113,7 @@ export function sendMessage(
 }
 
 /** Move my seen marker forward to `upTo` (never back). */
-export function markSeen(
-  conversationId: string,
-  body: SeenRequest,
-  options?: CallOptions,
-): Promise<SeenResponse> {
+export function markSeen(conversationId: string, body: SeenRequest, options?: CallOptions): Promise<SeenResponse> {
   return call(routes.markSeen, { id: conversationId, body }, options);
 }
 
@@ -140,7 +136,10 @@ export function getPushKey(options?: CallOptions): Promise<PushKeyResponse> {
 }
 
 /** Store this browser's push subscription (`PushSubscription.toJSON()`) for the signed-in account. */
-export function savePushSubscription(body: SavePushSubscriptionRequest, options?: CallOptions): Promise<PushOkResponse> {
+export function savePushSubscription(
+  body: SavePushSubscriptionRequest,
+  options?: CallOptions,
+): Promise<PushOkResponse> {
   return call(routes.savePushSubscription, { body }, options);
 }
 

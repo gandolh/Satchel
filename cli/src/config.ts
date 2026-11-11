@@ -58,5 +58,7 @@ function assertSafeUrl(url: string): void {
     throw new UsageError(`SATCHEL_URL isn't a valid URL: ${url}`);
   }
   if (parsed.protocol === "https:" || (parsed.protocol === "http:" && LOOPBACK.has(parsed.hostname))) return;
-  throw new UsageError(`SATCHEL_URL must be https: the token is only sent over https (http is allowed for localhost only). Got ${url}`);
+  throw new UsageError(
+    `SATCHEL_URL must be https: the token is only sent over https (http is allowed for localhost only). Got ${url}`,
+  );
 }

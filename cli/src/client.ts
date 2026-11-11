@@ -15,7 +15,8 @@ interface Schema<T> {
 const TIMEOUT_MS = 5_000;
 
 const OUT_OF_DATE = "satchel: Satchel answered with something this CLI doesn't understand. Is the CLI out of date?";
-const BAD_TOKEN = "satchel: Satchel doesn't know this token: it is unknown or revoked. Create a new one in Satchel under Settings → Connect Claude.";
+const BAD_TOKEN =
+  "satchel: Satchel doesn't know this token: it is unknown or revoked. Create a new one in Satchel under Settings → Connect Claude.";
 
 /** A server rejection (exit 2), or an answer this CLI can't read (also exit 2). */
 export class SatchelClient {

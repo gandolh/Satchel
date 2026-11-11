@@ -305,13 +305,23 @@ describe("the publisher", () => {
   const sent = (subject: string) => sockets[subject]!.sent;
 
   it("a message goes to the conversation's members; Claude's inbox only to its owner", () => {
-    const { message } = store.appendMessage({ conversationId: inbox, sender: "a", clientId: randomUUID(), text: "idea" });
+    const { message } = store.appendMessage({
+      conversationId: inbox,
+      sender: "a",
+      clientId: randomUUID(),
+      text: "idea",
+    });
     publisher().messageStored(message);
     expect(sent("a")).toEqual([{ type: "message", conversationId: inbox, message }]);
     expect(sent("b")).toEqual([]);
 
     const { conversation } = store.createDirect("a", "b");
-    const reply = store.appendMessage({ conversationId: conversation.id, sender: "b", clientId: randomUUID(), text: "hi" });
+    const reply = store.appendMessage({
+      conversationId: conversation.id,
+      sender: "b",
+      clientId: randomUUID(),
+      text: "hi",
+    });
     publisher().messageStored(reply.message);
     expect(sent("a").at(-1)).toMatchObject({ type: "message", message: { seq: reply.message.seq } });
     expect(sent("b")).toHaveLength(1);
@@ -319,7 +329,12 @@ describe("the publisher", () => {
   });
 
   it("Claude's seen goes to the owner with Claude's marker and its time", () => {
-    const { message } = store.appendMessage({ conversationId: inbox, sender: "a", clientId: randomUUID(), text: "idea" });
+    const { message } = store.appendMessage({
+      conversationId: inbox,
+      sender: "a",
+      clientId: randomUUID(),
+      text: "idea",
+    });
     store.markSeen(inbox, CLAUDE_MEMBER, message.seq);
     publisher().seenMoved(inbox, CLAUDE_MEMBER);
     expect(sent("a")).toEqual([
@@ -346,7 +361,12 @@ describe("the publisher", () => {
       socketCount: () => 0,
     };
     const live = createLivePublisher({ hub: broken, store, log: { warn } });
-    const { message } = store.appendMessage({ conversationId: inbox, sender: "a", clientId: randomUUID(), text: "idea" });
+    const { message } = store.appendMessage({
+      conversationId: inbox,
+      sender: "a",
+      clientId: randomUUID(),
+      text: "idea",
+    });
     expect(() => live.messageStored(message)).not.toThrow();
     expect(() => live.seenMoved("no-such-conversation", "a")).not.toThrow();
     expect(() => live.conversationCreated(inbox, "a")).not.toThrow();

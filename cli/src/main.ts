@@ -79,7 +79,8 @@ export async function main(argv: string[], ctx: Context, packageRoot: URL): Prom
           since: { type: "string" },
           limit: { type: "string" },
         });
-        if (positionals.length > 0) throw new UsageError("usage: satchel history [--after n] [--since date] [--limit n]");
+        if (positionals.length > 0)
+          throw new UsageError("usage: satchel history [--after n] [--since date] [--limit n]");
         const query = {
           after: values.after === undefined ? undefined : nonNegativeInt(String(values.after), "--after"),
           since: values.since === undefined ? undefined : String(values.since),

@@ -16,11 +16,7 @@ import { appBase } from "./base";
  */
 
 export type Route =
-  | { name: "chats" }
-  | { name: "thread"; id: string }
-  | { name: "settings" }
-  | { name: "new" }
-  | { name: "share" };
+  { name: "chats" } | { name: "thread"; id: string } | { name: "settings" } | { name: "new" } | { name: "share" };
 
 export const CHATS: Route = { name: "chats" };
 export const SETTINGS: Route = { name: "settings" };

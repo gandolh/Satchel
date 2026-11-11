@@ -26,7 +26,10 @@ type SendNotification = (subscription: PushTarget, payload: string, options: Req
  * `setVapidDetails`, so no module-wide state), TTL 24 hours, urgency normal,
  * and aes128gcm, web-push's default and the only encoding Apple accepts.
  */
-export function webPushSender(vapid: VapidKeys, sendNotification: SendNotification = webpush.sendNotification): SendPush {
+export function webPushSender(
+  vapid: VapidKeys,
+  sendNotification: SendNotification = webpush.sendNotification,
+): SendPush {
   const options: RequestOptions = {
     vapidDetails: { subject: vapid.subject, publicKey: vapid.publicKey, privateKey: vapid.privateKey },
     TTL: PUSH_TTL_SECONDS,

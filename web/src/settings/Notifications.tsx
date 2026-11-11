@@ -54,7 +54,14 @@ export interface NotificationsCardProps {
 }
 
 /** The card itself, without the browser: `Notifications` feeds it. */
-export function NotificationsCard({ view, busy = false, error = null, note = null, onToggle, onRetry }: NotificationsCardProps) {
+export function NotificationsCard({
+  view,
+  busy = false,
+  error = null,
+  note = null,
+  onToggle,
+  onRetry,
+}: NotificationsCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
   const hintId = `${id}-hint`;
@@ -163,7 +170,8 @@ export function Notifications() {
         },
         (e: unknown) => {
           // A failed re-check leaves a working switch as it was.
-          if (live && !(e instanceof SignedOut)) setView((current) => (current.kind === "ready" ? current : { kind: "check-failed" }));
+          if (live && !(e instanceof SignedOut))
+            setView((current) => (current.kind === "ready" ? current : { kind: "check-failed" }));
         },
       );
     };
@@ -195,7 +203,8 @@ export function Notifications() {
   const turnOn = async () => {
     // First thing in the click, before any other await: browsers only show
     // the permission prompt during the user's gesture.
-    const asked = Notification.permission === "granted" ? Promise.resolve("granted" as const) : Notification.requestPermission();
+    const asked =
+      Notification.permission === "granted" ? Promise.resolve("granted" as const) : Notification.requestPermission();
     setBusy(true);
     setError(null);
     setNote(null);
@@ -203,7 +212,8 @@ export function Notifications() {
       const permission = await asked;
       if (permission !== "granted") {
         setView({ ...view, on: false, permission });
-        if (permission === "default") setNote("Satchel needs your permission to notify you. Turn this on again to be asked.");
+        if (permission === "default")
+          setNote("Satchel needs your permission to notify you. Turn this on again to be asked.");
         return;
       }
       const registration = await pushRegistration();

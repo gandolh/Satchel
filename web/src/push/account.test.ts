@@ -59,7 +59,9 @@ describe("forgetPushSubscription", () => {
 
   it("still unsubscribes when the server call fails, and never throws", async () => {
     const sub = subscription();
-    await forgetPushSubscription(deps({ current: async () => sub, forget: async () => Promise.reject(new Error("down")) }));
+    await forgetPushSubscription(
+      deps({ current: async () => sub, forget: async () => Promise.reject(new Error("down")) }),
+    );
     expect(sub.unsubscribe).toHaveBeenCalled();
   });
 

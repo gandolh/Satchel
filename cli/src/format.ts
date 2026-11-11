@@ -33,7 +33,8 @@ export function renderHistory(
   messages: { seq: number; sentAt: string; text: string; seen: boolean; fromClaude: boolean }[],
 ): string {
   if (messages.length === 0) return "Ideas inbox · no messages match";
-  const state = (m: { seen: boolean; fromClaude: boolean }) => (m.fromClaude ? CLAUDE_REPLY_STATE : m.seen ? "seen" : "unread");
+  const state = (m: { seen: boolean; fromClaude: boolean }) =>
+    m.fromClaude ? CLAUDE_REPLY_STATE : m.seen ? "seen" : "unread";
   return [
     `Ideas inbox · ${messages.length} message${messages.length === 1 ? "" : "s"}`,
     "",

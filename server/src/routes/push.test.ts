@@ -219,13 +219,18 @@ describe("pushes for a stored message", () => {
     await t.settle();
 
     expect(t.sent.map((s) => s.endpoint).sort()).toEqual([endpointOf("laptop-b"), endpointOf("phone-b")]);
-    for (const { payload } of t.sent) expect(payload).toEqual({ conversationId: chat, title: "ana", body: "Lunch at 1?" });
+    for (const { payload } of t.sent)
+      expect(payload).toEqual({ conversationId: chat, title: "ana", body: "Lunch at 1?" });
     expect(t.store.listPushSubscriptions(B.subject).every((s) => s.lastSuccessAt !== null)).toBe(true);
     expect(t.store.listPushSubscriptions(A.subject)[0]?.lastSuccessAt).toBeNull();
   });
 
   it('titles a group push "Sender in Group" and sends it to every other member', async () => {
-    for (const [cookie, device] of [[cookieA, "a"], [cookieB, "b"], [cookieC, "c"]] as const) {
+    for (const [cookie, device] of [
+      [cookieA, "a"],
+      [cookieB, "b"],
+      [cookieC, "c"],
+    ] as const) {
       await subscribe(cookie, subscription(device));
     }
     const hike = await group(cookieB, "Hike", [A.subject, C.subject]);
@@ -294,7 +299,8 @@ describe("pushes for a stored message", () => {
 
   it("keeps a subscription after any other failure, logs it without the endpoint, and never retries", async () => {
     await subscribe(cookieB, subscription("phone-b"));
-    t.respond = () => Promise.reject(Object.assign(new Error("Received unexpected response code"), { statusCode: 500 }));
+    t.respond = () =>
+      Promise.reject(Object.assign(new Error("Received unexpected response code"), { statusCode: 500 }));
     const chat = await direct(cookieA, B.subject);
 
     expect((await send(cookieA, chat, "hi")).statusCode).toBe(201);
@@ -304,7 +310,11 @@ describe("pushes for a stored message", () => {
     expect(endpoints(B.subject)).toEqual([endpointOf("phone-b")]);
     const warning = t.logs.find((line) => line.includes("push not delivered"));
     expect(warning).toBeDefined();
-    expect(JSON.parse(warning ?? "{}")).toMatchObject({ statusCode: 500, pushService: "fcm.googleapis.com", subject: B.subject });
+    expect(JSON.parse(warning ?? "{}")).toMatchObject({
+      statusCode: 500,
+      pushService: "fcm.googleapis.com",
+      subject: B.subject,
+    });
     expect(t.logs.join("\n")).not.toContain("phone-b");
   });
 
@@ -344,9 +354,9 @@ describe("pushes for a stored message", () => {
     await t.settle();
 
     expect(t.logs.some((line) => line.includes("encryption blew up"))).toBe(true);
-    expect(t.logs.some((line) => line.includes("push notifications not sent") && line.includes("database is locked"))).toBe(
-      true,
-    );
+    expect(
+      t.logs.some((line) => line.includes("push notifications not sent") && line.includes("database is locked")),
+    ).toBe(true);
   });
 });
 
@@ -448,7 +458,12 @@ describe("with push off", () => {
     const cookie = await off.signIn(A);
     expectError(await off.app.inject({ method: "GET", url: "/api/push/key", headers: { cookie } }), 404, "not_found");
     expectError(
-      await off.app.inject({ method: "POST", url: "/api/push/subscriptions", headers: { cookie }, payload: subscription("x") }),
+      await off.app.inject({
+        method: "POST",
+        url: "/api/push/subscriptions",
+        headers: { cookie },
+        payload: subscription("x"),
+      }),
       404,
       "not_found",
     );

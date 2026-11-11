@@ -6,7 +6,8 @@ import { main } from "./main.js";
 async function readStdin(): Promise<string | undefined> {
   if (process.stdin.isTTY) return undefined;
   const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer));
+  for await (const chunk of process.stdin)
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer));
   return Buffer.concat(chunks).toString("utf8");
 }
 

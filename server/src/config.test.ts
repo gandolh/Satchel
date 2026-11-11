@@ -36,7 +36,9 @@ describe("loadConfig", () => {
     const config = loadConfig({ WARD_OIDC_REDIRECT_URI: "https://example.com/satchel-api/auth/ward/callback" });
     expect(config.publicOrigin).toBe("https://example.com");
     // An explicit one wins.
-    expect(loadConfig({ ...ENV, WARD_OIDC_REDIRECT_URI: "https://example.com/x" }).publicOrigin).toBe("http://localhost:5175");
+    expect(loadConfig({ ...ENV, WARD_OIDC_REDIRECT_URI: "https://example.com/x" }).publicOrigin).toBe(
+      "http://localhost:5175",
+    );
   });
 
   it("names PUBLIC_ORIGIN when there is no way to know the origin", () => {
@@ -107,7 +109,9 @@ describe("loadConfig push settings", () => {
     expect(pushOffMessage(["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"])).toBe(
       'Push notifications are off: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT are not set. See "Push notifications" in the README.',
     );
-    expect(pushOffMessage(["VAPID_SUBJECT"])).toContain("VAPID_SUBJECT is not set (all three VAPID settings are needed)");
+    expect(pushOffMessage(["VAPID_SUBJECT"])).toContain(
+      "VAPID_SUBJECT is not set (all three VAPID settings are needed)",
+    );
   });
 
   it("refuses malformed keys and subjects without echoing a key", () => {

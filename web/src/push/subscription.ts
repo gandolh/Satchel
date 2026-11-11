@@ -100,7 +100,10 @@ export async function pushRegistration(): Promise<ServiceWorkerRegistration | nu
  * This browser's subscription for `publicKey`: the existing one when it was
  * made with that key, otherwise a new one (dropping one made with an old key).
  */
-export async function subscribeWith(registration: ServiceWorkerRegistration, publicKey: string): Promise<PushSubscription> {
+export async function subscribeWith(
+  registration: ServiceWorkerRegistration,
+  publicKey: string,
+): Promise<PushSubscription> {
   const key = base64UrlToBytes(publicKey);
   const existing = await registration.pushManager.getSubscription();
   if (existing !== null) {

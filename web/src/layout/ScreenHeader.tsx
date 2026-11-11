@@ -17,7 +17,15 @@ export interface ScreenHeaderProps {
 }
 
 /** The bar at the top of every screen. */
-export function ScreenHeader({ title, subtitle, back = false, leading, actions, level = 2, large = false }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  back = false,
+  leading,
+  actions,
+  level = 2,
+  large = false,
+}: ScreenHeaderProps) {
   const Heading = level === 1 ? "h1" : "h2";
   return (
     <header className="bar">

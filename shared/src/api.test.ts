@@ -324,9 +324,7 @@ describe("paging queries", () => {
 
 describe("claudeMessagesQuerySchema since", () => {
   it("turns a bare date into midnight UTC", () => {
-    expect(claudeMessagesQuerySchema.parse({ since: "2026-10-01" }).since).toBe(
-      "2026-10-01T00:00:00.000Z",
-    );
+    expect(claudeMessagesQuerySchema.parse({ since: "2026-10-01" }).since).toBe("2026-10-01T00:00:00.000Z");
   });
 
   it("normalises a date-time with an offset to UTC", () => {
@@ -356,9 +354,7 @@ describe("what Claude and Settings never see", () => {
     expect(claudeUnreadMessageSchema.safeParse(view).success).toBe(true);
     expect(claudeUnreadMessageSchema.safeParse({ ...view, sender: "owner" }).success).toBe(false);
     expect(claudeUnreadMessageSchema.safeParse({ ...view, clientId }).success).toBe(false);
-    expect(
-      routes.claudeUnread.response.safeParse({ seenUpTo: 0, messages: [message] }).success,
-    ).toBe(false);
+    expect(routes.claudeUnread.response.safeParse({ seenUpTo: 0, messages: [message] }).success).toBe(false);
     // Claude's own reply comes back the same way, and history flags Claude's messages without naming senders.
     expect(claudeReplyResponseSchema.safeParse({ message: view }).success).toBe(true);
     expect(claudeReplyResponseSchema.safeParse({ message }).success).toBe(false);
@@ -402,9 +398,7 @@ describe("errors", () => {
   });
 
   it("rejects an unknown code", () => {
-    expect(errorResponseSchema.safeParse({ error: { code: "teapot", message: "" } }).success).toBe(
-      false,
-    );
+    expect(errorResponseSchema.safeParse({ error: { code: "teapot", message: "" } }).success).toBe(false);
   });
 });
 
@@ -418,9 +412,7 @@ describe("inferred types", () => {
       after?: number | undefined;
       limit?: number | undefined;
     }>();
-    expectTypeOf<z.infer<typeof routes.claudeMessages.query>["since"]>().toEqualTypeOf<
-      string | undefined
-    >();
+    expectTypeOf<z.infer<typeof routes.claudeMessages.query>["since"]>().toEqualTypeOf<string | undefined>();
     expectTypeOf(routes.sendMessage.method).toEqualTypeOf<"POST">();
     expectTypeOf(routes.deletePushSubscription.method).toEqualTypeOf<"DELETE">();
   });

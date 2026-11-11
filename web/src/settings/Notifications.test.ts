@@ -64,7 +64,10 @@ describe("NotificationsCard", () => {
   });
 
   it("shows an error as an alert and a note quietly", () => {
-    const html = render(ready(false), { error: "Couldn't turn notifications on. Try again.", note: "Satchel needs your permission." });
+    const html = render(ready(false), {
+      error: "Couldn't turn notifications on. Try again.",
+      note: "Satchel needs your permission.",
+    });
     expect(html).toContain('role="alert"');
     expect(html).toContain("Satchel needs your permission.");
   });

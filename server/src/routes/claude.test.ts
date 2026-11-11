@@ -174,7 +174,12 @@ describe("GET /claude/unread and POST /claude/seen", () => {
     });
     expectError(empty, 400, "invalid_request");
     for (const upTo of [-1, 1.5, "3"]) {
-      const res = await t.app.inject({ method: "POST", url: "/claude/seen", headers: bearer(token), payload: { upTo } });
+      const res = await t.app.inject({
+        method: "POST",
+        url: "/claude/seen",
+        headers: bearer(token),
+        payload: { upTo },
+      });
       expectError(res, 400, "invalid_request");
     }
     expect(t.store.seenUpTo(a.inboxId, CLAUDE_MEMBER)).toBe(0);
@@ -244,7 +249,9 @@ describe("POST /claude/messages: Claude replies in the inbox", () => {
     const res = await replyRequest(token, { clientId, text: `Re #${asked}: done, see the brief` });
     expect(res.statusCode).toBe(201);
     const body = res.json() as { message: Record<string, unknown> };
-    expect(body).toEqual({ message: { seq: expect.any(Number), sentAt: now.toISOString(), text: `Re #${asked}: done, see the brief` } });
+    expect(body).toEqual({
+      message: { seq: expect.any(Number), sentAt: now.toISOString(), text: `Re #${asked}: done, see the brief` },
+    });
     expect(res.body).not.toContain(clientId);
     expect(res.body).not.toContain(CLAUDE_MEMBER);
 
@@ -253,8 +260,15 @@ describe("POST /claude/messages: Claude replies in the inbox", () => {
       { seq: body.message.seq, sender: CLAUDE_MEMBER, text: `Re #${asked}: done, see the brief` },
     ]);
     // The owner's thread shows it from Claude, and counts it unread.
-    const thread = await t.app.inject({ method: "GET", url: `/api/conversations/${a.inboxId}/messages`, headers: { cookie: a.cookie } });
-    expect(messagesResponseSchema.parse(thread.json()).messages.at(-1)).toMatchObject({ sender: CLAUDE_MEMBER, clientId });
+    const thread = await t.app.inject({
+      method: "GET",
+      url: `/api/conversations/${a.inboxId}/messages`,
+      headers: { cookie: a.cookie },
+    });
+    expect(messagesResponseSchema.parse(thread.json()).messages.at(-1)).toMatchObject({
+      sender: CLAUDE_MEMBER,
+      clientId,
+    });
     const list = t.store.listConversations(A.subject).find((c) => c.id === a.inboxId);
     expect(list?.unreadCount).toBe(1);
   });
@@ -444,7 +458,11 @@ describe("friend conversations are never reachable with a Claude token", () => {
       return (res.json() as { conversation: { id: string } }).conversation.id;
     };
     const direct = await start(a.cookie, { kind: "direct", with: B.subject });
-    const group = await start(a.cookie, { kind: "group", title: "group-secret-title", members: [B.subject, C.subject] });
+    const group = await start(a.cookie, {
+      kind: "group",
+      title: "group-secret-title",
+      members: [B.subject, C.subject],
+    });
     const say = (conversationId: string, sender: string, text: string) =>
       t.store.appendMessage({ conversationId, sender, clientId: randomUUID(), text }).message.seq;
 
@@ -472,7 +490,9 @@ describe("friend conversations are never reachable with a Claude token", () => {
       expect(u.messages.map((m) => m.seq)).toEqual(inboxSeqs);
       const all = claudeMessagesResponseSchema.parse(await capture("GET", `/claude/messages?after=0&${steer}`));
       expect(all.messages.map((m) => m.text)).toEqual(["inbox-1", "inbox-2"]);
-      const since = claudeMessagesResponseSchema.parse(await capture("GET", `/claude/messages?since=2026-10-01&${steer}`));
+      const since = claudeMessagesResponseSchema.parse(
+        await capture("GET", `/claude/messages?since=2026-10-01&${steer}`),
+      );
       expect(since.messages.map((m) => m.text)).toEqual(["inbox-1", "inbox-2"]);
     }
     // Clamped to the inbox, which ends below the group's latest seq.
@@ -496,7 +516,9 @@ describe("friend conversations are never reachable with a Claude token", () => {
       expect(body).not.toContain(C.subject);
     }
     // Claude is not a member of either chat, and no marker in them moved.
-    expect(t.db.prepare("SELECT * FROM members WHERE conversation_id IN (?, ?)").all(direct, group)).toEqual(markersBefore);
+    expect(t.db.prepare("SELECT * FROM members WHERE conversation_id IN (?, ?)").all(direct, group)).toEqual(
+      markersBefore,
+    );
     expect(
       t.db
         .prepare<[string, string, string], { n: number }>(
@@ -543,7 +565,11 @@ describe("401 unauthorized", () => {
   it("the scheme is case-insensitive", async () => {
     const a = await owner(A);
     const { token } = await createToken(a);
-    const res = await t.app.inject({ method: "GET", url: "/claude/unread", headers: { authorization: `bearer ${token}` } });
+    const res = await t.app.inject({
+      method: "GET",
+      url: "/claude/unread",
+      headers: { authorization: `bearer ${token}` },
+    });
     expect(res.statusCode).toBe(200);
   });
 
@@ -561,7 +587,11 @@ describe("401 unauthorized", () => {
     post(a, "one");
     expect((await unread(token)).messages).toHaveLength(1);
 
-    const revoke = await t.app.inject({ method: "POST", url: `/api/claude-tokens/${id}/revoke`, headers: { cookie: a.cookie } });
+    const revoke = await t.app.inject({
+      method: "POST",
+      url: `/api/claude-tokens/${id}/revoke`,
+      headers: { cookie: a.cookie },
+    });
     expect(revoke.statusCode).toBe(200);
 
     for (const request of claudeRequests) {

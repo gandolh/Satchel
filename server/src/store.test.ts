@@ -155,7 +155,9 @@ describe("openDb and migrations", () => {
   it("only a direct conversation has a direct_key, and a pair has one at most", () => {
     const insert = (id: string, kind: string, key: string | null) =>
       db
-        .prepare("INSERT INTO conversations (id, kind, title, created_by, created_at, direct_key) VALUES (?, ?, NULL, ?, ?, ?)")
+        .prepare(
+          "INSERT INTO conversations (id, kind, title, created_by, created_at, direct_key) VALUES (?, ?, NULL, ?, ?, ?)",
+        )
         .run(id, kind, A, T0, key);
     insert("d1", "direct", directKey(A, B));
     expect(() => insert("d2", "direct", directKey(B, A))).toThrow(/UNIQUE/);
@@ -193,7 +195,9 @@ describe("accounts and the inbox", () => {
     const second = store.ensureInbox(A);
     expect(second).toBe(first);
     const inboxes = db
-      .prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM conversations WHERE created_by = ? AND kind = 'inbox'")
+      .prepare<[string], { n: number }>(
+        "SELECT COUNT(*) AS n FROM conversations WHERE created_by = ? AND kind = 'inbox'",
+      )
       .get(A);
     expect(inboxes?.n).toBe(1);
 
@@ -298,7 +302,13 @@ describe("appendMessage", () => {
   it("markSenderSeen: false still refuses a sender outside the conversation", () => {
     const inbox = store.ensureInbox(A);
     expect(() =>
-      store.appendMessage({ conversationId: inbox, sender: B, clientId: randomUUID(), text: "x", markSenderSeen: false }),
+      store.appendMessage({
+        conversationId: inbox,
+        sender: B,
+        clientId: randomUUID(),
+        text: "x",
+        markSenderSeen: false,
+      }),
     ).toThrow(NotAMember);
     expect(messageCount()).toBe(0);
   });
@@ -638,7 +648,9 @@ describe("Claude tokens", () => {
     expect(created.token).toMatch(/^stl_[A-Za-z0-9_-]{43}$/);
     expect(created.createdAt).toBe(T0);
 
-    const row = db.prepare<[string], Record<string, unknown>>("SELECT * FROM agent_tokens WHERE id = ?").get(created.id);
+    const row = db
+      .prepare<[string], Record<string, unknown>>("SELECT * FROM agent_tokens WHERE id = ?")
+      .get(created.id);
     expect(row).toEqual({
       id: created.id,
       owner_subject: A,

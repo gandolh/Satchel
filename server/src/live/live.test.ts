@@ -174,7 +174,9 @@ describe("events reach the members' sockets and nobody else's", () => {
     // would already have had the inbox message.
     const { conversation } = await createDirect(a.cookie, B.subject);
     await waitFor(() => b1.events.length >= 1, "B's conversation event");
-    expect(b1.events).toEqual([{ type: "conversation", conversation: expect.objectContaining({ id: conversation.id }) }]);
+    expect(b1.events).toEqual([
+      { type: "conversation", conversation: expect.objectContaining({ id: conversation.id }) },
+    ]);
   });
 
   it("a message in an A–B chat reaches all three sockets, the sender's own included", async () => {
@@ -220,7 +222,13 @@ describe("events reach the members' sockets and nobody else's", () => {
     await waitFor(() => a1.events.length === 1 && a2.events.length === 1, "A's sockets");
     for (const client of [a1, a2]) {
       expect(client.events).toEqual([
-        { type: "seen", conversationId: a.inboxId, member: CLAUDE_MEMBER, seenUpTo: message.seq, seenAt: expect.any(String) },
+        {
+          type: "seen",
+          conversationId: a.inboxId,
+          member: CLAUDE_MEMBER,
+          seenUpTo: message.seq,
+          seenAt: expect.any(String),
+        },
       ]);
     }
 
@@ -285,7 +293,13 @@ describe("events reach the members' sockets and nobody else's", () => {
     await waitFor(() => a1.events.length === 1 && b1.events.length === 1, "both sockets");
     for (const client of [a1, b1]) {
       expect(client.events).toEqual([
-        { type: "seen", conversationId: conversation.id, member: B.subject, seenUpTo: message.seq, seenAt: expect.any(String) },
+        {
+          type: "seen",
+          conversationId: conversation.id,
+          member: B.subject,
+          seenUpTo: message.seq,
+          seenAt: expect.any(String),
+        },
       ]);
     }
   });

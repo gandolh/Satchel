@@ -191,7 +191,9 @@ describe("owner-only", () => {
   function inboxCount(subject: string): number {
     return (
       t.db
-        .prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM conversations WHERE kind = 'inbox' AND created_by = ?")
+        .prepare<[string], { n: number }>(
+          "SELECT COUNT(*) AS n FROM conversations WHERE kind = 'inbox' AND created_by = ?",
+        )
         .get(subject)?.n ?? -1
     );
   }
@@ -207,7 +209,11 @@ describe("owner-only", () => {
   it("a friend gets 403 forbidden on list and on revoke, even of the owner's token, which keeps working", async () => {
     const { id, token } = await create(cookieA);
 
-    expectError(await t.app.inject({ method: "GET", url: "/api/claude-tokens", headers: { cookie: friend } }), 403, "forbidden");
+    expectError(
+      await t.app.inject({ method: "GET", url: "/api/claude-tokens", headers: { cookie: friend } }),
+      403,
+      "forbidden",
+    );
     expectError(await revoke(friend, id), 403, "forbidden");
     expectError(await revoke(friend, "no-such-token"), 403, "forbidden");
 

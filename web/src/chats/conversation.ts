@@ -119,11 +119,7 @@ export interface LiveListUpdate {
  *
  * A conversation the list doesn't have is `stale`.
  */
-export function applyLiveEvent(
-  conversations: ConversationSummary[],
-  event: LiveEvent,
-  me: string,
-): LiveListUpdate {
+export function applyLiveEvent(conversations: ConversationSummary[], event: LiveEvent, me: string): LiveListUpdate {
   if (event.type === "conversation") {
     const others = conversations.filter((conversation) => conversation.id !== event.conversation.id);
     return { conversations: sortConversations([...others, event.conversation]), stale: false };

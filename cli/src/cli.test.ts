@@ -77,7 +77,9 @@ describe("unread and seen", () => {
     const lines = res.out.split("\n");
     expect(lines[0]).toMatch(/^Ideas inbox · \d+ unread · seen up to #\d+$/);
     expect(res.out).toMatch(new RegExp(`#${first}  \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  Warmup timer`));
-    expect(res.out).toMatch(new RegExp(`#${last}  \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  instead of one long timer\\n {2,}second line`));
+    expect(res.out).toMatch(
+      new RegExp(`#${last}  \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  instead of one long timer\\n {2,}second line`),
+    );
     expect(res.out).toContain("Oldest first. Later messages can correct earlier ones. Gaps in numbers are normal.");
     expect(lines.at(-1)).toBe(`When you have read them all, run:  satchel seen ${last}`);
 
@@ -222,7 +224,9 @@ describe("config order", () => {
     // Env beats file: a dead URL in the environment wins over the live one in the file.
     const dead = await run(["unread"], { SATCHEL_URL: "http://127.0.0.1:1" });
     expect(dead.code).toBe(3);
-    expect(dead.err).toBe("satchel: Satchel isn't reachable at http://127.0.0.1:1. Tell the owner and carry on without it.");
+    expect(dead.err).toBe(
+      "satchel: Satchel isn't reachable at http://127.0.0.1:1. Tell the owner and carry on without it.",
+    );
     // An env token beats the file's token.
     const bad = await run(["unread"], { SATCHEL_TOKEN: "stl_wrong" });
     expect(bad.code).toBe(2);

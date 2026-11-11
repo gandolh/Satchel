@@ -4,7 +4,10 @@ export type AvatarSize = "xs" | "sm" | "md" | "lg";
 
 /** Up to two letters: the first two words' initials, or a single word's first two letters. */
 export function initials(name: string): string {
-  const words = name.trim().split(/[\s._-]+/u).filter(Boolean);
+  const words = name
+    .trim()
+    .split(/[\s._-]+/u)
+    .filter(Boolean);
   const [first = "", second = ""] = words;
   const letters = second ? [...first].slice(0, 1).concat([...second].slice(0, 1)) : [...first].slice(0, 2);
   return letters.join("").toLocaleUpperCase() || "?";

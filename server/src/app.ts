@@ -195,7 +195,11 @@ export async function buildApp({
   void app.register(tokenRoutes, deps);
   void app.register(pushRoutes, deps);
   void app.register(claudeRoutes, deps);
-  void app.register(liveRoutes, { hub, sessionUrl: `${AUTH_ROUTE_PREFIX}/session`, ...(liveRecheckMs ? { recheckMs: liveRecheckMs } : {}) });
+  void app.register(liveRoutes, {
+    hub,
+    sessionUrl: `${AUTH_ROUTE_PREFIX}/session`,
+    ...(liveRecheckMs ? { recheckMs: liveRecheckMs } : {}),
+  });
 
   return app;
 }

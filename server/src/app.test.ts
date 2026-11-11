@@ -108,7 +108,8 @@ describe("error mapping", () => {
 
   it("a zod error is 400 invalid_request with the first issue's message", async () => {
     const message = expectError(await inject({ method: "GET", url: "/test/zod" }), 400, "invalid_request");
-    const expected = sendMessageRequestSchema.safeParse({ clientId: "not-a-uuid", text: "hi" }).error?.issues[0]?.message;
+    const expected = sendMessageRequestSchema.safeParse({ clientId: "not-a-uuid", text: "hi" }).error?.issues[0]
+      ?.message;
     expect(message).toBe(expected);
   });
 
@@ -147,7 +148,11 @@ describe("logging", () => {
     const bearer = "stl_secret_claude_token";
 
     await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie, authorization: `Bearer ${bearer}` } });
-    await t.app.inject({ method: "GET", url: "/test/log-headers", headers: { cookie, authorization: `Bearer ${bearer}` } });
+    await t.app.inject({
+      method: "GET",
+      url: "/test/log-headers",
+      headers: { cookie, authorization: `Bearer ${bearer}` },
+    });
     await t.app.inject({ method: "GET", url: "/test/boom", headers: { cookie, authorization: `Bearer ${bearer}` } });
     // A Ward-originated session while Ward is down: the guard logs its refusal.
     t.fakeWard.down = true;

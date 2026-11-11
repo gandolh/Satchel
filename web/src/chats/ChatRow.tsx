@@ -33,10 +33,7 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
             {inbox && <span className="chat-row__tag"> · {INBOX_SUBTITLE}</span>}
           </span>
           {sentAt && (
-            <time
-              className={unread > 0 ? "chat-row__time chat-row__time--unread" : "chat-row__time"}
-              dateTime={sentAt}
-            >
+            <time className={unread > 0 ? "chat-row__time chat-row__time--unread" : "chat-row__time"} dateTime={sentAt}>
               {listTime(sentAt)}
             </time>
           )}

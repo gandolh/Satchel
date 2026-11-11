@@ -28,7 +28,9 @@ describe("shareMessage", () => {
   });
 
   it("uses the title only when there is no text", () => {
-    expect(shareMessage({ title: "A page", text: "", url: "https://example.com/a" })).toBe("A page\nhttps://example.com/a");
+    expect(shareMessage({ title: "A page", text: "", url: "https://example.com/a" })).toBe(
+      "A page\nhttps://example.com/a",
+    );
     expect(shareMessage({ title: "A page", text: "Some text" })).toBe("Some text");
     expect(shareMessage({ title: "Only a title" })).toBe("Only a title");
   });

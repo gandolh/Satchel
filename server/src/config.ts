@@ -87,12 +87,14 @@ const envSchema = z.object({
   ).transform((value) => value ?? "/satchel/"),
   VAPID_PUBLIC_KEY: optional(
     z.string().refine(base64urlOf(65), {
-      message: "VAPID_PUBLIC_KEY must be the publicKey from `npx web-push generate-vapid-keys` (87 base64url characters).",
+      message:
+        "VAPID_PUBLIC_KEY must be the publicKey from `npx web-push generate-vapid-keys` (87 base64url characters).",
     }),
   ),
   VAPID_PRIVATE_KEY: optional(
     z.string().refine(base64urlOf(32), {
-      message: "VAPID_PRIVATE_KEY must be the privateKey from `npx web-push generate-vapid-keys` (43 base64url characters).",
+      message:
+        "VAPID_PRIVATE_KEY must be the privateKey from `npx web-push generate-vapid-keys` (43 base64url characters).",
     }),
   ),
   VAPID_SUBJECT: optional(

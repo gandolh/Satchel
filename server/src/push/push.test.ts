@@ -87,7 +87,9 @@ describe("webPushSender", () => {
       { publicKey: "pub", privateKey: "priv", subject: "mailto:johndoe@example.com" },
       vi.fn(async () => Promise.reject(gone)),
     );
-    await expect(send({ endpoint: "https://x.example/1", keys: { p256dh: "p", auth: "a" } }, "{}")).rejects.toMatchObject({
+    await expect(
+      send({ endpoint: "https://x.example/1", keys: { p256dh: "p", auth: "a" } }, "{}"),
+    ).rejects.toMatchObject({
       statusCode: 410,
     });
   });

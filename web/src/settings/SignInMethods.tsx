@@ -33,7 +33,9 @@ export function SignInMethods() {
         Sign in
       </h3>
       {user.hasPassword ? <ChangePassword /> : <SetPassword />}
-      {ward.enabled && <WardAccount linked={ward.linked} hasPassword={user.hasPassword} fromWard={session.session.origin === "ward"} />}
+      {ward.enabled && (
+        <WardAccount linked={ward.linked} hasPassword={user.hasPassword} fromWard={session.session.origin === "ward"} />
+      )}
     </section>
   );
 }
@@ -165,12 +167,22 @@ function WardAccount({ linked, hasPassword, fromWard }: { linked: boolean; hasPa
       <ErrorLine error={link.error ?? unlink.error ?? out.error} />
       <div className="signin-methods__actions">
         {!linked && (
-          <button type="button" className="button button--quiet" disabled={link.pending} onClick={() => void link.link()}>
+          <button
+            type="button"
+            className="button button--quiet"
+            disabled={link.pending}
+            onClick={() => void link.link()}
+          >
             {link.pending ? "Going to Ward…" : "Link Ward"}
           </button>
         )}
         {linked && !confirming && (
-          <button type="button" className="button button--quiet" disabled={!hasPassword} onClick={() => setConfirming(true)}>
+          <button
+            type="button"
+            className="button button--quiet"
+            disabled={!hasPassword}
+            onClick={() => setConfirming(true)}
+          >
             Unlink Ward
           </button>
         )}
@@ -192,7 +204,12 @@ function WardAccount({ linked, hasPassword, fromWard }: { linked: boolean; hasPa
           </>
         )}
         {fromWard && (
-          <button type="button" className="button button--quiet" disabled={out.pending} onClick={() => void out.signOut()}>
+          <button
+            type="button"
+            className="button button--quiet"
+            disabled={out.pending}
+            onClick={() => void out.signOut()}
+          >
             Sign out of Ward too
           </button>
         )}

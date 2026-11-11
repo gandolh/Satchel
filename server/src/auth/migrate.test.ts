@@ -43,7 +43,12 @@ describe("linkExistingAccounts", () => {
 
     expect(result.created.sort()).toEqual([OWNER, FRIEND].sort());
     expect(result).toMatchObject({ placeholders: [], failed: [], skipped: [] });
-    expect(await t.accounts.findUserById(OWNER)).toMatchObject({ id: OWNER, username: "ana", role: "admin", hasPassword: false });
+    expect(await t.accounts.findUserById(OWNER)).toMatchObject({
+      id: OWNER,
+      username: "ana",
+      role: "admin",
+      hasPassword: false,
+    });
     expect(await t.accounts.findUserById(FRIEND)).toMatchObject({ id: FRIEND, username: "bogdan", role: "member" });
     expect((await t.identities.findUserBySubject(OWNER))?.id).toBe(OWNER);
     expect((await t.identities.findUserBySubject(FRIEND))?.id).toBe(FRIEND);
@@ -130,8 +135,15 @@ describe("linkExistingAccounts", () => {
   });
 
   it("skips Claude's reserved member name and a database with no accounts", async () => {
-    expect(await linkExistingAccounts(t.db, t.accounts)).toEqual({ created: [], placeholders: [], skipped: [], failed: [] });
-    t.db.prepare("INSERT INTO accounts (subject, display_name, created_at, last_seen_at) VALUES (?, 'Claude', 'x', 'x')").run(CLAUDE_MEMBER);
+    expect(await linkExistingAccounts(t.db, t.accounts)).toEqual({
+      created: [],
+      placeholders: [],
+      skipped: [],
+      failed: [],
+    });
+    t.db
+      .prepare("INSERT INTO accounts (subject, display_name, created_at, last_seen_at) VALUES (?, 'Claude', 'x', 'x')")
+      .run(CLAUDE_MEMBER);
     expect((await linkExistingAccounts(t.db, t.accounts)).skipped).toEqual([CLAUDE_MEMBER]);
   });
 

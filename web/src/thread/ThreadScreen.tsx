@@ -12,7 +12,14 @@ import { Tick } from "../layout/Tick";
 import { isLiveConnected, useLiveCatchUp, useLiveEvents } from "../live";
 import { usePageVisible, usePolling } from "../polling";
 import { Composer } from "./Composer";
-import { buildTimeline, initialThreadState, seenByLabel, isRetryable, threadReducer, type PendingMessage } from "./model";
+import {
+  buildTimeline,
+  initialThreadState,
+  seenByLabel,
+  isRetryable,
+  threadReducer,
+  type PendingMessage,
+} from "./model";
 import "./thread.css";
 
 export interface ThreadScreenProps {
@@ -46,7 +53,8 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
 
   // The thread's own answer, with any marker the (live-updated) list has seen move since.
   const conversation = useMemo(
-    () => (state.conversation && summary ? withNewerMarkers(state.conversation, summary) : (state.conversation ?? summary)),
+    () =>
+      state.conversation && summary ? withNewerMarkers(state.conversation, summary) : (state.conversation ?? summary),
     [state.conversation, summary],
   );
   const title = conversation ? conversationTitle(conversation, me.subject) : "Chat";

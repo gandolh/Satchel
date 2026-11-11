@@ -102,7 +102,9 @@ describe("errors", () => {
     serve((url) =>
       url === "/satchel-api/api/people"
         ? json(200, { people: [{ subject: "s2", displayName: "Maria" }] })
-        : json(201, { conversation: { id: "c1", kind: "direct", title: null, members: [], lastMessage: null, unreadCount: 0 } }),
+        : json(201, {
+            conversation: { id: "c1", kind: "direct", title: null, members: [], lastMessage: null, unreadCount: 0 },
+          }),
     );
     expect((await listPeople()).people).toEqual([{ subject: "s2", displayName: "Maria" }]);
     expect((await createConversation({ kind: "direct", with: "s2" })).conversation.id).toBe("c1");
@@ -203,7 +205,11 @@ describe("requests", () => {
     serve((url) =>
       url.includes("revoke")
         ? json(200, { id: "t/1", revokedAt: "2026-10-09T10:00:00.000Z" })
-        : json(200, { conversation: { id: "c1", kind: "inbox", title: null, members: [], lastMessage: null, unreadCount: 0 }, messages: [], latestSeq: 0 }),
+        : json(200, {
+            conversation: { id: "c1", kind: "inbox", title: null, members: [], lastMessage: null, unreadCount: 0 },
+            messages: [],
+            latestSeq: 0,
+          }),
     );
     await revokeClaudeToken("t/1");
     await listMessages("c1", { after: 5 });
