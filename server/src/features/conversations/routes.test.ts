@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { errorResponseSchema, routes } from "@satchel/shared";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Store } from "../../db/store.js";
+import { routeSchemas } from "../../testing/routeSchemas.js";
 import { startTestApp, type TestApp } from "../../testing/testApp.js";
+import type { LivePublisher } from "../live/index.js";
+import { pushOff } from "../push/index.js";
+import { conversationRoutes } from "./routes.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bob" };
@@ -61,6 +66,44 @@ async function post3(): Promise<number[]> {
   }
   return seqs;
 }
+
+describe("the schemas", () => {
+  it("are the contract's", async () => {
+    const live = {} as LivePublisher;
+    expect(await routeSchemas(conversationRoutes, { store: {} as Store, live, push: pushOff })).toEqual({
+      [`GET ${routes.listConversations.path}`]: { response: { 200: routes.listConversations.response } },
+      [`GET ${routes.listPeople.path}`]: { response: { 200: routes.listPeople.response } },
+      [`POST ${routes.createConversation.path}`]: {
+        body: routes.createConversation.body,
+        response: { 200: routes.createConversation.response, 201: routes.createConversation.response },
+      },
+      [`GET ${routes.listMessages.path}`]: {
+        params: routes.listMessages.params,
+        querystring: routes.listMessages.query,
+        response: { 200: routes.listMessages.response },
+      },
+      [`POST ${routes.sendMessage.path}`]: {
+        params: routes.sendMessage.params,
+        body: routes.sendMessage.body,
+        response: { 200: routes.sendMessage.response, 201: routes.sendMessage.response },
+      },
+      [`POST ${routes.markSeen.path}`]: {
+        params: routes.markSeen.params,
+        body: routes.markSeen.body,
+        response: { 200: routes.markSeen.response },
+      },
+    });
+  });
+
+  it("strip a field a store row carries and the contract doesn't name", async () => {
+    vi.spyOn(t.store, "listPeople").mockReturnValue([
+      { subject: B.subject, displayName: B.username, lastSeenAt: "2026-11-11T10:00:00.000Z" } as never,
+    ]);
+    const res = await t.app.inject({ method: "GET", url: "/api/people", headers: { cookie: cookieA } });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe(`{"people":[{"subject":"${B.subject}","displayName":"${B.username}"}]}`);
+  });
+});
 
 describe("GET /api/conversations", () => {
   it("lists only the caller's inbox", async () => {

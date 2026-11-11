@@ -1,10 +1,17 @@
+import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { routes } from "@satchel/shared";
-import type { FastifyPluginAsync } from "fastify";
-import { ApiError } from "../../lib/api-error.js";
 import { InactiveAccount, UnknownAccount, type Store } from "../../db/store.js";
+import { ApiError } from "../../lib/api-error.js";
 import { signedIn } from "../../plugins/auth/guard.js";
 import type { LivePublisher } from "../live/index.js";
 import type { PushNotifier } from "../push/index.js";
+
+/** What the conversation routes take from the app's `RouteDeps`. */
+export interface ConversationRoutesOptions {
+  store: Store;
+  live: LivePublisher;
+  push: PushNotifier;
+}
 
 /**
  * The conversation routes. Behind the session guard. A
@@ -21,15 +28,15 @@ import type { PushNotifier } from "../push/index.js";
  * that moved, a conversation that was created (not an existing direct one).
  * A stored message also goes out as Web Push to the other members'
  * devices, after the reply; a push failure never touches the response.
+ *
+ * Each route declares the contract's schemas, so a request that fails one is a
+ * 400 before the handler runs, and a reply carries only the fields its schema
+ * names.
  */
-/** What the conversation routes take from the app's `RouteDeps`. */
-export interface ConversationRoutesOptions {
-  store: Store;
-  live: LivePublisher;
-  push: PushNotifier;
-}
-
-export const conversationRoutes: FastifyPluginAsync<ConversationRoutesOptions> = async (app, { store, live, push }) => {
+export const conversationRoutes: FastifyPluginAsyncZod<ConversationRoutesOptions> = async (
+  app,
+  { store, live, push },
+) => {
   const notFound = () => new ApiError("not_found", "No such conversation");
 
   /**
@@ -50,79 +57,118 @@ export const conversationRoutes: FastifyPluginAsync<ConversationRoutesOptions> =
     }
   }
 
-  app.get(routes.listConversations.path, (request) => {
-    const { subject } = signedIn(request);
-    return routes.listConversations.response.parse({ conversations: store.listConversations(subject) });
-  });
+  app.get(
+    routes.listConversations.path,
+    { schema: { response: { 200: routes.listConversations.response } } },
+    (request) => {
+      const { subject } = signedIn(request);
+      return { conversations: store.listConversations(subject) };
+    },
+  );
 
-  app.get(routes.listPeople.path, (request) => {
+  app.get(routes.listPeople.path, { schema: { response: { 200: routes.listPeople.response } } }, (request) => {
     const { subject } = signedIn(request);
-    return routes.listPeople.response.parse({ people: store.listPeople(subject) });
+    return { people: store.listPeople(subject) };
   });
 
   // Direct: 201 when made, 200 when the pair already had one. Group: 201.
-  app.post(routes.createConversation.path, (request, reply) => {
-    const { subject } = signedIn(request);
-    const body = routes.createConversation.body.parse(request.body);
+  app.post(
+    routes.createConversation.path,
+    {
+      schema: {
+        body: routes.createConversation.body,
+        response: { 200: routes.createConversation.response, 201: routes.createConversation.response },
+      },
+    },
+    (request, reply) => {
+      const { subject } = signedIn(request);
+      const body = request.body;
 
-    if (body.kind === "direct") {
-      if (body.with === subject) throw new ApiError("invalid_request", "A chat needs someone other than you.");
-      const made = withKnownPeople(() => store.createDirect(subject, body.with));
-      if (made.created) live.conversationCreated(made.conversation.id, subject);
-      reply.code(made.created ? 201 : 200);
-      return routes.createConversation.response.parse({ conversation: made.conversation });
-    }
+      if (body.kind === "direct") {
+        if (body.with === subject) throw new ApiError("invalid_request", "A chat needs someone other than you.");
+        const made = withKnownPeople(() => store.createDirect(subject, body.with));
+        if (made.created) live.conversationCreated(made.conversation.id, subject);
+        void reply.code(made.created ? 201 : 200);
+        return { conversation: made.conversation };
+      }
 
-    if (body.members.includes(subject)) {
-      throw new ApiError("invalid_request", "Leave yourself out of the members; you're added to the group anyway.");
-    }
-    const conversation = withKnownPeople(() => store.createGroup(subject, body.title, body.members));
-    live.conversationCreated(conversation.id, subject);
-    reply.code(201);
-    return routes.createConversation.response.parse({ conversation });
-  });
+      if (body.members.includes(subject)) {
+        throw new ApiError("invalid_request", "Leave yourself out of the members; you're added to the group anyway.");
+      }
+      const conversation = withKnownPeople(() => store.createGroup(subject, body.title, body.members));
+      live.conversationCreated(conversation.id, subject);
+      void reply.code(201);
+      return { conversation };
+    },
+  );
 
-  app.get(routes.listMessages.path, (request) => {
-    const { subject } = signedIn(request);
-    const { id } = routes.listMessages.params.parse(request.params);
-    const { after, limit } = routes.listMessages.query.parse(request.query);
-    const conversation = store.getConversation(id, subject);
-    if (!conversation) throw notFound();
-    return routes.listMessages.response.parse({
-      conversation,
-      messages: store.listMessages(id, { after, limit }),
-      latestSeq: store.latestSeq(id),
-    });
-  });
+  app.get(
+    routes.listMessages.path,
+    {
+      schema: {
+        params: routes.listMessages.params,
+        querystring: routes.listMessages.query,
+        response: { 200: routes.listMessages.response },
+      },
+    },
+    (request) => {
+      const { subject } = signedIn(request);
+      const { id } = request.params;
+      const { after, limit } = request.query;
+      const conversation = store.getConversation(id, subject);
+      if (!conversation) throw notFound();
+      return { conversation, messages: store.listMessages(id, { after, limit }), latestSeq: store.latestSeq(id) };
+    },
+  );
 
-  app.post(routes.sendMessage.path, (request, reply) => {
-    const { subject } = signedIn(request);
-    const { id } = routes.sendMessage.params.parse(request.params);
-    const { clientId, text } = routes.sendMessage.body.parse(request.body);
-    if (!store.getConversation(id, subject)) throw notFound();
-    const { message, created } = store.appendMessage({
-      conversationId: id,
-      sender: subject,
-      clientId,
-      text,
-    });
-    if (created) {
-      live.messageStored(message);
-      push.messageStored(message);
-    }
-    reply.code(created ? 201 : 200);
-    return routes.sendMessage.response.parse({ message });
-  });
+  app.post(
+    routes.sendMessage.path,
+    {
+      schema: {
+        params: routes.sendMessage.params,
+        body: routes.sendMessage.body,
+        response: { 200: routes.sendMessage.response, 201: routes.sendMessage.response },
+      },
+    },
+    (request, reply) => {
+      const { subject } = signedIn(request);
+      const { id } = request.params;
+      const { clientId, text } = request.body;
+      if (!store.getConversation(id, subject)) throw notFound();
+      const { message, created } = store.appendMessage({
+        conversationId: id,
+        sender: subject,
+        clientId,
+        text,
+      });
+      if (created) {
+        live.messageStored(message);
+        push.messageStored(message);
+      }
+      void reply.code(created ? 201 : 200);
+      return { message };
+    },
+  );
 
-  app.post(routes.markSeen.path, (request) => {
-    const { subject } = signedIn(request);
-    const { id } = routes.markSeen.params.parse(request.params);
-    const { upTo } = routes.markSeen.body.parse(request.body);
-    const conversation = store.getConversation(id, subject);
-    if (!conversation) throw notFound();
-    const before = conversation.members.find((member) => member.id === subject)?.seenUpTo;
-    const seenUpTo = store.markSeen(id, subject, upTo);
-    if (seenUpTo !== before) live.seenMoved(id, subject);
-    return routes.markSeen.response.parse({ seenUpTo });
-  });
+  app.post(
+    routes.markSeen.path,
+    {
+      schema: {
+        params: routes.markSeen.params,
+        body: routes.markSeen.body,
+        response: { 200: routes.markSeen.response },
+      },
+    },
+    (request) => {
+      const { subject } = signedIn(request);
+      const { id } = request.params;
+      const { upTo } = request.body;
+      const conversation = store.getConversation(id, subject);
+      if (!conversation) throw notFound();
+      const before = conversation.members.find((member) => member.id === subject)?.seenUpTo;
+      const seenUpTo = store.markSeen(id, subject, upTo);
+      if (seenUpTo !== before) live.seenMoved(id, subject);
+      return { seenUpTo };
+    },
+  );
 };
