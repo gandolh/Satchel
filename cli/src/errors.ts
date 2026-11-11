@@ -9,7 +9,10 @@ export class Rejected extends Error {
 
 export class Unreachable extends Error {
   readonly exitCode = 3;
-  constructor(readonly url: string) {
+  readonly url: string;
+
+  constructor(url: string) {
     super(`satchel: Satchel isn't reachable at ${url}. Tell the owner and carry on without it.`);
+    this.url = url;
   }
 }

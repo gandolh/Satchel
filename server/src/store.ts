@@ -18,27 +18,35 @@ import type { Db } from "./db/open.js";
 
 /** The client ID is already stored for a different conversation, sender or text. Routes answer 409. */
 export class ClientIdConflict extends Error {
-  constructor(readonly clientId: string) {
+  readonly clientId: string;
+
+  constructor(clientId: string) {
     super(`Client ID ${clientId} is already used by a different message.`);
+    this.clientId = clientId;
     this.name = "ClientIdConflict";
   }
 }
 
 /** A member-scoped call for someone who isn't a member. Routes check membership first, so this is a bug. */
 export class NotAMember extends Error {
-  constructor(
-    readonly conversationId: string,
-    readonly member: string,
-  ) {
+  readonly conversationId: string;
+  readonly member: string;
+
+  constructor(conversationId: string, member: string) {
     super(`${member} is not a member of conversation ${conversationId}.`);
+    this.conversationId = conversationId;
+    this.member = member;
     this.name = "NotAMember";
   }
 }
 
 /** Subjects named for a new conversation that have no account (or are Claude). Routes answer 400. */
 export class UnknownAccount extends Error {
-  constructor(readonly subjects: readonly string[]) {
+  readonly subjects: readonly string[];
+
+  constructor(subjects: readonly string[]) {
     super(`No Satchel account for ${subjects.join(", ")}.`);
+    this.subjects = subjects;
     this.name = "UnknownAccount";
   }
 }
@@ -48,8 +56,11 @@ export class UnknownAccount extends Error {
  * (`accounts.active = 0`). Routes answer 400, as for `UnknownAccount`.
  */
 export class InactiveAccount extends Error {
-  constructor(readonly subjects: readonly string[]) {
+  readonly subjects: readonly string[];
+
+  constructor(subjects: readonly string[]) {
     super(`The Satchel account of ${subjects.join(", ")} no longer has a grant.`);
+    this.subjects = subjects;
     this.name = "InactiveAccount";
   }
 }

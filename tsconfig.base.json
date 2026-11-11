@@ -1,5 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
+  // Every flag of vendor/house-style/tsconfig.base.json, and Satchel's own beside them. It doesn't
+  // extend the copy because the image build copies only this file before `tsc -b server`.
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023"],
@@ -16,6 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "sourceMap": true,
     "types": ["node"]
   }

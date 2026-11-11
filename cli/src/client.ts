@@ -20,10 +20,13 @@ const BAD_TOKEN =
 
 /** A server rejection (exit 2), or an answer this CLI can't read (also exit 2). */
 export class SatchelClient {
-  constructor(
-    readonly url: string,
-    private readonly token: string,
-  ) {}
+  readonly url: string;
+  private readonly token: string;
+
+  constructor(url: string, token: string) {
+    this.url = url;
+    this.token = token;
+  }
 
   private async call<T>(method: string, path: string, schema: Schema<T>, body?: unknown): Promise<T> {
     let res: Response;

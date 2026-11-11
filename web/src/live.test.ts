@@ -34,7 +34,11 @@ class FakeSocket implements LiveSocketLike {
   onerror: LiveSocketLike["onerror"] = null;
   closedWith: number | undefined;
 
-  constructor(readonly url: string) {}
+  readonly url: string;
+
+  constructor(url: string) {
+    this.url = url;
+  }
 
   open(): void {
     this.onopen?.(new Event("open"));

@@ -11,11 +11,11 @@ import { ClientIdConflict } from "./store.js";
 
 /** Throw from a route or hook to answer `ERROR_STATUS[code]` with this message. */
 export class ApiError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    message: string,
-  ) {
+  readonly code: ErrorCode;
+
+  constructor(code: ErrorCode, message: string) {
     super(message);
+    this.code = code;
     this.name = "ApiError";
   }
 }
