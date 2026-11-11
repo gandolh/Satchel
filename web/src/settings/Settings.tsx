@@ -5,6 +5,7 @@ import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { Notifications } from "./Notifications";
 import { SignInMethods } from "./SignInMethods";
+import { ThemeSwitch } from "./ThemeSwitch";
 import { Card } from "../layout/Card";
 import { safeX, screen, screenBody } from "../layout/looks";
 import { cn } from "../lib/cn";
@@ -43,6 +44,7 @@ export function Settings() {
           </Card>
           <SignInMethods />
           <Notifications />
+          <ThemeSwitch />
           {ConnectClaude && <ConnectClaude />}
         </div>
       </div>

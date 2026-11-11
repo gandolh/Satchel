@@ -10,17 +10,26 @@ paths:
 - Base UI is imported only by the wrappers in `web/src/components/ui/`, from
   subpaths. Screens import the wrapper, never `@base-ui/react`. (Until that
   folder exists, `check-base-ui` reports the two direct imports as warnings.)
-- Colours are tokens only: the custom properties in `web/src/styles/tokens.css`.
-  No hex, `rgb()` or named colour in a component.
-- The app has a Light / Dark / System switch and opens light on a first visit.
-  Until it is built, dark follows the system (`prefers-color-scheme`).
-- The 900 px breakpoint is `WIDE_QUERY` in `web/src/polling.ts` and the CSS's
-  `wide:` variant. Keep the two in step.
+- Styling is Tailwind 4 utilities. The one stylesheet is
+  `web/src/styles/index.css`; no other `.css`, no inline `style`.
+- Tokens come from `@theme` there, never arbitrary: `bg-surface`, `text-muted`.
+  No hex, `rgb()`, `color-mix()` or `bg-[#…]` in a component.
+- Type sizes come from the named scale (`text-body`, `text-meta`, ...), never
+  `text-[13px]`. A new token's name also goes into the lists in
+  `web/src/lib/cn.ts`, or `cn()` drops classes it reads as clashing.
+- Dark is the same tokens switched, under `data-theme` on `<html>`
+  (`light-dark()` plus `color-scheme`); `dark:` only where a token can't cover
+  it. The app has a Light / Dark / System switch (`settings/theme.ts`) and
+  opens light on a first visit. `prefers-color-scheme` appears only in the
+  "System" code and the boot script in `index.html`.
+- The 900 px breakpoint is `WIDE_QUERY` in `web/src/polling.ts` and the
+  stylesheet's `--breakpoint-wide` (the `wide:` variant). A test keeps the two
+  equal.
+- `hover:` applies only where the device can hover; never hide a control behind it.
 - Fonts are self-hosted, never Google at runtime.
 - The service worker (`web/src/sw.ts`) caches the app shell only, never the API.
 - UI copy uses the words in
   [corpus/wiki/glossary.md](../../corpus/wiki/glossary.md).
 - Static-markup tests assert roles and text, not class names.
 - `web/vendor/` is Ward's generated client. Never edit it.
-- `npm run check:conventions` runs `check-base-ui` over this folder,
-  `--warn-only` until the Base UI and Tailwind briefs are done.
+- `npm run check:conventions` runs `check-base-ui` over this folder, strict.

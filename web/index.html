@@ -3,8 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#2A45C4" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#2a45c4" />
+    <script>
+      // The saved theme before the first paint, so a dark choice never flashes light; light on a first visit, even
+      // when the system is dark. src/settings/theme.ts keeps the same key and these colours (the accent of each
+      // theme), and takes over once the page loads.
+      (function () {
+        var colors = { light: "#2a45c4", dark: "#8da0ff" };
+        var theme = "light";
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored === "dark" || stored === "system") theme = stored;
+        } catch (error) {
+          // Storage is blocked: light.
+        }
+        document.documentElement.dataset.theme = theme;
+        var dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document
+          .querySelector('meta[name="color-scheme"]')
+          .setAttribute("content", theme === "system" ? "light dark" : theme);
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", dark ? colors.dark : colors.light);
+      })();
+    </script>
     <meta name="description" content="A small messenger, with an Ideas inbox Claude can read." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />

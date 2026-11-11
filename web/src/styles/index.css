@@ -115,8 +115,17 @@
 }
 
 @layer base {
-  /* Until the theme switch lands, System: the operating system picks. */
+  /* Light on a first visit; the theme switch sets data-theme on <html> (base-ui rule 14), and System lets the
+     operating system pick, live. color-scheme is what light-dark() in the tokens reads, and lightningcss turns
+     light-dark() into variables that follow a color-scheme set in this same stylesheet, so it is never set from
+     JavaScript or another sheet. */
   :root {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  :root[data-theme="system"] {
     color-scheme: light dark;
   }
 
@@ -151,12 +160,6 @@
   a {
     color: var(--color-accent);
     text-underline-offset: 2px;
-  }
-
-  /* The browser's monospace shrinks inline code to 13/16 of its parent; preflight sets it back to 1em, and now in the
-     app's own mono face too. */
-  code {
-    font-size: 0.8125em;
   }
 
   button {
