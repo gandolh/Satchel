@@ -203,7 +203,7 @@ describe("loadConfig push settings", () => {
     expect(bad).not.toContain(pair.privateKey);
     expect(problems({ ...ENV, ...VAPID, VAPID_SUBJECT: "johndoe@example.com" })).toContain("VAPID_SUBJECT must be");
     expect(problems({ ...ENV, ...VAPID, VAPID_SUBJECT: "http://example.com" })).toContain("VAPID_SUBJECT must be");
-    expect(loadConfig({ ...ENV, ...VAPID, VAPID_SUBJECT: "https://gandolh.ro/satchel/" }).push.enabled).toBe(true);
+    expect(loadConfig({ ...ENV, ...VAPID, VAPID_SUBJECT: "https://example.org/satchel/" }).push.enabled).toBe(true);
   });
 
   it.each([
