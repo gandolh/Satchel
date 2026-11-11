@@ -185,3 +185,8 @@ Base UI sets (`data-checked`, `data-disabled`). The owner asked for this on
 Rejected: native inputs restyled by hand (what the switch was), and a styled kit
 such as shadcn, which would bring Tailwind. New interactive widgets (a menu, a
 dialog, a popover) start from Base UI rather than being built by hand.
+
+_2026-11-11 (conventions)_. Base UI is imported only under `web/src/components/ui/`
+(`Switch.tsx`, `Checkbox.tsx`); features import the wrappers. The two inline
+confirms (revoke a Claude token, unlink Ward) stay inline, per the owner's Q58.
+Styling moves to Tailwind in brief 03.

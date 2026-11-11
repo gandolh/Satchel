@@ -31,7 +31,9 @@ typecheck and lint clean.
   with the API on the same host; the CLI's default URL follows. The
   container builds and `vps-deploy` has the stack.
 - **Controls** (2026-10-23). Base UI `Switch` and `Checkbox`; no hand-built
-  widgets left ([design.md](design.md)).
+  widgets left ([design.md](design.md)). Since 2026-11-11 they sit in
+  `web/src/components/ui/` wrappers; check-base-ui reads 0 for rules 1-3 and
+  9-11, and rule 5 (10 stylesheets) waits for the Tailwind brief.
 - **Android share target** (2026-10-28). Share → Satchel opens the Ideas
   inbox with the text in the composer, unsent ([design.md](design.md)).
 - **Claude's replies** (2026-10-28). `satchel reply` posts into the inbox,

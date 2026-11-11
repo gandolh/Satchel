@@ -89,3 +89,6 @@ The service worker is built with `injectManifest` and registered as `prompt`:
 a new version applies the next time the page is hidden, so nobody is reloaded
 mid-typing. A thread's first load pages forward 200 messages at a time, ten
 pages at most; there is no "load older" control.
+
+## Where the Base UI wrappers live
+`web/src/components/ui/` holds `Switch.tsx` and `Checkbox.tsx`, the only files that import Base UI. Features import the wrappers.

@@ -355,3 +355,6 @@ and `.claude/rules/`. `jose` and `ws` are gone from the server. `check` takes
 about 51 s, `check:fast` about 8 s. Owner steps: `git config
 blame.ignoreRevsFile .git-blame-ignore-revs`, and the deploy. See
 [decisions-tooling.md](wiki/decisions-tooling.md).
+
+## 2026-11-11: Base UI by the conventions (brief 02)
+`Switch` and `Checkbox` moved into `web/src/components/ui/` with static-markup tests; the two callers import them, and the CSS rules `.person__check*` became `.checkbox*`. check-base-ui: rule 3 from 2 to 0; rule 5 stays at 10 (brief 03). Before/after screenshots skipped: sign-in needs a seeded account and the Ward path, which the build run didn't set up.
