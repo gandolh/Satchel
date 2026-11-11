@@ -14,6 +14,38 @@ export const LIVE_MAX_PAYLOAD_BYTES = 1024;
  */
 export const LIVE_RECHECK_MS = 10_000;
 
+/**
+ * The close code every open socket gets when the server shuts down: RFC 6455's
+ * 1001, "going away". The web client treats it like any close but 4001 and
+ * 4002: it reconnects with backoff, and polls until the server is back.
+ */
+export const LIVE_CLOSE_GOING_AWAY = 1001;
+
+/**
+ * How long a socket the server closes waits for the client's own close frame
+ * before the connection is cut. `ws` waits 30 seconds by default, so one
+ * client that never answers (a phone that lost its network) would hold the
+ * shutdown that long, past the process's own deadline.
+ */
+export const LIVE_CLOSE_TIMEOUT_MS = 1_000;
+
+/** The part of `ws`'s server the shutdown uses. */
+export interface LiveSocketServer {
+  readonly clients: Iterable<{ close(code?: number, reason?: string): void }>;
+  close(): void;
+}
+
+/**
+ * `@fastify/websocket`'s `preClose`: closes every open socket with
+ * `LIVE_CLOSE_GOING_AWAY` and stops the socket server, before Fastify waits
+ * for the connections in flight. An open socket is one of those, so the
+ * close would otherwise wait for every tab to go away on its own.
+ */
+export function closeLiveSockets(server: LiveSocketServer): void {
+  for (const client of server.clients) client.close(LIVE_CLOSE_GOING_AWAY, "server shutting down");
+  server.close();
+}
+
 /** The part of a `ws` socket a live connection uses. */
 export interface LiveConnection extends LiveSocket {
   ping(): void;

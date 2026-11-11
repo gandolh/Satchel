@@ -9,7 +9,7 @@ import { registerErrorHandling } from "./errors.js";
 import { createHub } from "./live/hub.js";
 import { registerUpgradeChecks } from "./live/origin.js";
 import { createLivePublisher, type LivePublisher } from "./live/publish.js";
-import { LIVE_MAX_PAYLOAD_BYTES } from "./live/socket.js";
+import { LIVE_CLOSE_TIMEOUT_MS, LIVE_MAX_PAYLOAD_BYTES, closeLiveSockets } from "./live/socket.js";
 import { createPushNotifier, pushOff, type PushNotifier } from "./push/notifier.js";
 import { webPushSender, type SendPush } from "./push/sender.js";
 import { claudeRoutes } from "./routes/claude.js";
@@ -176,8 +176,15 @@ export async function buildApp({
 
   app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
 
-  // Before the route plugins: it wraps the handlers of routes registered after it.
-  void app.register(fastifyWebsocket, { options: { maxPayload: LIVE_MAX_PAYLOAD_BYTES } });
+  // Before the route plugins: it wraps the handlers of routes registered after it. Closing the app closes
+  // every open socket first, with a code the web client reconnects on, and cuts a client that doesn't answer.
+  void app.register(fastifyWebsocket, {
+    options: { maxPayload: LIVE_MAX_PAYLOAD_BYTES, closeTimeout: LIVE_CLOSE_TIMEOUT_MS },
+    preClose(done) {
+      closeLiveSockets(this.websocketServer);
+      done();
+    },
+  });
 
   const hub = createHub(app.log);
   const push = pushOptions

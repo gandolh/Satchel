@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { request as httpRequest } from "node:http";
-import { connect as netConnect, type AddressInfo } from "node:net";
+import { connect as netConnect, type AddressInfo, type Socket } from "node:net";
 import {
   CLAUDE_MEMBER,
   LIVE_CLOSE_SESSION_EXPIRED,
@@ -14,6 +14,7 @@ import {
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { startTestApp, type TestApp } from "../testing/testApp.js";
+import { LIVE_CLOSE_GOING_AWAY, LIVE_CLOSE_TIMEOUT_MS } from "./socket.js";
 
 /**
  * `GET /api/live` end to end: the real app listening on a port, the real Ward
@@ -476,6 +477,46 @@ describe("the socket and its session", () => {
       });
       expect(raw).toMatch(/^HTTP\/1\.1 40[13] /);
       expect(raw.toLowerCase()).toContain("connection: close");
+    }
+  });
+
+  it("closing the app closes every open socket with 1001, not 4001", async () => {
+    const { cookie } = await signIn(A);
+    const sockets = [await connect(cookie), await connect(cookie)];
+    const started = Date.now();
+    await t.app.close();
+    expect(Date.now() - started).toBeLessThan(1000);
+    for (const socket of sockets) {
+      const closed = await within(socket.closed, 1000, "the 1001 close");
+      expect(closed.code).toBe(LIVE_CLOSE_GOING_AWAY);
+    }
+  });
+
+  it("a client that never answers the close holds the app's close up for about a second, not 30", async () => {
+    const { cookie } = await signIn(A);
+    // A raw upgrade that reads nothing after the 101: it never answers a ping or the close frame.
+    const silent = await new Promise<Socket>((resolve, reject) => {
+      const socket = netConnect(port, "127.0.0.1", () => {
+        socket.write(
+          `GET ${LIVE_PATH} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n` +
+            `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ${randomBytes(16).toString("base64")}\r\n` +
+            `Origin: ${t.origin}\r\nCookie: ${cookie}\r\n\r\n`,
+        );
+      });
+      socket.once("data", (chunk: Buffer) => {
+        socket.pause();
+        if (chunk.toString("latin1").startsWith("HTTP/1.1 101 ")) resolve(socket);
+        else reject(new Error(`not upgraded: ${chunk.toString("latin1").split("\r\n")[0]}`));
+      });
+      socket.on("error", reject);
+    });
+    try {
+      const started = Date.now();
+      await t.app.close();
+      expect(Date.now() - started).toBeGreaterThanOrEqual(LIVE_CLOSE_TIMEOUT_MS - 100);
+      expect(Date.now() - started).toBeLessThan(LIVE_CLOSE_TIMEOUT_MS + 2000);
+    } finally {
+      silent.destroy();
     }
   });
 
