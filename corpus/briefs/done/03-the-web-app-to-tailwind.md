@@ -234,3 +234,7 @@ Follow the skill's `migrating-from-plain-css.md`. One commit per numbered step; 
 - Brief 05 (the redesign) builds on this brief's tokens, the type scale and the theme switch.
 - Brief 04 doesn't touch `web/`. If both are open at once, they conflict only in `package-lock.json`, so don't run them at the same time.
 - The service worker precaches `**/*.css`, so the new CSS file's hash changes the precache list. That is expected, and the next deploy updates installed copies through the worker's prompt flow ([wiki/design.md](../../wiki/design.md), PWA).
+
+## Outcome (2026-11-11)
+
+Done in five commits, not one per step: the stylesheets were migrated together because the shared pieces (Button, Card, Gate, the screen and field strings) cross every file. Board down: no (used). Light screenshots at 1280, 390, 899, 900 and 901 match; dark matches under the new switch. The comparison found one bug (shadowed `bubble` name), fixed. A Playwright script (scratch, not committed: the repo has no Playwright suite) checked the three theme choices, the first visit, no flash with the module blocked, and a reload. Sizes: CSS 20.2 to 27.1 kB, JS 370.9 to 422.7 kB, precache 531 to 589 KiB. Open from the brief: decision 7 (keep the CSS copy of 900 px) stands as the default and is still a question for the owner. The System choice sets `data-theme="system"` (the skill's way), not `dark`.
