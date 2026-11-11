@@ -128,14 +128,23 @@ function checkManifest(repo, file, version, report) {
 
 function checkStylesheets(repo, root, stylesheet, report) {
   const one = root === "." ? stylesheet : `${root}/${stylesheet}`;
-  for (const file of walk(repo, root)) {
-    if (!STYLESHEET_FILE.test(file) || file === one) continue;
+  const others = walk(repo, root).filter((file) => STYLESHEET_FILE.test(file) && file !== one);
+  // With no stylesheet at the declared path, a lone plain stylesheet is probably the repo's one, in another place.
+  const loneOther =
+    !existsSync(join(repo, one)) && others.filter((file) => !/\.module\.[a-z]+$/.test(file)).length === 1;
+  for (const file of others) {
+    const isModule = /\.module\.[a-z]+$/.test(file);
+    const where = root === "." ? file : file.slice(root.length + 1);
     report.add({
       file,
       rule: 5,
-      message: /\.module\.[a-z]+$/.test(file)
+      message: isModule
         ? `a CSS module: style the parts with Tailwind utilities, and keep the one stylesheet ${one}`
-        : `a stylesheet other than ${one}: move its rules into utilities, or into that one stylesheet`,
+        : `a stylesheet other than ${one}: move its rules into utilities, or into that one stylesheet${
+            loneOther
+              ? `; if this is the one stylesheet, declare it with "stylesheet": "${where}" in conventions.json`
+              : ""
+          }`,
     });
   }
   if (existsSync(join(repo, one))) {

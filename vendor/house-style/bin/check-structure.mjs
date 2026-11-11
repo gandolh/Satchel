@@ -20,7 +20,7 @@
  *            a heuristic, tests excepted
  *   rule 7   Fastify imported under lib/: the dependency-cruiser preset
  *            (lib-without-fastify), not this script
- *   rule 11  a file over 400 lines, in any root (a warning)
+ *   rule 11  a file over 400 lines, in any root, test files aside (a warning)
  *
  * Each finding prints as `file:line rule-N severity: message`. Warnings never fail
  * the run; an error exits 1, and --warn-only shows errors as warnings. A finding a
@@ -88,8 +88,9 @@ function main() {
 
   for (const file of codeFiles(repo, [...server, ...web, ...shared])) {
     const text = readFileSync(join(repo, file), "utf8");
+    const test = isTestFile(file);
     const lines = text.endsWith("\n") ? text.split("\n").length - 1 : text.split("\n").length;
-    if (lines > MAX_LINES) {
+    if (lines > MAX_LINES && !test) {
       report.add({
         file,
         rule: 11,
@@ -103,7 +104,6 @@ function main() {
 
     const masked = maskSource(text);
     const lineOf = lineIndex(text);
-    const test = isTestFile(file);
     if (inServer && !test) {
       checkListen(file, masked, lineOf, report);
       if (APP.test(file)) checkBuildApp(file, masked, report);

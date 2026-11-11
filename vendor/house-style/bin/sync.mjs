@@ -6,9 +6,10 @@
  *   npm run house-style:sync -- <ref> --check   compare only, write nothing
  *   npm run house-style:sync -- --check         compare against the commit in the header
  *
- * It copies into the git work tree it runs in (outside git, the nearest folder
- * with a package.json), so the first sync can run the library checkout's copy
- * of this script from the repo before vendor/house-style/ exists. <ref> is a tag
+ * It copies into the folder of the nearest package.json at or above the working
+ * directory, without going above the git toplevel (so an app in a subfolder of a
+ * multi-project repo takes the copy in its own folder), and the first sync can run
+ * the library checkout's copy of this script before vendor/house-style/ exists. <ref> is a tag
  * (`house-style-v1.0.0`) or a commit of the checkout named CHECKOUT, which is
  * looked up in the projects folder (PROJECTS_DIR, else ~/projects), directly or
  * one group folder down. Only that checkout's git objects are read, never its
@@ -91,7 +92,7 @@ function main() {
   }
 
   const checkout = findCheckout();
-  if (resolve(checkout) === repo)
+  if (repo === resolve(checkout) || repo.startsWith(resolve(checkout) + sep))
     throw new Error(`this is the ${CHECKOUT} checkout itself: run the sync from the repo that takes the copy`);
   const commit = resolveCommit(checkout, ref);
 
@@ -132,17 +133,21 @@ function main() {
 // ── the repo and the checkout ────────────────────────────────────────────────
 
 /**
- * The repo taking the copy: the git work tree the command runs in (the first
- * sync runs the library's script from there), or outside git the nearest folder
- * up from it with a package.json.
+ * The project taking the copy: the folder of the nearest package.json at or above
+ * the working directory, without going above the git toplevel. A repo with its
+ * package.json at the root gets the copy at its root; an app in a subfolder of a
+ * multi-project repo gets it in that folder. With no package.json on the way (the
+ * first sync of a bare repo) it is the git toplevel, and outside git it is the
+ * nearest package.json at any height.
  */
 function findRepoRoot(cwd) {
   const run = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd, encoding: "utf8" });
-  if (run.status === 0 && run.stdout.trim() !== "") return resolve(run.stdout.trim());
+  const top = run.status === 0 && run.stdout.trim() !== "" ? resolve(run.stdout.trim()) : null;
   for (let dir = resolve(cwd); ; dir = dirname(dir)) {
     if (existsSync(join(dir, "package.json"))) return dir;
-    if (dirname(dir) === dir) break;
+    if (dir === top || dirname(dir) === dir) break;
   }
+  if (top !== null) return top;
   throw new Error("no git work tree and no package.json up from the working directory: run the sync inside the repo");
 }
 

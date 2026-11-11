@@ -24,6 +24,8 @@ const JS = "**/*.{js,jsx,mjs,cjs}";
 const SOURCE_EXTENSIONS = "{ts,tsx,mts,cts,js,jsx,mjs,cjs}";
 const CONFIG_FILES = [`**/*.config.${SOURCE_EXTENSIONS}`];
 const DEFAULT_TESTS = [`**/*.test.${SOURCE_EXTENSIONS}`, `**/*.spec.${SOURCE_EXTENSIONS}`];
+const DEFAULT_ENV = ["**/config.ts"];
+const DEFAULT_ASSERT_FUNCTIONS = ["expect", "expectTypeOf"];
 const DEFAULT_IGNORES = ["**/vendor/**", "**/dist/**", "**/coverage/**"];
 
 /**
@@ -45,6 +47,8 @@ const KNOWN_OPTIONS = new Set([
   "tests",
   "defaultExports",
   "console",
+  "env",
+  "assertFunctionNames",
   "tailwind",
   "vitest",
   "typed",
@@ -65,7 +69,9 @@ const KNOWN_OPTIONS = new Set([
  * @param {string[]} [options.scripts] Folders of scripts run by hand, where `console` is the interface and `process.env` is read directly (default `["scripts"]`).
  * @param {string[]} [options.tests] Test file globs (default `**\/*.test.*` and `**\/*.spec.*`).
  * @param {string[]} [options.defaultExports] Globs where a framework or a runtime contract needs a default export, beyond config files.
- * @param {string[]} [options.console] Globs of CLI entry files where `console` is allowed. They still read the environment through `config.ts`.
+ * @param {string[]} [options.console] Globs of app files allowed to print: a CLI entry, or a module that logs before the logger exists. Their `process.env` reads are still errors.
+ * @param {string[]} [options.env] Globs of the files that read `process.env`, where `n/no-process-env` is off (default `["**\/config.ts"]`). A repo whose reader is `config/env.ts` passes its path instead.
+ * @param {string[]} [options.assertFunctionNames] The names `vitest/expect-expect` counts as assertions (default `["expect", "expectTypeOf"]`); a repo adds its own helpers.
  * @param {{ css: string, order?: boolean }} [options.tailwind] The Tailwind CSS entry, and whether the class order is enforced yet.
  * @param {boolean} [options.vitest] Whether tests run on vitest (default true); a `node:test` repo passes false.
  * @param {{ project?: true | string | string[], allowDefaultProject?: string[] }} [options.typed] Typed-lint parser settings: `projectService` unless `project` is given.
@@ -81,6 +87,8 @@ export function houseStyle(options = {}) {
   const web = list(options.web);
   const scripts = options.scripts ?? ["scripts"];
   const tests = options.tests ?? DEFAULT_TESTS;
+  const env = options.env ?? DEFAULT_ENV;
+  const assertFunctionNames = options.assertFunctionNames ?? DEFAULT_ASSERT_FUNCTIONS;
   const typed = options.typed ?? {};
   const webFiles = web.map((dir) => `${trim(dir)}/**/*.{ts,tsx,js,jsx}`);
 
@@ -136,9 +144,9 @@ export function houseStyle(options = {}) {
     },
     {
       name: "house-style/process-env",
-      files: ["**/config.ts", ...CONFIG_FILES],
+      files: [...env, ...CONFIG_FILES],
       rules: {
-        // config.ts is the app's one reader of the environment, and a tool config is not app code.
+        // The env reader (config.ts by default) is the app's one reader of the environment, and a tool config is not app code.
         "n/no-process-env": "off",
       },
     },
@@ -175,6 +183,8 @@ export function houseStyle(options = {}) {
           "error",
           { disallowTypeAnnotations: false, fixStyle: "inline-type-imports" },
         ],
+        // With `verbatimModuleSyntax`, `import { type X } from "./a.js"` still emits `import {} from "./a.js"`, so an import of only types is written `import type`.
+        "@typescript-eslint/no-import-type-side-effects": "error",
       },
     },
     {
@@ -235,6 +245,8 @@ export function houseStyle(options = {}) {
       rules: {
         // The vitest set catches a committed `.only`, a test with no assertion, and an expect that cannot fail.
         ...vitest.configs.recommended.rules,
+        // A helper that wraps `expect` counts as an assertion once the repo names it.
+        "vitest/expect-expect": ["error", { assertFunctionNames }],
         // `expect(value, "message")` is how the house labels an assertion.
         "vitest/valid-expect": ["error", { maxArgs: 2 }],
         // The house asserts on a thrown error inside its `catch`, which this rule flags every time.
@@ -274,9 +286,9 @@ export function houseStyle(options = {}) {
     },
     {
       name: "house-style/default-exports",
-      files: [...CONFIG_FILES, ...(options.defaultExports ?? [])],
+      files: [...CONFIG_FILES, "**/*.d.ts", ...(options.defaultExports ?? [])],
       rules: {
-        // Tool configs, route modules and runtime contracts are read through `default` by their framework.
+        // Tool configs, ambient `declare module` files, route modules and runtime contracts are read through `default` by their framework.
         "import-x/no-default-export": "off",
       },
     },

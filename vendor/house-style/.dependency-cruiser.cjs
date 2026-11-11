@@ -22,9 +22,10 @@ module.exports = {
     {
       name: "not-to-unresolvable",
       severity: "error",
-      comment: "An import that cannot be resolved is an edge every other rule here misses.",
+      comment:
+        "An import that cannot be resolved is an edge every other rule here misses. A Vite virtual module (`virtual:` ids) is made by a plugin at build time, so it is allowed.",
       from: {},
-      to: { couldNotResolve: true },
+      to: { couldNotResolve: true, pathNot: "^virtual:" },
     },
     {
       name: "feature-through-index",

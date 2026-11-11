@@ -4,6 +4,77 @@ house-style's versions, newest first. Each section is the upgrade note for a
 repo moving to that version: what changed, and what to fix before syncing it.
 Tags are `house-style-v<version>`.
 
+## 1.1.0 (2026-11-11)
+
+Folds in what the eight repos that adopted 1.0.0 on 2026-11-11 reported
+(wicket, the todo app in mini-projects, 3D-sandbox, imbatranim-apps, Lantern,
+SocialEvents, Satchel, Newspapper). A repo on 1.0.0 syncs `house-style-v1.1.0`,
+runs `npx eslint --fix .`, then `npm run check`; the list below says what each
+change does to it.
+
+- **The sync's target** (`bin/sync.mjs`): the copy goes to the folder of the
+  nearest `package.json` at or above the working directory, without going
+  above the git toplevel. A repo with its `package.json` at the root is
+  unchanged. An app in a subfolder of a multi-project repo now takes the copy
+  in its own folder when the sync runs there, so mini-projects can drop its
+  `scripts/house-style-sync.mjs` wrapper and its `GIT_CEILING_DIRECTORIES`
+  setting. From a workspace folder that has its own `package.json`, the copy
+  now goes to that workspace, not the repo root: run the sync from the root.
+  The sync also refuses to run anywhere inside the library checkout.
+- **`env` option** (`houseStyle()`): globs where `n/no-process-env` is off,
+  default `["**/config.ts"]`, so nothing changes by default. A repo whose env
+  reader is `config/env.ts` passes `env: ["server/src/config/env.ts"]` and
+  deletes its own block for it. Tests, scripts and `*.config.*` stay exempt.
+- **`assertFunctionNames` option**: the names `vitest/expect-expect` counts as
+  assertions, default `["expect", "expectTypeOf"]`. A repo with helpers
+  (`expectError`, `expectUnauthorized`, `expectPoint`) passes them and deletes
+  its own `expect-expect` block.
+- **`@typescript-eslint/no-import-type-side-effects`: error**, beside
+  `consistent-type-imports`. With `verbatimModuleSyntax`, `import { type X }
+  from "./a.js"` still emits `import {} from "./a.js"`. A repo that wrote
+  all-inline type imports sees findings; `npx eslint --fix` turns them into
+  `import type { X }`.
+- **`defaultExports`**: `**/*.d.ts` joins the built-in config-file exemption,
+  so an ambient `declare module` with `export default` needs no entry. A repo
+  with that entry can drop it.
+- **dependency-cruiser**: `not-to-unresolvable` allows `^virtual:` module ids
+  (Vite virtual modules). A repo with an override for them can drop it.
+- **knip**: no change to the preset. knip drops a preset's top-level `entry`
+  once a repo sets `workspaces`, so the preset can't carry
+  `scripts/*.{js,mjs,ts}`; the README's sample lists it for the repo to add.
+- **`check-structure` rule 11** (the file-size warning) skips test files, as
+  rules 1, 3 and 6 do. A repo's long test files stop being warnings.
+- **`check-base-ui` rule 5**: when the one stylesheet sits somewhere other
+  than `styles/index.css`, the message names the `"stylesheet"` key in
+  `conventions.json` as the way to declare it.
+- **The Stop hook** (the plugin, 0.41.0): finds `check:fast` from the folders
+  of the files the session saved, runs each distinct one once, and falls back
+  to the working directory only when no saved file leads to one. An app folder
+  in a multi-project repo no longer needs a scripts-only root `package.json`
+  for the hook.
+- **Documentation**: the README, the adoption reference and the skill say what
+  the repos found. Two projects in one copy (pins in the folder that holds
+  `vendor/house-style/`, knip `ignoreBinaries`); `check-fast` with
+  `git diff --name-only --relative HEAD`; `projectService` and Vite solution
+  tsconfigs; Playwright specs and the `tests` default; knip config names and
+  `ignoreDependencies`; `format` until `format:check` passes; anchored
+  `.prettierignore` entries; when a repo keeps its own tsconfig base; turning
+  `no-unnecessary-type-assertion` off until `noUncheckedIndexedAccess` lands;
+  the vitest and `react-hooks` notes; merging a `forbidden` entry by name;
+  `console` against `scripts` against `env`; `no-restricted-syntax` selectors
+  for `autoFocus` and a `<button>` without `type`, because `jsx-a11y` 6.10.2
+  doesn't support ESLint 10; and `tsc` after a knip cleanup.
+
+To move a repo from 1.0.0:
+
+1. `npm run house-style:sync -- house-style-v1.1.0` (from the app's folder in a
+   multi-project repo), and commit the copy.
+2. `npx eslint --fix .`, then review the `import type` rewrites it made.
+3. Replace the repo's own `n/no-process-env` block for its env reader with
+   `env: [...]`, and its own `expect-expect` block with `assertFunctionNames`.
+   Remove any `*.d.ts` entry in `defaultExports` and any `virtual:` override.
+4. `npm run check`.
+
 ## 1.0.0 (2026-11-11)
 
 The first version. A repo adopting it takes the reformat commit, the configs

@@ -1,6 +1,6 @@
 // The house dependency-cruiser preset, from the vendored house-style copy: no cycles, no unresolvable
 // imports, a feature used through its index only, no Fastify in lib/. A rule of the same name here
-// replaces the preset's, and two are changed for Satchel.
+// replaces the preset's, and one is changed for Satchel.
 module.exports = {
   extends: "./vendor/house-style/.dependency-cruiser.cjs",
   forbidden: [
@@ -13,14 +13,6 @@ module.exports = {
       comment: "A cycle makes load order matter and leaves no layer that can be read on its own.",
       from: {},
       to: { circular: true },
-    },
-    {
-      // `virtual:pwa-register` is a module vite-plugin-pwa makes at build time, so it has no file to find.
-      name: "not-to-unresolvable",
-      severity: "error",
-      comment: "An import that cannot be resolved is an edge every other rule here misses.",
-      from: {},
-      to: { couldNotResolve: true, pathNot: "^virtual:" },
     },
   ],
 };

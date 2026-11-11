@@ -15,6 +15,8 @@ export default [
     // Allowed to print: the CLI talks to the person running it, the server entry logs before its logger
     // exists, and the seed command reports to its operator.
     console: ["cli/src/index.ts", "server/src/index.ts", "server/src/seed.ts"],
+    // The two helpers the route tests define assert inside: they count as assertions.
+    assertFunctionNames: ["expect", "expectTypeOf", "expectError", "expectUnauthorized"],
     // data/ is the local database.
     ignores: ["data/**"],
   }),
@@ -24,16 +26,5 @@ export default [
     name: "satchel/process-env-warns",
     files: ["server/src/app.ts", "server/src/index.ts", "server/src/seed.ts", "cli/src/index.ts"],
     rules: { "n/no-process-env": "warn" },
-  },
-  {
-    // The two helpers the route tests define assert inside: they count as assertions.
-    name: "satchel/assert-helpers",
-    files: ["**/*.test.{ts,tsx}"],
-    rules: {
-      "vitest/expect-expect": [
-        "error",
-        { assertFunctionNames: ["expect", "expectError", "expectUnauthorized", "expectTypeOf"] },
-      ],
-    },
   },
 ];
