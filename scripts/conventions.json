@@ -2,5 +2,20 @@
   "$schema": "../vendor/house-style/conventions.schema.json",
   "web": ["web/src"],
   "server": ["server/src"],
-  "shared": ["shared/src"]
+  "shared": ["shared/src"],
+  "exceptions": [
+    {
+      "check": "structure",
+      "rule": 6,
+      "path": "server/src/features/live/routes.ts",
+      "match": "GET (computed url) declares no schema",
+      "reason": "GET /api/live upgrades to a WebSocket (Q53): the upgrade takes no params, query or body, and has no JSON reply to declare. Its plain-GET 400 is the handler's own answer, and every event it sends is checked against liveEventSchema in the hub."
+    },
+    {
+      "check": "structure",
+      "rule": 9,
+      "path": "server/src/testing/testApp.ts",
+      "reason": "The test helper keeps its name, startTestApp, rather than the skill's buildTestApp: it builds the same thing (the whole app on an in-memory database, fakes passed in), and the CLI's tests import it as @satchel/server/testing."
+    }
+  ]
 }
