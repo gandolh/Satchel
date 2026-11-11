@@ -20,7 +20,10 @@
     "test": "vitest run",
     "typecheck": "tsc -b && tsc -p web --noEmit",
     "lint": "eslint .",
-    "house-style:sync": "node vendor/house-style/bin/sync.mjs"
+    "house-style:sync": "node vendor/house-style/bin/sync.mjs",
+    "pretest": "tsc -b",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
