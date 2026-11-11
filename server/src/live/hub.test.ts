@@ -302,7 +302,11 @@ describe("the publisher", () => {
   });
 
   const publisher = () => createLivePublisher({ hub, store, log: { warn } });
-  const sent = (subject: string) => sockets[subject]!.sent;
+  const sent = (subject: string) => {
+    const socket = sockets[subject];
+    if (socket === undefined) throw new Error(`no socket for ${subject}`);
+    return socket.sent;
+  };
 
   it("a message goes to the conversation's members; Claude's inbox only to its owner", () => {
     const { message } = store.appendMessage({

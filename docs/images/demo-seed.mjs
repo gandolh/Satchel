@@ -10,7 +10,6 @@
 // (Maya, Theo, Ana) that never sign in, backdated chats, and a Claude token,
 // which it writes to <token file> (mode 0600) and never prints. Messages are
 // append-only, so to start over, stop the server and delete the scratch folder.
-/* global process, console */
 import { randomUUID } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

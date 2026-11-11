@@ -248,7 +248,7 @@ describe("POST /claude/messages: Claude replies in the inbox", () => {
 
     const res = await replyRequest(token, { clientId, text: `Re #${asked}: done, see the brief` });
     expect(res.statusCode).toBe(201);
-    const body = res.json() as { message: Record<string, unknown> };
+    const body = res.json<{ message: Record<string, unknown> }>();
     expect(body).toEqual({
       message: { seq: expect.any(Number), sentAt: now.toISOString(), text: `Re #${asked}: done, see the brief` },
     });
@@ -353,7 +353,7 @@ describe("POST /claude/messages: Claude replies in the inbox", () => {
       payload: { kind: "direct", with: B.subject },
     });
     expect(friend.statusCode).toBe(201);
-    const direct = (friend.json() as { conversation: { id: string } }).conversation.id;
+    const direct = friend.json<{ conversation: { id: string } }>().conversation.id;
 
     for (const target of [direct, b.inboxId]) {
       const steer = { conversationId: target, id: target, conversation: target, inboxId: target };
@@ -403,7 +403,7 @@ describe("a Claude token reaches its own inbox and nothing else", () => {
       const res = await t.app.inject({ method, url, headers: bearer(token), ...(payload ? { payload } : {}) });
       expect(res.statusCode).toBe(200);
       responses.push(res.body);
-      return res.json() as unknown;
+      return res.json<unknown>();
     };
 
     const u = claudeUnreadResponseSchema.parse(await capture("GET", "/claude/unread"));
@@ -455,7 +455,7 @@ describe("friend conversations are never reachable with a Claude token", () => {
     const start = async (cookie: string, payload: object) => {
       const res = await t.app.inject({ method: "POST", url: "/api/conversations", headers: { cookie }, payload });
       expect(res.statusCode).toBe(201);
-      return (res.json() as { conversation: { id: string } }).conversation.id;
+      return res.json<{ conversation: { id: string } }>().conversation.id;
     };
     const direct = await start(a.cookie, { kind: "direct", with: B.subject });
     const group = await start(a.cookie, {
@@ -481,7 +481,7 @@ describe("friend conversations are never reachable with a Claude token", () => {
       const res = await t.app.inject({ method, url, headers: bearer(token), ...(payload ? { payload } : {}) });
       expect(res.statusCode).toBe(200);
       responses.push(res.body);
-      return res.json() as unknown;
+      return res.json<unknown>();
     };
 
     for (const id of [direct, group]) {

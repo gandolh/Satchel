@@ -21,9 +21,11 @@ export function parseEnvFile(text: string): Record<string, string> {
   for (const line of text.split(/\r?\n/)) {
     const match = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
     if (!match) continue;
-    const raw = match[2]!;
+    const key = match[1];
+    const raw = match[2];
+    if (key === undefined || raw === undefined) continue;
     const quoted = /^(['"])(.*)\1(?:\s+#.*)?$/.exec(raw);
-    values[match[1]!] = quoted ? quoted[2]!.trim() : raw.replace(/\s+#.*$/, "").trim();
+    values[key] = quoted ? (quoted[2] ?? "").trim() : raw.replace(/\s+#.*$/, "").trim();
   }
   return values;
 }

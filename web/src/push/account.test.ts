@@ -20,7 +20,7 @@ function deps(over: Partial<PushAccountDeps> = {}): PushAccountDeps {
   return {
     current: async () => null,
     permission: () => "granted",
-    save: vi.fn(async () => ({ ok: true as const })) as PushAccountDeps["save"],
+    save: vi.fn(async () => ({ ok: true as const })),
     forget: vi.fn(async () => undefined),
     ...over,
   };

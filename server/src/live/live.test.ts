@@ -131,6 +131,12 @@ async function signIn(who: typeof A | typeof B): Promise<{ cookie: string; inbox
   return { cookie, inboxId: meResponseSchema.parse(res.json()).inboxId };
 }
 
+/** The inbox of an account that is expected to have one. */
+function inboxOf(who: { inboxId: string | null }): string {
+  if (who.inboxId === null) throw new Error("this account has no inbox");
+  return who.inboxId;
+}
+
 async function send(cookie: string, conversationId: string, text: string, clientId: string = randomUUID()) {
   const res = await t.app.inject({
     method: "POST",
@@ -164,7 +170,7 @@ describe("events reach the members' sockets and nobody else's", () => {
     const b = await signIn(B);
     const [a1, a2, b1] = [await connect(a.cookie), await connect(a.cookie), await connect(b.cookie)];
 
-    const message = await send(a.cookie, a.inboxId!, "an idea");
+    const message = await send(a.cookie, inboxOf(a), "an idea");
     await waitFor(() => a1.events.length === 1 && a2.events.length === 1, "A's two sockets");
     for (const client of [a1, a2]) {
       expect(client.events).toEqual([{ type: "message", conversationId: a.inboxId, message }]);
@@ -196,9 +202,9 @@ describe("events reach the members' sockets and nobody else's", () => {
     const a = await signIn(A);
     const a1 = await connect(a.cookie);
     const clientId = randomUUID();
-    await send(a.cookie, a.inboxId!, "once", clientId);
-    await send(a.cookie, a.inboxId!, "once", clientId);
-    const next = await send(a.cookie, a.inboxId!, "next");
+    await send(a.cookie, inboxOf(a), "once", clientId);
+    await send(a.cookie, inboxOf(a), "once", clientId);
+    const next = await send(a.cookie, inboxOf(a), "next");
     await waitFor(() => a1.events.length >= 2, "the next message");
     expect(ofType(a1.events, "message").map((e) => e.message.text)).toEqual(["once", "next"]);
     expect(a1.events.at(-1)).toMatchObject({ message: { seq: next.seq } });
@@ -209,7 +215,7 @@ describe("events reach the members' sockets and nobody else's", () => {
     const b = await signIn(B);
     const tokenRes = await t.app.inject({ method: "POST", url: "/api/claude-tokens", headers: { cookie: a.cookie } });
     const { token } = createClaudeTokenResponseSchema.parse(tokenRes.json());
-    const message = await send(a.cookie, a.inboxId!, "for claude");
+    const message = await send(a.cookie, inboxOf(a), "for claude");
     const [a1, a2, b1] = [await connect(a.cookie), await connect(a.cookie), await connect(b.cookie)];
 
     const seen = await t.app.inject({

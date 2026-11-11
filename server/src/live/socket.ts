@@ -81,7 +81,8 @@ export function serveLiveSocket(socket: LiveConnection, options: ServeLiveSocket
     // One check at a time: a slow Ward must not stack them up.
     if (checking || socket.readyState !== SOCKET_OPEN) return;
     checking = true;
-    stillSignedIn()
+    // The chain can't reject: `.catch` answers a failed check, and `safely` swallows what the close throws.
+    void stillSignedIn()
       .catch((err: unknown) => {
         log?.warn({ err, subject }, "live socket session check failed; closing");
         return false;

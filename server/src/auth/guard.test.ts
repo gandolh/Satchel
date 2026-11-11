@@ -54,7 +54,8 @@ function cookieFrom(res: { headers: Record<string, unknown> }): string {
   const raw = res.headers["set-cookie"];
   const header = (Array.isArray(raw) ? raw : [String(raw)]).find((line) => line.startsWith(`${SESSION_COOKIE}=`));
   if (header === undefined) throw new Error("no session cookie was set");
-  return header.split(";")[0]!;
+  const [pair = ""] = header.split(";");
+  return pair;
 }
 
 describe("local login", () => {
@@ -352,7 +353,8 @@ describe("the Ward routes are wired", () => {
     const identities = createWardIdentities({ accounts: t.accounts });
     await identities.createLinkedUser({ subject: "ward-subject-1", username: "wanda", role: "member" });
     const user = await t.accounts.findUserByUsername("wanda");
-    const startSession = async () => `${SESSION_COOKIE}=${(await t.accounts.startSession(user!.id)).token}`;
+    if (user === undefined) throw new Error("the Ward-created user is missing");
+    const startSession = async () => `${SESSION_COOKIE}=${(await t.accounts.startSession(user.id)).token}`;
     let cookie = await startSession();
 
     const session = await t.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } });
@@ -363,7 +365,7 @@ describe("the Ward routes are wired", () => {
     expect(refused.json()).toMatchObject({ error: "no_local_password" });
 
     // Setting a password ends every other session; sign in again.
-    await t.accounts.setPassword(user!.id, TEST_PASSWORD);
+    await t.accounts.setPassword(user.id, TEST_PASSWORD);
     cookie = await startSession();
     const unlinked = await post("/auth/ward/unlink", { cookie });
     expect(unlinked.statusCode).toBe(200);

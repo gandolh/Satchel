@@ -64,7 +64,7 @@ describe("POST /api/claude-tokens", () => {
     expect(res.statusCode).toBe(201);
     expect(res.headers["cache-control"]).toBe("no-store");
     const body = createClaudeTokenResponseSchema.parse(res.json());
-    expect(Object.keys(res.json() as object).sort()).toEqual(["createdAt", "id", "token"]);
+    expect(Object.keys(res.json<object>()).sort()).toEqual(["createdAt", "id", "token"]);
     expect(body.token).toMatch(/^stl_[A-Za-z0-9_-]{43}$/);
     expect(body.createdAt).toBe(now.toISOString());
 

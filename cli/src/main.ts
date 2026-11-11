@@ -67,8 +67,9 @@ export async function main(argv: string[], ctx: Context, packageRoot: URL): Prom
       }
       case "seen": {
         const { positionals } = parse(args, {});
-        if (positionals.length !== 1) throw new UsageError("usage: satchel seen <n>");
-        const upTo = nonNegativeInt(positionals[0]!, "<n>");
+        const [first] = positionals;
+        if (positionals.length !== 1 || first === undefined) throw new UsageError("usage: satchel seen <n>");
+        const upTo = nonNegativeInt(first, "<n>");
         const res = await client(ctx).seen(upTo);
         ctx.out(`Seen up to #${res.seenUpTo}.`);
         return 0;

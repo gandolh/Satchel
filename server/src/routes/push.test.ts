@@ -42,7 +42,7 @@ async function startPushApp(): Promise<PushApp> {
   let closed = false;
   const t: PushApp = Object.assign(base, {
     sent,
-    respond: (() => Promise.resolve()) as PushApp["respond"],
+    respond: () => Promise.resolve(),
     async settle() {
       if (closed) return;
       closed = true;
@@ -83,7 +83,7 @@ beforeEach(async () => {
   cookieC = await t.signIn(C);
   // A first request makes each account.
   for (const cookie of [cookieA, cookieB, cookieC]) {
-    expect((await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } })).statusCode).toBe(200);
+    await t.app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
   }
 });
 

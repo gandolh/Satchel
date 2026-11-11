@@ -145,7 +145,9 @@ export async function buildApp({
       done(null, undefined);
       return;
     }
-    parseJson(request, body as string, done);
+    // Fastify types the default parser as a callback or a promise; this call uses the callback, which
+    // reports the result through `done`, so there is no promise to await.
+    void parseJson(request, body as string, done);
   });
 
   registerErrorHandling(app);

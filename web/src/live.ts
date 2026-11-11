@@ -166,6 +166,8 @@ export function createLiveClient(deps: LiveClientDeps): LiveClient {
       try {
         listener(event);
       } catch (error) {
+        // A listener that throws must not stop the others, and the browser console is the only place to say so.
+        // eslint-disable-next-line no-console
         console.error("A live event handler failed", error);
       }
     }
