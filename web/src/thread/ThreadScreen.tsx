@@ -269,7 +269,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
               const startsRun = !(before?.kind === "message" && before.message.sender === message.sender);
               return (
                 <li key={item.key} className={cn("flex flex-col", own ? "items-end" : "items-start")}>
-                  <div className={cn(bubble, own && "border-transparent bg-accent text-accent-ink")}>
+                  <div className={cn(bubbleClass, own && "border-transparent bg-accent text-accent-ink")}>
                     {isGroup && !own && startsRun && (
                       <span className="mb-0.5 block font-title text-meta font-semibold text-accent">
                         {senderName(message)}
@@ -308,7 +308,8 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
 /** A day or a notice, as a small pill in the middle of the thread. */
 const pill = "rounded-pill bg-sunk px-3 py-1 text-small font-medium text-muted";
 /** A message bubble: theirs by default, mine with the accent on top. */
-const bubble = "block max-w-[min(78%,560px)] rounded-lg border border-line bg-surface px-3 py-2 text-left text-ink";
+const bubbleClass =
+  "block max-w-[min(78%,560px)] rounded-lg border border-line bg-surface px-3 py-2 text-left text-ink";
 const failedBubble = "border-dashed border-bad";
 const bubbleText = "wrap-anywhere whitespace-pre-wrap";
 const bubbleMeta = "mt-0.5 flex items-center justify-end gap-1 text-tiny opacity-80";
@@ -318,7 +319,7 @@ function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (
   if (bubble.status === "sending") {
     return (
       <li className="flex flex-col items-end">
-        <div className={cn(bubble, "border-transparent bg-accent text-accent-ink opacity-70")}>
+        <div className={cn(bubbleClass, "border-transparent bg-accent text-accent-ink opacity-70")}>
           <p className={bubbleText}>{bubble.text}</p>
           <span className={bubbleMeta}>Sending…</span>
         </div>
@@ -334,11 +335,11 @@ function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (
   return (
     <li className="flex flex-col items-end">
       {failed ? (
-        <button type="button" className={cn(bubble, failedBubble)} onClick={() => onRetry(bubble)}>
+        <button type="button" className={cn(bubbleClass, failedBubble)} onClick={() => onRetry(bubble)}>
           {content}
         </button>
       ) : (
-        <div className={cn(bubble, failedBubble)}>{content}</div>
+        <div className={cn(bubbleClass, failedBubble)}>{content}</div>
       )}
       <p className="mt-0.5 text-small text-bad" role="alert">
         {failed ? "Not sent. Tap to retry" : (bubble.error ?? "Not sent.")}
