@@ -23,7 +23,10 @@
     "house-style:sync": "node vendor/house-style/bin/sync.mjs",
     "pretest": "tsc -b",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:conventions && npm test",
+    "check:fast": "npm run typecheck && node scripts/check-fast.mjs",
+    "check:conventions": "knip && depcruise server/src web/src shared/src cli/src && node vendor/house-style/bin/check-base-ui.mjs --warn-only && node vendor/house-style/bin/check-structure.mjs --warn-only"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
