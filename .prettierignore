@@ -1,0 +1,19 @@
+# Markdown stays out of Prettier (decided 2026-11-10): the corpus is prose that corpus/lint.sh governs,
+# and cli/src/guide.md is text Claude reads at run time.
+*.md
+
+# Generated or vendored copies.
+server/vendor/
+web/vendor/
+vendor/house-style/
+
+# Lockfile, build output, local data.
+package-lock.json
+dist/
+dev-dist/
+data/
+coverage/
+
+# Static assets and captured images.
+web/public/
+docs/images/
