@@ -9,10 +9,16 @@ import {
   errorResponseSchema,
   meResponseSchema,
   messagesResponseSchema,
+  routes,
   seenResponseSchema,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Store } from "../../db/store.js";
+import { routeSchemas } from "../../testing/routeSchemas.js";
 import { startTestApp, type TestApp } from "../../testing/testApp.js";
+import type { LivePublisher } from "../live/index.js";
+import { pushOff } from "../push/index.js";
+import { claudeRoutes } from "./routes.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };
@@ -526,6 +532,37 @@ describe("friend conversations are never reachable with a Claude token", () => {
         )
         .get(direct, group, CLAUDE_MEMBER)?.n,
     ).toBe(0);
+  });
+});
+
+describe("the schemas", () => {
+  it("are the contract's", async () => {
+    const live = {} as LivePublisher;
+    expect(await routeSchemas(claudeRoutes, { store: {} as Store, live, push: pushOff })).toEqual({
+      [`GET ${routes.claudeUnread.path}`]: { response: { 200: routes.claudeUnread.response } },
+      [`POST ${routes.claudeSeen.path}`]: {
+        body: routes.claudeSeen.body,
+        response: { 200: routes.claudeSeen.response },
+      },
+      [`GET ${routes.claudeMessages.path}`]: {
+        querystring: routes.claudeMessages.query,
+        response: { 200: routes.claudeMessages.response },
+      },
+      [`POST ${routes.claudeReply.path}`]: {
+        body: routes.claudeReply.body,
+        response: { 200: routes.claudeReply.response, 201: routes.claudeReply.response },
+      },
+    });
+  });
+
+  it("run after the token check: a bad body or query without a token is still 401", async () => {
+    for (const request of [
+      { method: "POST", url: "/claude/seen", payload: { upTo: "x" } },
+      { method: "GET", url: "/claude/messages?limit=0" },
+      { method: "POST", url: "/claude/messages", payload: { clientId: "x", text: "" } },
+    ] as const) {
+      expectUnauthorized(await t.app.inject(request));
+    }
   });
 });
 

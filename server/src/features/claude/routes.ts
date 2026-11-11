@@ -1,7 +1,8 @@
+import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { CLAUDE_MEMBER, routes } from "@satchel/shared";
-import type { FastifyPluginAsync, FastifyRequest } from "fastify";
-import { sendError } from "../../plugins/errors.js";
+import type { FastifyRequest } from "fastify";
 import type { ResolvedClaudeToken, Store } from "../../db/store.js";
+import { sendError } from "../../plugins/errors.js";
 import type { LivePublisher } from "../live/index.js";
 import type { PushNotifier } from "../push/index.js";
 
@@ -19,6 +20,11 @@ import type { PushNotifier } from "../push/index.js";
  * takes the conversation id from the resolved token. No route reads a
  * conversation id from the request, for writing (`POST /claude/messages`)
  * as for reading.
+ *
+ * The token check is an `onRequest` hook, so it runs before each route's
+ * schema: a caller without a token gets the 401 whatever it sent. The
+ * response schemas are the contract's strict shapes, so a reply that carried
+ * a sender, a client ID or any other field would be a 500, never sent.
  */
 
 /** The one answer for a missing, malformed, unknown or revoked Claude token. */
@@ -50,7 +56,7 @@ export interface ClaudeRoutesOptions {
   push: PushNotifier;
 }
 
-export const claudeRoutes: FastifyPluginAsync<ClaudeRoutesOptions> = async (app, { store, live, push }) => {
+export const claudeRoutes: FastifyPluginAsyncZod<ClaudeRoutesOptions> = async (app, { store, live, push }) => {
   app.decorateRequest("claudeToken", null);
 
   // Scoped to this plugin's routes. `onRequest` runs before the body is
@@ -67,40 +73,48 @@ export const claudeRoutes: FastifyPluginAsync<ClaudeRoutesOptions> = async (app,
   });
 
   // Changes nothing: reading and marking are separate calls (messages-and-seen.md).
-  app.get(routes.claudeUnread.path, (request) => {
+  app.get(routes.claudeUnread.path, { schema: { response: { 200: routes.claudeUnread.response } } }, (request) => {
     const { conversationId } = claudeToken(request);
     const seenUpTo = store.seenUpTo(conversationId, CLAUDE_MEMBER);
     const messages = store
       .unreadFor(conversationId, CLAUDE_MEMBER)
       .map(({ seq, sentAt, text }) => ({ seq, sentAt, text }));
-    return routes.claudeUnread.response.parse({ seenUpTo, messages });
+    return { seenUpTo, messages };
   });
 
-  app.post(routes.claudeSeen.path, (request) => {
-    const { conversationId } = claudeToken(request);
-    const { upTo } = routes.claudeSeen.body.parse(request.body);
-    const before = store.seenUpTo(conversationId, CLAUDE_MEMBER);
-    const seenUpTo = store.markSeen(conversationId, CLAUDE_MEMBER, upTo);
-    // The owner's sockets, so the ticks turn blue while they watch.
-    if (seenUpTo !== before) live.seenMoved(conversationId, CLAUDE_MEMBER);
-    return routes.claudeSeen.response.parse({ seenUpTo });
-  });
+  app.post(
+    routes.claudeSeen.path,
+    { schema: { body: routes.claudeSeen.body, response: { 200: routes.claudeSeen.response } } },
+    (request) => {
+      const { conversationId } = claudeToken(request);
+      const { upTo } = request.body;
+      const before = store.seenUpTo(conversationId, CLAUDE_MEMBER);
+      const seenUpTo = store.markSeen(conversationId, CLAUDE_MEMBER, upTo);
+      // The owner's sockets, so the ticks turn blue while they watch.
+      if (seenUpTo !== before) live.seenMoved(conversationId, CLAUDE_MEMBER);
+      return { seenUpTo };
+    },
+  );
 
-  app.get(routes.claudeMessages.path, (request) => {
-    const { conversationId } = claudeToken(request);
-    const { after, since, limit } = routes.claudeMessages.query.parse(request.query);
-    const seenUpTo = store.seenUpTo(conversationId, CLAUDE_MEMBER);
-    const messages = store
-      .listMessages(conversationId, { after, since, limit })
-      .map(({ seq, sentAt, text, sender }) => ({
-        seq,
-        sentAt,
-        text,
-        seen: seq <= seenUpTo,
-        fromClaude: sender === CLAUDE_MEMBER,
-      }));
-    return routes.claudeMessages.response.parse({ messages });
-  });
+  app.get(
+    routes.claudeMessages.path,
+    { schema: { querystring: routes.claudeMessages.query, response: { 200: routes.claudeMessages.response } } },
+    (request) => {
+      const { conversationId } = claudeToken(request);
+      const { after, since, limit } = request.query;
+      const seenUpTo = store.seenUpTo(conversationId, CLAUDE_MEMBER);
+      const messages = store
+        .listMessages(conversationId, { after, since, limit })
+        .map(({ seq, sentAt, text, sender }) => ({
+          seq,
+          sentAt,
+          text,
+          seen: seq <= seenUpTo,
+          fromClaude: sender === CLAUDE_MEMBER,
+        }));
+      return { messages };
+    },
+  );
 
   /*
    * Claude replies in the inbox: an ordinary send with the
@@ -114,23 +128,30 @@ export const claudeRoutes: FastifyPluginAsync<ClaudeRoutesOptions> = async (app,
    * stays unread for Claude (decisions.md, "Reading and marking seen are two
    * calls").
    */
-  app.post(routes.claudeReply.path, (request, reply) => {
-    const { conversationId } = claudeToken(request);
-    const { clientId, text } = routes.claudeReply.body.parse(request.body);
-    const { message, created } = store.appendMessage({
-      conversationId,
-      sender: CLAUDE_MEMBER,
-      clientId,
-      text,
-      markSenderSeen: false,
-    });
-    if (created) {
-      live.messageStored(message);
-      push.messageStored(message);
-    }
-    reply.code(created ? 201 : 200);
-    return routes.claudeReply.response.parse({
-      message: { seq: message.seq, sentAt: message.sentAt, text: message.text },
-    });
-  });
+  app.post(
+    routes.claudeReply.path,
+    {
+      schema: {
+        body: routes.claudeReply.body,
+        response: { 200: routes.claudeReply.response, 201: routes.claudeReply.response },
+      },
+    },
+    (request, reply) => {
+      const { conversationId } = claudeToken(request);
+      const { clientId, text } = request.body;
+      const { message, created } = store.appendMessage({
+        conversationId,
+        sender: CLAUDE_MEMBER,
+        clientId,
+        text,
+        markSenderSeen: false,
+      });
+      if (created) {
+        live.messageStored(message);
+        push.messageStored(message);
+      }
+      void reply.code(created ? 201 : 200);
+      return { message: { seq: message.seq, sentAt: message.sentAt, text: message.text } };
+    },
+  );
 };
