@@ -1,8 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { errorResponseSchema, routes } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { PushTarget, SendPush } from "./sender.js";
+import type { Store } from "../../db/store.js";
+import { routeSchemas } from "../../testing/routeSchemas.js";
 import { startTestApp, type TestApp } from "../../testing/testApp.js";
+import { pushOff } from "./notifier.js";
+import { pushRoutes } from "./routes.js";
+import type { PushTarget, SendPush } from "./sender.js";
 
 /**
  * The push routes and the pushes a stored message sends, with
@@ -443,6 +447,22 @@ describe("an inactive account", () => {
   });
 });
 
+describe("the schemas", () => {
+  it("are the contract's", async () => {
+    expect(await routeSchemas(pushRoutes, { store: {} as Store, push: pushOff })).toEqual({
+      [`GET ${routes.pushKey.path}`]: { response: { 200: routes.pushKey.response } },
+      [`POST ${routes.savePushSubscription.path}`]: {
+        body: routes.savePushSubscription.body,
+        response: { 200: routes.savePushSubscription.response, 201: routes.savePushSubscription.response },
+      },
+      [`DELETE ${routes.deletePushSubscription.path}`]: {
+        body: routes.deletePushSubscription.body,
+        response: { 200: routes.deletePushSubscription.response },
+      },
+    });
+  });
+});
+
 describe("with push off", () => {
   let off: TestApp;
 
@@ -474,6 +494,18 @@ describe("with push off", () => {
       payload: { endpoint: endpointOf("x") },
     });
     expect(res.statusCode).toBe(200);
+  });
+
+  it("answers a malformed subscription with 400: the route's schema runs before the push-off check", async () => {
+    const cookie = await off.signIn(A);
+    // It was a 404 when the handler checked for push before it parsed the body.
+    for (const payload of [{ endpoint: "not a push service" }, { ...subscription("x"), keys: {} }]) {
+      expectError(
+        await off.app.inject({ method: "POST", url: "/api/push/subscriptions", headers: { cookie }, payload }),
+        400,
+        "invalid_request",
+      );
+    }
   });
 
   it("stores and answers a message as usual", async () => {
