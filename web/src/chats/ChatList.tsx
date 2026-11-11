@@ -7,6 +7,9 @@ import { usePolling } from "../polling";
 import { NEW_CHAT } from "../router";
 import { CHAT_LIST_POLL_MS, refreshConversations, useConversations, useLiveChats } from "./conversations";
 import { ChatRow } from "./ChatRow";
+import { Button } from "../components/ui/Button";
+import { cn } from "../lib/cn";
+import { iconButton, listNote, screen, screenBody } from "../layout/looks";
 
 /** Why the list couldn't refresh, in plain words. */
 function describe(error: Error): string {
@@ -28,13 +31,13 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
   usePolling(refreshConversations, { intervalMs: CHAT_LIST_POLL_MS, enabled: !connected });
 
   return (
-    <section className="screen">
+    <section className={screen}>
       <ScreenHeader
         title="Chats"
         level={1}
         large
         actions={
-          <Link to={NEW_CHAT} className="icon-button icon-button--end" aria-label="New chat">
+          <Link to={NEW_CHAT} className={cn(iconButton, "-mr-2 ml-auto")} aria-label="New chat">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -50,7 +53,7 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
           </Link>
         }
       />
-      <div className="screen__body">
+      <div className={screenBody}>
         {conversations === null ? (
           error ? (
             <ListError message={describe(error)} />
@@ -60,14 +63,14 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
         ) : (
           <>
             {error && (
-              <p className="list-banner" role="status">
+              <p className="border-b border-line bg-sunk px-4 py-2 text-meta text-muted" role="status">
                 {describe(error)} Trying again.
               </p>
             )}
             {conversations.length === 0 ? (
-              <p className="list-note">No chats yet. Start one with the pencil above.</p>
+              <p className={listNote}>No chats yet. Start one with the pencil above.</p>
             ) : (
-              <ul className="chat-list">
+              <ul className="bg-surface">
                 {conversations.map((conversation) => (
                   <li key={conversation.id}>
                     <ChatRow conversation={conversation} me={me.subject} selected={conversation.id === selectedId} />
@@ -86,11 +89,11 @@ function ListLoading() {
   return (
     <div aria-busy="true" aria-label="Loading chats">
       {[0, 1, 2].map((row) => (
-        <div className="skeleton-row" key={row} aria-hidden="true">
-          <span className="avatar" />
-          <span className="skeleton-lines">
-            <span className="skeleton-line" style={{ width: row === 0 ? "40%" : "55%" }} />
-            <span className="skeleton-line" style={{ width: "75%" }} />
+        <div className="flex min-h-18 items-center gap-3 border-b border-line px-4 py-3" key={row} aria-hidden="true">
+          <span className="size-12 flex-none rounded-pill bg-sunk" />
+          <span className="grid flex-1 gap-2">
+            <span className={cn("h-2.5 rounded-pill bg-sunk", row === 0 ? "w-2/5" : "w-[55%]")} />
+            <span className="h-2.5 w-3/4 rounded-pill bg-sunk" />
           </span>
         </div>
       ))}
@@ -101,11 +104,10 @@ function ListLoading() {
 function ListError({ message }: { message: string }) {
   const [retrying, setRetrying] = useState(false);
   return (
-    <div className="list-note" role="alert">
+    <div className={listNote} role="alert">
       <p>{message}</p>
-      <button
-        type="button"
-        className="button button--quiet"
+      <Button
+        variant="quiet"
         disabled={retrying}
         onClick={() => {
           setRetrying(true);
@@ -113,7 +115,7 @@ function ListError({ message }: { message: string }) {
         }}
       >
         {retrying ? "Trying…" : "Try again"}
-      </button>
+      </Button>
     </div>
   );
 }

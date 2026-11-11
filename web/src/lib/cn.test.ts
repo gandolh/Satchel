@@ -16,8 +16,8 @@ describe("cn", () => {
   });
 
   it("keeps a leading beside a size, in either order", () => {
-    expect(cn("leading-tight", "text-meta")).toBe("leading-tight text-meta");
-    expect(cn("text-meta", "leading-tight")).toBe("text-meta leading-tight");
+    expect(cn("leading-5", "text-meta")).toBe("leading-5 text-meta");
+    expect(cn("text-meta", "leading-5")).toBe("text-meta leading-5");
   });
 
   it("tells a size from a weight and a font", () => {

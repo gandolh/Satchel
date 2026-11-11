@@ -1,7 +1,10 @@
 import { useId, useState, type FormEvent } from "react";
 import { useLogin, useSession, useWardSignIn, type AuthError } from "../../vendor/ward/ward-auth-react.js";
+import { Gate, GateMessage } from "../layout/Gate";
+import { errorLine, field, fieldInput, fieldLabel } from "../layout/looks";
 import { returnToFor } from "../ward";
 import { loginMessage, sessionReasonMessage, wardSignInMessage } from "./messages";
+import { Button } from "../components/ui/Button";
 
 export interface LoginViewProps {
   /** Whether the server has Ward configured: the button shows only then. */
@@ -42,77 +45,71 @@ export function LoginView({
   };
 
   return (
-    <main className="gate" aria-busy={pending || undefined}>
-      <div className="gate__panel login">
-        <span className="mark" aria-hidden="true">
-          S
-        </span>
-        <h1 className="gate__title">Sign in to Satchel</h1>
-        {notice !== null && (
-          <p className="gate__message" role="status">
-            {notice}
+    <Gate title="Sign in to Satchel" busy={pending} className="w-full max-w-[340px]">
+      {notice !== null && <GateMessage role="status">{notice}</GateMessage>}
+      <form className="grid w-full gap-3 text-left" onSubmit={submit}>
+        <div className={field}>
+          <label className={fieldLabel} htmlFor={`${id}-username`}>
+            Username
+          </label>
+          <input
+            id={`${id}-username`}
+            className={fieldInput}
+            name="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+        </div>
+        <div className={field}>
+          <label className={fieldLabel} htmlFor={`${id}-password`}>
+            Password
+          </label>
+          <input
+            id={`${id}-password`}
+            className={fieldInput}
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </div>
+        {error !== null && (
+          <p className={errorLine} role="alert">
+            {loginMessage(error)}
           </p>
         )}
-        <form className="login__form" onSubmit={submit}>
-          <div className="login__field">
-            <label className="login__label" htmlFor={`${id}-username`}>
-              Username
-            </label>
-            <input
-              id={`${id}-username`}
-              className="login__input"
-              name="username"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-          </div>
-          <div className="login__field">
-            <label className="login__label" htmlFor={`${id}-password`}>
-              Password
-            </label>
-            <input
-              id={`${id}-password`}
-              className="login__input"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
-          {error !== null && (
-            <p className="login__error" role="alert">
-              {loginMessage(error)}
+        <Button className="w-full" type="submit" disabled={pending}>
+          {pending ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+      {wardEnabled && (
+        <>
+          <p className="text-meta text-muted" aria-hidden="true">
+            or
+          </p>
+          <Button variant="quiet" className="w-full" onClick={onWard}>
+            Sign in with Ward
+          </Button>
+          {wardError !== null && (
+            <p className={errorLine} role="alert">
+              {wardSignInMessage(wardError)}{" "}
+              <button
+                type="button"
+                className="border-0 bg-transparent p-0 text-accent underline"
+                onClick={onDismissWard}
+              >
+                Dismiss
+              </button>
             </p>
           )}
-          <button type="submit" className="button login__submit" disabled={pending}>
-            {pending ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        {wardEnabled && (
-          <>
-            <p className="login__or" aria-hidden="true">
-              or
-            </p>
-            <button type="button" className="button button--quiet login__submit" onClick={onWard}>
-              Sign in with Ward
-            </button>
-            {wardError !== null && (
-              <p className="login__error" role="alert">
-                {wardSignInMessage(wardError)}{" "}
-                <button type="button" className="login__dismiss" onClick={onDismissWard}>
-                  Dismiss
-                </button>
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    </main>
+        </>
+      )}
+    </Gate>
   );
 }
 

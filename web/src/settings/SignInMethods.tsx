@@ -9,6 +9,9 @@ import {
   type AuthError,
 } from "../../vendor/ward/ward-auth-react.js";
 import { settingsMessage } from "../auth/messages";
+import { Button } from "../components/ui/Button";
+import { Card } from "../layout/Card";
+import { errorLine, field, fieldInput, fieldLabel } from "../layout/looks";
 
 /**
  * Settings: how this account signs in. A local password (set one, or change
@@ -27,21 +30,18 @@ export function SignInMethods() {
   if (session.status !== "signed_in") return null;
   const { user, ward } = session;
   return (
-    <section className="card signin-methods" aria-labelledby={titleId}>
-      <h3 className="card__title" id={titleId}>
-        Sign in
-      </h3>
+    <Card title="Sign in" titleId={titleId} className="gap-3">
       {user.hasPassword ? <ChangePassword /> : <SetPassword />}
       {ward.enabled && (
         <WardAccount linked={ward.linked} hasPassword={user.hasPassword} fromWard={session.session.origin === "ward"} />
       )}
-    </section>
+    </Card>
   );
 }
 
 function ErrorLine({ error }: { error: AuthError | null }) {
   return error === null ? null : (
-    <p className="login__error" role="alert">
+    <p className={errorLine} role="alert">
       {settingsMessage(error)}
     </p>
   );
@@ -60,13 +60,13 @@ function PasswordField({
 }) {
   const id = useId();
   return (
-    <div className="login__field">
-      <label className="login__label" htmlFor={id}>
+    <div className={field}>
+      <label className={fieldLabel} htmlFor={id}>
         {label}
       </label>
       <input
         id={id}
-        className="login__input"
+        className={fieldInput}
         type="password"
         autoComplete={autoComplete}
         value={value}
@@ -94,20 +94,20 @@ function ChangePassword() {
   };
 
   return (
-    <form className="signin-methods__form" onSubmit={submit} onChange={reset}>
-      <p className="muted">Your password signs you in even when Ward is down.</p>
+    <form className="grid gap-3" onSubmit={submit} onChange={reset}>
+      <p className="text-muted">Your password signs you in even when Ward is down.</p>
       <PasswordField label="Current password" value={current} onChange={setCurrent} autoComplete="current-password" />
       <PasswordField label="New password" value={next} onChange={setNext} autoComplete="new-password" />
       <ErrorLine error={error} />
       {done && error === null && (
-        <p className="muted" role="status">
+        <p className="text-muted" role="status">
           Password changed. Your other sessions were signed out.
         </p>
       )}
-      <div className="signin-methods__actions">
-        <button type="submit" className="button button--quiet" disabled={pending}>
+      <div className="flex flex-wrap gap-3">
+        <Button variant="quiet" type="submit" disabled={pending}>
           {pending ? "Saving…" : "Change password"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -127,25 +127,25 @@ function SetPassword() {
   };
 
   return (
-    <form className="signin-methods__form" onSubmit={submit} onChange={reset}>
-      <p className="muted">
+    <form className="grid gap-3" onSubmit={submit} onChange={reset}>
+      <p className="text-muted">
         You sign in with Ward. Set a password too, so you can still get in when Ward isn&rsquo;t reachable.
       </p>
       {reauthenticated && (
-        <p className="muted" role="status">
+        <p className="text-muted" role="status">
           Confirmed with Ward. Set the password now.
         </p>
       )}
       <PasswordField label="New password" value={next} onChange={setNext} autoComplete="new-password" />
       <ErrorLine error={error} />
-      <div className="signin-methods__actions">
-        <button type="submit" className="button button--quiet" disabled={pending}>
+      <div className="flex flex-wrap gap-3">
+        <Button variant="quiet" type="submit" disabled={pending}>
           {pending ? "Saving…" : "Set password"}
-        </button>
+        </Button>
         {error?.code === "reauthentication_required" && (
-          <button type="button" className="button button--quiet" onClick={() => void reauthenticate()}>
+          <Button variant="quiet" onClick={() => void reauthenticate()}>
             Sign in to Ward again
-          </button>
+          </Button>
         )}
       </div>
     </form>
@@ -160,57 +160,41 @@ function WardAccount({ linked, hasPassword, fromWard }: { linked: boolean; hasPa
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="signin-methods__row">
-      <p className="muted">{linked ? "A Ward account is linked to this one." : "No Ward account is linked."}</p>
-      {linked && !hasPassword && <p className="muted">Set a password above before you unlink Ward.</p>}
+    <div className="grid gap-1">
+      <p className="text-muted">{linked ? "A Ward account is linked to this one." : "No Ward account is linked."}</p>
+      {linked && !hasPassword && <p className="text-muted">Set a password above before you unlink Ward.</p>}
       <ErrorLine error={link.error ?? unlink.error ?? out.error} />
-      <div className="signin-methods__actions">
+      <div className="flex flex-wrap gap-3">
         {!linked && (
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={link.pending}
-            onClick={() => void link.link()}
-          >
+          <Button variant="quiet" disabled={link.pending} onClick={() => void link.link()}>
             {link.pending ? "Going to Ward…" : "Link Ward"}
-          </button>
+          </Button>
         )}
         {linked && !confirming && (
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={!hasPassword}
-            onClick={() => setConfirming(true)}
-          >
+          <Button variant="quiet" disabled={!hasPassword} onClick={() => setConfirming(true)}>
             Unlink Ward
-          </button>
+          </Button>
         )}
         {linked && confirming && (
           <>
-            <button
-              type="button"
-              className="button button--danger"
+            <Button
+              variant="danger"
               disabled={unlink.pending}
               onClick={() => {
                 void unlink.unlink().then(() => setConfirming(false));
               }}
             >
               {unlink.pending ? "Unlinking…" : "Unlink Ward"}
-            </button>
-            <button type="button" className="button button--quiet" onClick={() => setConfirming(false)}>
+            </Button>
+            <Button variant="quiet" onClick={() => setConfirming(false)}>
               Cancel
-            </button>
+            </Button>
           </>
         )}
         {fromWard && (
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={out.pending}
-            onClick={() => void out.signOut()}
-          >
+          <Button variant="quiet" disabled={out.pending} onClick={() => void out.signOut()}>
             Sign out of Ward too
-          </button>
+          </Button>
         )}
       </div>
     </div>

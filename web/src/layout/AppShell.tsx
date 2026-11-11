@@ -6,6 +6,7 @@ import { navigate, pathFor, usePathname, useRoute } from "../router";
 import { Settings } from "../settings/Settings";
 import { ShareScreen } from "../share/ShareScreen";
 import { ThreadScreen } from "../thread/ThreadPlaceholder";
+import { Mark } from "./Mark";
 import { TabBar } from "./TabBar";
 
 /**
@@ -37,30 +38,31 @@ export function AppShell() {
 
   if (wide) {
     return (
-      <div className="shell shell--wide">
-        <div className="shell__side">
+      <div className="grid h-dvh min-h-0 grid-cols-[var(--width-list)_minmax(0,1fr)] overflow-hidden">
+        <div className="flex min-h-0 flex-col border-r border-line bg-surface">
           <ChatList selectedId={route.name === "thread" ? route.id : undefined} />
           <TabBar active={tab} />
         </div>
-        <main className="shell__main">{pane ?? <EmptyPane />}</main>
+        <main className={main}>{pane ?? <EmptyPane />}</main>
       </div>
     );
   }
 
   return (
-    <div className="shell">
-      <main className="shell__main">{pane ?? <ChatList />}</main>
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+      <main className={main}>{pane ?? <ChatList />}</main>
       {route.name !== "thread" && <TabBar active={tab} />}
     </div>
   );
 }
 
+/** The shell's main column: one screen at a time, which scrolls inside itself. */
+const main = "flex min-h-0 min-w-0 flex-1 flex-col";
+
 function EmptyPane() {
   return (
-    <div className="empty-pane">
-      <span className="mark" aria-hidden="true">
-        S
-      </span>
+    <div className="grid flex-1 place-content-center justify-items-center gap-3 p-8 text-center text-muted">
+      <Mark className="opacity-90" />
       <p>Pick a chat to read it here.</p>
     </div>
   );

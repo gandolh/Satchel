@@ -1,5 +1,6 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 import { CheckIcon } from "../../layout/icons";
+import { cn } from "../../lib/cn";
 
 type CheckboxProps = {
   checked: boolean;
@@ -11,8 +12,15 @@ type CheckboxProps = {
 /** A checkbox: Base UI's `Checkbox.Root` with its tick. Wrap it in a `<label>` at the call site. */
 export function Checkbox({ className, ...props }: CheckboxProps) {
   return (
-    <BaseCheckbox.Root className={className ? `checkbox ${className}` : "checkbox"} {...props}>
-      <BaseCheckbox.Indicator className="checkbox__tick">
+    <BaseCheckbox.Root
+      className={cn(
+        "inline-flex size-5.5 flex-none items-center justify-center rounded-box border-2 border-muted bg-surface text-surface",
+        "data-checked:border-accent data-checked:bg-accent data-disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    >
+      <BaseCheckbox.Indicator className="flex [&_svg]:size-4.5">
         <CheckIcon />
       </BaseCheckbox.Indicator>
     </BaseCheckbox.Root>

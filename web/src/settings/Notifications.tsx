@@ -11,6 +11,8 @@ import {
   subscribeWith,
   subscriptionBody,
 } from "../push/subscription";
+import { Button } from "../components/ui/Button";
+import { Card } from "../layout/Card";
 
 /** What the card shows. `ready` is the only state with a working switch. */
 export type NotificationsView =
@@ -65,31 +67,34 @@ export function NotificationsCard({
   const titleId = `${id}-title`;
   const hintId = `${id}-hint`;
   return (
-    <section className="card" aria-labelledby={titleId} aria-busy={view.kind === "loading" || busy}>
-      <h3 className="card__title" id={titleId}>
-        Notifications
-      </h3>
-      {view.kind === "loading" && <p className="muted">Checking this device…</p>}
-      {view.kind === "ios-home-screen" && <p className="notify-hint">{IOS_HOME_SCREEN_MESSAGE}</p>}
-      {view.kind === "ios-update" && (
-        <p className="notify-hint">Notifications need iOS 16.4 or later. Update the iPhone, then turn this on here.</p>
+    <Card title="Notifications" titleId={titleId} aria-busy={view.kind === "loading" || busy}>
+      {view.kind === "loading" && <p className="text-muted">Checking this device…</p>}
+      {view.kind === "ios-home-screen" && (
+        <p className="rounded-md bg-accent-soft p-3 text-compact">{IOS_HOME_SCREEN_MESSAGE}</p>
       )}
-      {view.kind === "unsupported" && <p className="muted">This browser can't show notifications from Satchel.</p>}
+      {view.kind === "ios-update" && (
+        <p className="rounded-md bg-accent-soft p-3 text-compact">
+          Notifications need iOS 16.4 or later. Update the iPhone, then turn this on here.
+        </p>
+      )}
+      {view.kind === "unsupported" && <p className="text-muted">This browser can't show notifications from Satchel.</p>}
       {view.kind === "check-failed" && (
         <>
-          <p className="muted">Couldn't check notifications. Try again.</p>
-          <button type="button" className="button button--quiet" onClick={onRetry}>
+          <p className="text-muted">Couldn't check notifications. Try again.</p>
+          <Button variant="quiet" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         </>
       )}
-      {view.kind === "server-off" && <p className="muted">Notifications aren't set up on this Satchel server yet.</p>}
+      {view.kind === "server-off" && (
+        <p className="text-muted">Notifications aren't set up on this Satchel server yet.</p>
+      )}
       {view.kind === "ready" && (
         <>
-          <label className="notify-switch">
-            <span className="notify-switch__text">
-              <span className="notify-switch__label">{SWITCH_LABEL}</span>
-              <span className="muted" id={hintId}>
+          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
+            <span className="grid min-w-0 gap-0.5 text-compact">
+              <span className="text-body font-semibold">{SWITCH_LABEL}</span>
+              <span className="text-muted" id={hintId}>
                 Notify this device when someone writes to you.
               </span>
             </span>
@@ -100,16 +105,18 @@ export function NotificationsCard({
               onCheckedChange={(checked) => onToggle?.(checked)}
             />
           </label>
-          {view.permission === "denied" && <p className="notify-hint">{deniedHelp(view.ios)}</p>}
+          {view.permission === "denied" && (
+            <p className="rounded-md bg-accent-soft p-3 text-compact">{deniedHelp(view.ios)}</p>
+          )}
         </>
       )}
-      {note && <p className="muted">{note}</p>}
+      {note && <p className="text-muted">{note}</p>}
       {error && (
-        <p className="notify-error" role="alert">
+        <p className="text-compact text-bad" role="alert">
           {error}
         </p>
       )}
-    </section>
+    </Card>
   );
 }
 

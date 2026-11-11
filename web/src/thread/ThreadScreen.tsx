@@ -20,6 +20,9 @@ import {
   threadReducer,
   type PendingMessage,
 } from "./model";
+import { cn } from "../lib/cn";
+import { safeX, screen, screenBody } from "../layout/looks";
+import { Button } from "../components/ui/Button";
 
 export interface ThreadScreenProps {
   /** The conversation id from `/satchel/c/:id`. */
@@ -223,35 +226,35 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
   const otherMember = members.find((member) => member.id !== me.subject);
 
   return (
-    <section className="screen thread">
+    <section className={cn(screen, "relative bg-bg")}>
       <ScreenHeader
         back
         title={title}
         subtitle={subtitle || undefined}
         leading={conversation && <Avatar name={title} claude={isInbox} size="sm" />}
       />
-      <div className="thread__scroll" ref={scroller} onScroll={onScroll}>
+      <div className={screenBody} ref={scroller} onScroll={onScroll}>
         {!state.loaded ? (
-          <p className="thread__status" role={loadError ? "alert" : "status"}>
+          <p className="mx-auto my-8 px-4 text-center text-muted" role={loadError ? "alert" : "status"}>
             {loadError ?? "Loading messages…"}
           </p>
         ) : (
-          <ol className="thread__list" aria-label="Messages">
+          <ol className={cn("flex min-h-full flex-col justify-end gap-1 py-3", safeX)} aria-label="Messages">
             {conversation && conversation.kind !== "inbox" && (
-              <li className="thread__notice">
-                <span className="thread__pill">Claude has no access to this chat</span>
+              <li className="my-2 flex justify-center">
+                <span className={pill}>Claude has no access to this chat</span>
               </li>
             )}
             {state.messages.length === 0 && state.pending.length === 0 && (
-              <li className="thread__empty">
+              <li className="mx-auto my-8 px-4 text-center text-muted">
                 {isInbox ? "Write down an idea. Claude reads it next time you ask." : "No messages yet."}
               </li>
             )}
             {timeline.map((item, index) => {
               if (item.kind === "day") {
                 return (
-                  <li key={item.key} className="thread__day">
-                    <span>{item.label}</span>
+                  <li key={item.key} className="my-2 flex justify-center">
+                    <span className={pill}>{item.label}</span>
                   </li>
                 );
               }
@@ -265,13 +268,17 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
               const before = timeline[index - 1];
               const startsRun = !(before?.kind === "message" && before.message.sender === message.sender);
               return (
-                <li key={item.key} className={own ? "row row--mine" : "row"}>
-                  <div className={own ? "bubble bubble--mine" : "bubble"}>
-                    {isGroup && !own && startsRun && <span className="bubble__sender">{senderName(message)}</span>}
-                    <p className="bubble__text">{message.text}</p>
-                    <span className="bubble__meta">
+                <li key={item.key} className={cn("flex flex-col", own ? "items-end" : "items-start")}>
+                  <div className={cn(bubble, own && "border-transparent bg-accent text-accent-ink")}>
+                    {isGroup && !own && startsRun && (
+                      <span className="mb-0.5 block font-title text-meta font-semibold text-accent">
+                        {senderName(message)}
+                      </span>
+                    )}
+                    <p className={bubbleText}>{message.text}</p>
+                    <span className={bubbleMeta}>
                       {clockTime(new Date(message.sentAt))}
-                      {own && <Tick state={tickState(message, members, me.subject)} />}
+                      {own && <Tick state={tickState(message, members, me.subject)} onAccent />}
                     </span>
                   </div>
                   {line?.seq === message.seq && (
@@ -284,27 +291,36 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
         )}
       </div>
       {offline && (
-        <p className="thread__offline" role="status">
+        <p className="flex-none bg-sunk px-4 py-1 text-center text-small text-muted" role="status">
           Can't reach Satchel. Trying again.
         </p>
       )}
       {newBelow && (
-        <button type="button" className="thread__new button" onClick={jumpToBottom}>
+        <Button className="absolute right-4 bottom-21 min-h-9 px-4 shadow-lift" onClick={jumpToBottom}>
           New messages
-        </button>
+        </Button>
       )}
       <Composer onSend={send} initialText={draft} />
     </section>
   );
 }
 
+/** A day or a notice, as a small pill in the middle of the thread. */
+const pill = "rounded-pill bg-sunk px-3 py-1 text-small font-medium text-muted";
+/** A message bubble: theirs by default, mine with the accent on top. */
+const bubble = "block max-w-[min(78%,560px)] rounded-lg border border-line bg-surface px-3 py-2 text-left text-ink";
+const failedBubble = "border-dashed border-bad";
+const bubbleText = "wrap-anywhere whitespace-pre-wrap";
+const bubbleMeta = "mt-0.5 flex items-center justify-end gap-1 text-tiny opacity-80";
+const seenClass = "mt-0.5 flex items-center gap-1 text-small text-muted";
+
 function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (bubble: PendingMessage) => void }) {
   if (bubble.status === "sending") {
     return (
-      <li className="row row--mine">
-        <div className="bubble bubble--mine bubble--sending">
-          <p className="bubble__text">{bubble.text}</p>
-          <span className="bubble__meta">Sending…</span>
+      <li className="flex flex-col items-end">
+        <div className={cn(bubble, "border-transparent bg-accent text-accent-ink opacity-70")}>
+          <p className={bubbleText}>{bubble.text}</p>
+          <span className={bubbleMeta}>Sending…</span>
         </div>
       </li>
     );
@@ -312,19 +328,19 @@ function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (
   const failed = bubble.status === "failed";
   const content = (
     <>
-      <p className="bubble__text">{bubble.text}</p>
+      <p className={bubbleText}>{bubble.text}</p>
     </>
   );
   return (
-    <li className="row row--mine">
+    <li className="flex flex-col items-end">
       {failed ? (
-        <button type="button" className="bubble bubble--failed" onClick={() => onRetry(bubble)}>
+        <button type="button" className={cn(bubble, failedBubble)} onClick={() => onRetry(bubble)}>
           {content}
         </button>
       ) : (
-        <div className="bubble bubble--failed">{content}</div>
+        <div className={cn(bubble, failedBubble)}>{content}</div>
       )}
-      <p className="row__error" role="alert">
+      <p className="mt-0.5 text-small text-bad" role="alert">
         {failed ? "Not sent. Tap to retry" : (bubble.error ?? "Not sent.")}
       </p>
     </li>
@@ -340,9 +356,9 @@ function SeenLine({
   avatarName: string;
   claude: boolean;
 }) {
-  if (line.kind === "seenBy") return <p className="row__seen">{seenByLabel(line.names)}</p>;
+  if (line.kind === "seenBy") return <p className={seenClass}>{seenByLabel(line.names)}</p>;
   return (
-    <p className="row__seen">
+    <p className={seenClass}>
       <Avatar name={avatarName} claude={claude} size="xs" />
       {line.seenAt ? `Seen ${clockTime(new Date(line.seenAt))}` : "Seen"}
     </p>

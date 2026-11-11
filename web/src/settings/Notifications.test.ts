@@ -45,7 +45,7 @@ describe("NotificationsCard", () => {
     const off = render(ready(false));
     expect(off).toContain('role="switch"');
     expect(off).toContain('aria-checked="false"');
-    expect(off).not.toContain("disabled");
+    expect(off).not.toContain('disabled=""');
     const on = render(ready(true));
     expect(on).toContain('aria-checked="true"');
     expect(on).toContain('checked=""');

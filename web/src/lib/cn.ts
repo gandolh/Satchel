@@ -12,7 +12,7 @@ const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: ["micro", "tiny", "small", "meta", "compact", "body", "input", "title", "heading", "display", "hero"],
-      radius: ["pill"],
+      radius: ["box", "pill"],
       shadow: ["thumb", "lift"],
       font: ["title", "body", "mono"],
     },

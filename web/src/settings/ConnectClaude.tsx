@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, createClaudeToken, listClaudeTokens, revokeClaudeToken, SignedOut } from "../api";
 import { useMe } from "../auth/session";
 import { clockTime } from "../chats/time";
+import { Button } from "../components/ui/Button";
+import { Card } from "../layout/Card";
+import { cn } from "../lib/cn";
 
 const dayMonth = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
 
@@ -122,39 +125,37 @@ function ConnectClaudeCard() {
   const active = tokens?.filter((t) => t.revokedAt === null) ?? [];
 
   return (
-    <section className="card" aria-labelledby="settings-connect-claude">
-      <h3 className="card__title" id="settings-connect-claude">
-        Connect Claude
-      </h3>
-      <p className="muted">
+    <Card title="Connect Claude" titleId="settings-connect-claude">
+      <p className="text-muted">
         A token lets the <code>satchel</code> command read your Ideas inbox. It can't see any other chat.
       </p>
 
       {shown && (
-        <div className="token-panel" role="region" aria-label="New token">
-          <p className="token-panel__once">This is the only time Satchel shows this token.</p>
+        <div
+          className="grid gap-3 rounded-md border border-accent bg-accent-soft p-4"
+          role="region"
+          aria-label="New token"
+        >
+          <p className="font-semibold">This is the only time Satchel shows this token.</p>
           <p>
             Put this line in <code>{TOKEN_FILE}</code>:
           </p>
-          <code className="token-panel__line" ref={line}>
+          <code className="rounded-sm bg-surface p-3 font-mono text-meta wrap-anywhere select-all" ref={line}>
             SATCHEL_TOKEN={shown.token}
           </code>
-          <div className="token-panel__actions">
-            <button type="button" className="button" onClick={() => void copy()}>
-              Copy
-            </button>
-            <button
-              type="button"
-              className="button button--quiet"
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void copy()}>Copy</Button>
+            <Button
+              variant="quiet"
               onClick={() => {
                 setShown(null);
                 setCopied(null);
               }}
             >
               Done
-            </button>
+            </Button>
           </div>
-          <p className="muted" role="status">
+          <p className="text-muted" role="status">
             {copied === "yes" && "Copied."}
             {copied === "selected" && "Couldn't copy. The line is selected: copy it yourself."}
           </p>
@@ -162,18 +163,24 @@ function ConnectClaudeCard() {
       )}
 
       {tokens === null ? (
-        !error && <p className="muted">Loading…</p>
+        !error && <p className="text-muted">Loading…</p>
       ) : tokens.length === 0 ? (
-        <p className="muted">No tokens yet.</p>
+        <p className="text-muted">No tokens yet.</p>
       ) : (
-        <ul className="tokens">
+        <ul className="grid gap-2">
           {tokens.map((token) => {
             const revoked = token.revokedAt !== null;
             return (
-              <li key={token.id} className={revoked ? "token-row token-row--revoked" : "token-row"}>
-                <div className="token-row__text">
+              <li
+                key={token.id}
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-line p-3",
+                  revoked && "opacity-55",
+                )}
+              >
+                <div className="grid min-w-0 gap-0.5 text-compact">
                   <span>Created {dateTime(token.createdAt)}</span>
-                  <span className="muted">
+                  <span className="text-muted">
                     {revoked
                       ? `Revoked ${dateTime(token.revokedAt as string)}`
                       : token.lastUsedAt
@@ -182,25 +189,20 @@ function ConnectClaudeCard() {
                   </span>
                 </div>
                 {!revoked && (
-                  <div className="token-row__actions">
+                  <div className="flex gap-2">
                     {confirming === token.id ? (
                       <>
-                        <button
-                          type="button"
-                          className="button button--danger"
-                          disabled={busy}
-                          onClick={() => void revoke(token.id)}
-                        >
+                        <Button variant="danger" disabled={busy} onClick={() => void revoke(token.id)}>
                           Confirm revoke
-                        </button>
-                        <button type="button" className="button button--quiet" onClick={() => setConfirming(null)}>
+                        </Button>
+                        <Button variant="quiet" onClick={() => setConfirming(null)}>
                           Cancel
-                        </button>
+                        </Button>
                       </>
                     ) : (
-                      <button type="button" className="button button--quiet" onClick={() => setConfirming(token.id)}>
+                      <Button variant="quiet" onClick={() => setConfirming(token.id)}>
                         Revoke
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -211,16 +213,16 @@ function ConnectClaudeCard() {
       )}
 
       {error && (
-        <p className="connect-error" role="alert">
+        <p className="text-compact text-bad" role="alert">
           {error}
         </p>
       )}
       <div>
-        <button type="button" className="button" disabled={busy} onClick={() => void create()}>
+        <Button disabled={busy} onClick={() => void create()}>
           Create token
-        </button>
-        {active.length > 1 && <span className="muted"> {active.length} active tokens.</span>}
+        </Button>
+        {active.length > 1 && <span className="text-muted"> {active.length} active tokens.</span>}
       </div>
-    </section>
+    </Card>
   );
 }

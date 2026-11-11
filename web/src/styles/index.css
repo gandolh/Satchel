@@ -1,6 +1,6 @@
 /* Satchel's one stylesheet (base-ui rule 5). The layer order comes first: the first @layer statement fixes the order
    for the whole page. */
-@layer theme, base, vendor, legacy, components, utilities;
+@layer theme, base, vendor, components, utilities;
 
 /* The self-hosted fonts hold @font-face only, so they sit in the vendor layer, above Tailwind's reset and below the
    app's own rules. They are local files: the build keeps them where they are written. */
@@ -20,15 +20,6 @@
 
 /* The old stylesheets, until each is moved to utilities on its components. They sit below utilities, so a leftover
    rule never beats a class (migration step 2). */
-@import "./tokens.css" layer(legacy);
-@import "./layout.css" layer(legacy);
-@import "./chats.css" layer(legacy);
-@import "./settings.css" layer(legacy);
-@import "../thread/thread.css" layer(legacy);
-@import "../people/people.css" layer(legacy);
-@import "../auth/auth.css" layer(legacy);
-@import "../push/notifications.css" layer(legacy);
-@import "../settings/connect-claude.css" layer(legacy);
 
 /* Tailwind scans every file under the web root for class names; the vendored Ward client isn't the app's. */
 @source not "../../vendor";
@@ -48,7 +39,7 @@
 /* Satchel keeps its own token names until its redesign (decision Q17); a name says a role, never a value.
    Colours: --color-bg, surface, sunk, ink, muted, line, accent, accent-ink, accent-soft, ok, bad, and four mixes of
    them (row-hover, row-pinned-hover, row-pinned-current, accent-press).
-   Fonts: --font-title, body, mono. Radii: --radius-sm, md, lg, pill. Shadows: --shadow-thumb, lift.
+   Fonts: --font-title, body, mono. Radii: --radius-box, sm, md, lg, pill. Shadows: --shadow-thumb, lift.
    Sizes: --width-list, --height-bar, --breakpoint-wide, and the type scale below.
    Spacing is Tailwind's own, 0.25rem a step, which is 4 px: the old --space-1..4 are 1..4, --space-5 is 6, --space-6 is 8. */
 @theme {
@@ -94,6 +85,7 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  --radius-box: 3px; /* the checkbox */
   --radius-pill: 999px;
 
   /* The type scale (Q62), in rem against the browser's 16 px, so each is the pixel size it was. The old CSS used 13
@@ -159,6 +151,12 @@
   a {
     color: var(--color-accent);
     text-underline-offset: 2px;
+  }
+
+  /* The browser's monospace shrinks inline code to 13/16 of its parent; preflight sets it back to 1em, and now in the
+     app's own mono face too. */
+  code {
+    font-size: 0.8125em;
   }
 
   button {

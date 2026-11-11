@@ -7,12 +7,20 @@ import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { CHATS, navigate, threadRoute } from "../router";
 import { filterPeople } from "./people";
+import { field, fieldInput, fieldLabel, listNote, screen, screenBody } from "../layout/looks";
+import { Button } from "../components/ui/Button";
 
 function describe(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof NetworkError) return error.message;
   return "Something went wrong. Try again.";
 }
+
+/** A row in the people list: an avatar and a name, as a button (a chat) or a label (a group's checkbox). */
+const personRow =
+  "flex min-h-16 w-full cursor-pointer items-center gap-3 border-b border-line bg-transparent px-4 py-2 text-left text-inherit hover:bg-sunk";
+const personName = "min-w-0 flex-1 overflow-hidden font-title font-semibold text-ellipsis whitespace-nowrap";
+const actions = "flex flex-wrap items-center gap-3 px-4 py-3";
 
 /** `/satchel/new`: pick someone to chat with, or pick two or more and name a group. */
 export function NewChat() {
@@ -74,40 +82,39 @@ export function NewChat() {
   const visible = people ? filterPeople(people, query) : [];
 
   return (
-    <section className="screen new-chat">
+    <section className={screen}>
       <ScreenHeader back title={group ? "New group" : "New chat"} />
-      <div className="screen__body">
+      <div className={screenBody}>
         {people === null ? (
           loadError ? (
-            <div className="list-note" role="alert">
+            <div className={listNote} role="alert">
               <p>{loadError}</p>
-              <button
-                type="button"
-                className="button button--quiet"
+              <Button
+                variant="quiet"
                 onClick={() => {
                   setLoadError(null);
                   setAttempt((n) => n + 1);
                 }}
               >
                 Try again
-              </button>
+              </Button>
             </div>
           ) : (
-            <p className="list-note" role="status">
+            <p className={listNote} role="status">
               Loading people…
             </p>
           )
         ) : people.length === 0 ? (
-          <p className="list-note">
+          <p className={listNote}>
             No one else is on Satchel yet. Friends appear here after they sign in for the first time.
           </p>
         ) : (
-          <form className="new-chat__form" onSubmit={submitGroup}>
+          <form className="grid gap-3 px-4 py-3" onSubmit={submitGroup}>
             {group && (
-              <label className="field">
-                <span className="field__label">Group name</span>
+              <label className={field}>
+                <span className={fieldLabel}>Group name</span>
                 <input
-                  className="field__input"
+                  className={fieldInput}
                   value={title}
                   maxLength={GROUP_TITLE_MAX_LENGTH}
                   autoComplete="off"
@@ -116,7 +123,7 @@ export function NewChat() {
               </label>
             )}
             <input
-              className="field__input"
+              className={fieldInput}
               type="search"
               aria-label="Search people"
               placeholder="Search people"
@@ -125,26 +132,26 @@ export function NewChat() {
               onChange={(event) => setQuery(event.target.value)}
             />
             {!group && (
-              <button
-                type="button"
-                className="button button--quiet new-chat__group-toggle"
+              <Button
+                variant="quiet"
+                className="justify-self-start"
                 onClick={() => {
                   setGroup(true);
                   setError(null);
                 }}
               >
                 New group
-              </button>
+              </Button>
             )}
-            <ul className="people" aria-label="People">
+            <ul className="-mx-4 bg-surface" aria-label="People">
               {visible.map((person) => {
                 const checked = picked.includes(person.subject);
                 return (
                   <li key={person.subject}>
                     {group ? (
-                      <label className="person">
+                      <label className={personRow}>
                         <Avatar name={person.displayName} />
-                        <span className="person__name">{person.displayName}</span>
+                        <span className={personName}>{person.displayName}</span>
                         <Checkbox
                           checked={checked}
                           disabled={!checked && atMax}
@@ -154,46 +161,46 @@ export function NewChat() {
                     ) : (
                       <button
                         type="button"
-                        className="person"
+                        className={personRow}
                         disabled={busy}
                         onClick={() => void open({ kind: "direct", with: person.subject })}
                       >
                         <Avatar name={person.displayName} />
-                        <span className="person__name">{person.displayName}</span>
+                        <span className={personName}>{person.displayName}</span>
                       </button>
                     )}
                   </li>
                 );
               })}
-              {visible.length === 0 && <li className="list-note">No one matches “{query.trim()}”.</li>}
+              {visible.length === 0 && <li className={listNote}>No one matches “{query.trim()}”.</li>}
             </ul>
             {error && (
-              <p className="new-chat__error" role="alert">
+              <p className="text-bad" role="alert">
                 {error}
               </p>
             )}
             {group && (
-              <div className="new-chat__actions">
-                <p className="muted" role="status">
+              <div className={actions}>
+                <p className="flex-[1_0_100%] text-muted" role="status">
                   {picked.length === 0
                     ? `Pick at least ${GROUP_MEMBERS_MIN} people.`
                     : `${picked.length} picked${picked.length < GROUP_MEMBERS_MIN ? `, pick at least ${GROUP_MEMBERS_MIN}` : ""}${atMax ? `. That's the most a group can have (${GROUP_MEMBERS_MAX}).` : "."}`}
                 </p>
-                <button type="button" className="button button--quiet" onClick={() => (setGroup(false), setPicked([]))}>
+                <Button variant="quiet" onClick={() => (setGroup(false), setPicked([]))}>
                   Cancel
-                </button>
-                <button type="submit" className="button" disabled={!canCreate}>
+                </Button>
+                <Button type="submit" disabled={!canCreate}>
                   {busy ? "Creating…" : "Create group"}
-                </button>
+                </Button>
               </div>
             )}
           </form>
         )}
         {people !== null && people.length === 0 && (
-          <div className="new-chat__actions">
-            <button type="button" className="button button--quiet" onClick={() => navigate(CHATS)}>
+          <div className={actions}>
+            <Button variant="quiet" onClick={() => navigate(CHATS)}>
               Back to chats
-            </button>
+            </Button>
           </div>
         )}
       </div>

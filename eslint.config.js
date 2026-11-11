@@ -9,6 +9,9 @@ export default [
   ...houseStyle({
     root: import.meta.dirname,
     web: "web/src",
+    // better-tailwindcss reads the page's one stylesheet for its classes: an unknown or deprecated class is an error,
+    // and so is a class string out of Tailwind's order.
+    tailwind: { css: "web/src/styles/index.css", order: true },
     server: "server/src",
     // The docs capture helper runs by hand, so it may print and read the environment.
     scripts: ["scripts", "docs/images"],

@@ -5,6 +5,9 @@ import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { Notifications } from "./Notifications";
 import { SignInMethods } from "./SignInMethods";
+import { Card } from "../layout/Card";
+import { safeX, screen, screenBody } from "../layout/looks";
+import { cn } from "../lib/cn";
 
 /**
  * The Connect Claude slot. `./ConnectClaude.tsx` exports `ConnectClaude`
@@ -20,25 +23,24 @@ const ConnectClaude = Object.values(slot)[0]?.ConnectClaude;
 export function Settings() {
   const me = useMe();
   return (
-    <section className="screen">
+    <section className={screen}>
       <ScreenHeader title="Settings" large />
-      <div className="screen__body">
-        <div className="settings">
-          <section className="card" aria-labelledby="settings-account">
-            <h3 className="card__title" id="settings-account">
-              Account
-            </h3>
-            <div className="account">
+      <div className={screenBody}>
+        <div className={cn("mx-auto grid w-full max-w-160 content-start gap-4 p-4 wide:px-6 wide:py-8", safeX)}>
+          <Card title="Account" titleId="settings-account">
+            <div className="flex min-w-0 items-center gap-3">
               <Avatar name={me.displayName} size="lg" />
-              <div className="account__text">
-                <p className="account__name">{me.displayName}</p>
-                <p className="muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
+              <div className="grid min-w-0 gap-0.5">
+                <p className="overflow-hidden font-title text-title font-semibold text-ellipsis whitespace-nowrap">
+                  {me.displayName}
+                </p>
+                <p className="text-muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
               </div>
             </div>
-            <div className="account__actions">
+            <div className="flex flex-wrap gap-3">
               <SignOutButton />
             </div>
-          </section>
+          </Card>
           <SignInMethods />
           <Notifications />
           {ConnectClaude && <ConnectClaude />}

@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { cn } from "../lib/cn";
 import { goBack } from "../router";
 import { BackIcon } from "./icons";
+import { iconButton, safeX } from "./looks";
 
 export interface ScreenHeaderProps {
   title: string;
@@ -28,12 +30,24 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   const Heading = level === 1 ? "h1" : "h2";
   return (
-    <header className="bar">
+    <header
+      className={cn(
+        "flex min-h-[calc(var(--height-bar)+env(safe-area-inset-top,0px))] flex-none items-center gap-3 border-b border-line bg-surface pt-[env(safe-area-inset-top,0px)]",
+        safeX,
+      )}
+    >
       {back && <BackButton />}
       {leading}
-      <div className="bar__titles">
-        <Heading className={large ? "bar__title bar__title--large" : "bar__title"}>{title}</Heading>
-        {subtitle && <p className="bar__subtitle">{subtitle}</p>}
+      <div className="min-w-0 flex-1">
+        <Heading
+          className={cn(
+            "overflow-hidden text-ellipsis whitespace-nowrap",
+            large ? "text-display font-bold tracking-[-0.01em]" : "text-title font-semibold",
+          )}
+        >
+          {title}
+        </Heading>
+        {subtitle && <p className="overflow-hidden text-meta text-ellipsis whitespace-nowrap text-muted">{subtitle}</p>}
       </div>
       {actions}
     </header>
@@ -43,7 +57,7 @@ export function ScreenHeader({
 /** Back to the chat list: the browser's Back when it stays in the app, otherwise a replace. */
 export function BackButton() {
   return (
-    <button type="button" className="icon-button back-button" aria-label="Back to chats" onClick={goBack}>
+    <button type="button" className={cn(iconButton, "wide:hidden")} aria-label="Back to chats" onClick={goBack}>
       <BackIcon />
     </button>
   );

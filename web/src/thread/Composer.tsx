@@ -1,7 +1,9 @@
 import { MAX_TEXT_LENGTH } from "@satchel/shared";
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { cn } from "../lib/cn";
 import { useMediaQuery } from "../polling";
 import { canSend, COUNTER_FROM, textLength } from "./model";
+import { Button } from "../components/ui/Button";
 
 /** Touch devices: Enter is a newline and the Send button sends. */
 const TOUCH_QUERY = "(pointer: coarse)";
@@ -45,16 +47,16 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
 
   return (
     <form
-      className="composer"
+      className="flex flex-none items-end gap-2 border-t border-line bg-surface px-4 pt-2 pb-[max(--spacing(2),env(safe-area-inset-bottom,0px))]"
       onSubmit={(event) => {
         event.preventDefault();
         send();
       }}
     >
-      <div className="composer__field">
+      <div className="relative min-w-0 flex-1">
         <textarea
           ref={field}
-          className="composer__input"
+          className="block w-full resize-none rounded-lg border border-line bg-sunk px-4 py-2.5 text-input leading-5.5 text-ink"
           rows={1}
           value={text}
           placeholder="Message"
@@ -64,14 +66,19 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
           onKeyDown={onKeyDown}
         />
         {length >= COUNTER_FROM && (
-          <span className={length > MAX_TEXT_LENGTH ? "composer__count composer__count--over" : "composer__count"}>
+          <span
+            className={cn(
+              "absolute right-3 bottom-[calc(100%+2px)] text-tiny",
+              length > MAX_TEXT_LENGTH ? "font-semibold text-bad" : "text-muted",
+            )}
+          >
             {length} / {MAX_TEXT_LENGTH}
           </span>
         )}
       </div>
-      <button type="submit" className="button" disabled={!sendable}>
+      <Button type="submit" disabled={!sendable}>
         Send
-      </button>
+      </Button>
     </form>
   );
 }

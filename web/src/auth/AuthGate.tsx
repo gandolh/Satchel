@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLogout, useSession } from "../../vendor/ward/ward-auth-react.js";
+import { Button } from "../components/ui/Button";
+import { Gate, GateMessage } from "../layout/Gate";
 import { live } from "../live";
 import { forgetPushSubscription, rebindPushSubscription } from "../push/account";
 import { LoginPage } from "./LoginPage";
@@ -107,46 +109,27 @@ export function GateScreen({ state, onRetry }: GateScreenProps) {
     case "checking":
       return (
         <Gate busy>
-          <p className="gate__message">Loading…</p>
+          <GateMessage>Loading…</GateMessage>
         </Gate>
       );
     case "unreachable":
       return (
         <Gate title="Can’t reach Satchel">
-          <p className="gate__message" role="alert">
-            Satchel isn&rsquo;t answering. Check your connection and try again.
-          </p>
-          <div className="gate__actions">
-            <button type="button" className="button" onClick={onRetry}>
-              Retry
-            </button>
+          <GateMessage role="alert">Satchel isn&rsquo;t answering. Check your connection and try again.</GateMessage>
+          <div className="mt-2 flex flex-wrap justify-center gap-3">
+            <Button onClick={onRetry}>Retry</Button>
           </div>
         </Gate>
       );
   }
 }
 
-function Gate({ title, busy = false, children }: { title?: string; busy?: boolean; children: ReactNode }) {
-  return (
-    <main className="gate" aria-busy={busy || undefined}>
-      <div className="gate__panel">
-        <span className="mark" aria-hidden="true">
-          S
-        </span>
-        <h1 className={title ? "gate__title" : "sr-only"}>{title ?? "Satchel"}</h1>
-        {children}
-      </div>
-    </main>
-  );
-}
-
 /** Signs out of Satchel. A shared browser must stop showing this account's previews first, so the push subscription goes before the session does. */
-export function SignOutButton({ className = "button button--danger" }: { className?: string }) {
+export function SignOutButton() {
   const { logout, pending } = useLogout();
   return (
-    <button
-      type="button"
-      className={className}
+    <Button
+      variant="danger"
       disabled={pending}
       onClick={() => {
         void forgetPushSubscription()
@@ -155,6 +138,6 @@ export function SignOutButton({ className = "button button--danger" }: { classNa
       }}
     >
       {pending ? "Signing out…" : "Sign out"}
-    </button>
+    </Button>
   );
 }
