@@ -89,21 +89,8 @@ updated: <YYYY-MM-DD>
 - Code comments don't cite brief numbers ("brief 12", "(brief 18)"). Say what
   the code does and why; the history belongs in `log.md`.
 
-## Hard rules
+## Hard rules and brief-board
 
-- **No secrets.** Never write a password, token or key into the corpus or the
-  repo. Name a secret by its file and key, never by its value.
-- **Claude never reads friend chats.** No code path may hand a Claude token
-  anything outside its own Ideas inbox.
-- **Messages are append-only.** No route, script or migration updates or
-  deletes a message row.
-- **No CI.** Don't add GitHub Actions, runners or other GitHub-specific
-  automation.
-- **No pushes.** Commit locally. The owner pushes.
-- **Deploys, git hooks and `npm link` are owner steps.** Write the exact
-  commands down and hand them over.
-
-## brief-board
-
-Brief progress goes on brief-board. Run `brief-board guide` before you
-start or resume a brief, and follow it.
+The rules that apply outside the corpus too (no secrets, Claude never reads
+friend chats, messages are append-only, no CI, no pushes, deploys are owner
+steps) and the brief-board section are in the root `CLAUDE.md`.
