@@ -306,3 +306,58 @@ One commit per step, each with `npm run typecheck`, `npm test`, `npm run lint` a
 - Brief 02 adds nothing to the gate. Brief 03 adds `better-tailwindcss` and drops `check-base-ui`'s `--warn-only`. Brief 04 adds dependency-cruiser, drops `check-structure`'s `--warn-only`, and turns `no-process-env` (from `eslint-plugin-n`) into an error.
 - The reformat changes three stylesheets by 9 lines. Brief 03 deletes all of them anyway.
 - Brief 04 moves `server/src/errors.ts` and `server/src/store.ts`. This brief's constructor fixes go in first, so the moves carry them.
+
+## Outcome
+
+Built on 2026-11-11 on `main`, committed and not pushed. Commits, in order:
+`e6e8d35` vendor house-style 1.0.0 and pin its tools, `97a25bb` `pretest`,
+`3b799a3` Prettier at width 120, `e21a6a5` `style: format with Prettier`,
+`c610785` the blame ignore file, `ea6dd4a` the tsconfig flags and the eight
+constructors, `922350b` the house ESLint config and its fixes, `1a2ea37` the
+gate (knip, dependency-cruiser, `check`, `check:fast`), `67521c9` `CLAUDE.md`
+and the rules.
+
+- **Timings (warm, Node 24.22):** `check` 51 s; `check:fast` with one changed
+  file 8 to 8.5 s; `eslint .` 17.5 s warm, 58 s the first time after the install.
+- **`pretest`:** with `shared/dist`, `server/dist` and `cli/dist` deleted,
+  `npm test` rebuilt them and passed, 29 files and 577 tests.
+- **Reformat:** 51 files, 424 added and 195 removed lines. The bundle compare
+  (esbuild-minified TS/TSX/JS, CSS through the `css` loader, JSON parsed) found
+  **no difference** in any file. `git diff -w` is not empty (rewrapped lines),
+  as the adoption reference says. `cli/src/guide.md` is unchanged.
+- **tsc:** `verbatimModuleSyntax` 0 errors, `erasableSyntaxOnly` 10 (the eight
+  constructors, fixed as declared fields). The config flags sit in Satchel's own
+  `tsconfig.base.json`, not an extension of the copy, because the Dockerfile's
+  `deps` stage copies only that file. The Dockerfile is untouched; `npx tsc -b
+  server` builds.
+- **ESLint, before to after:** `no-floating-promises` 2 to 0 (`void` with a
+  comment); `switch-exhaustiveness-check` 0 (the `default` clears it, as Q48
+  said); `no-unnecessary-type-assertion` 9 to 0 (`res.json<T>()`);
+  `no-non-null-assertion` 13 to 0 (3 in source, 9 found in tests; all fixed, none
+  left as warnings); `no-console` 1, kept with one `eslint-disable-next-line` and
+  its reason (`web/src/live.ts`); `vitest/expect-expect` 12 expected, found 18
+  until the helper names were passed (`expect`, `expectError`,
+  `expectUnauthorized`, `expectTypeOf`), then 0; `vitest/no-standalone-expect` 2
+  to 0 (the account-making loops in two `beforeEach` hooks no longer assert, they
+  make the call); `no-redeclare` 2 (a `/* global */` comment in
+  `docs/images/demo-seed.mjs`, removed); enum, `TODO`, default export, `any`: 0.
+  `n/no-process-env` stays a warning: 7 (`cli/src/index.ts` 1, `server/src/app.ts`
+  1, `index.ts` 1, `seed.ts` 4). The last warnings are these 7.
+- **knip:** `jose` and `ws` removed from `server/package.json` (nothing imports
+  them; build, typecheck and 577 tests pass without; no container start, no
+  Docker). `scripts/*.mjs` and `docs/images/*.mjs` are entries. 23 unused exports
+  and 4 unused types remain as warnings.
+- **dependency-cruiser:** `no-circular` is a warning (5 route files import their
+  context type from `app.ts`), dated in `.dependency-cruiser.cjs`; `virtual:pwa-register`
+  is exempt from `not-to-unresolvable`. 0 errors.
+- **Checkers, both `--warn-only`:** `check-base-ui` 12 (rule-3 2, rule-5 10);
+  `check-structure` 21 errors and 9 warnings (rule-1 1, rule-3 6, rule-6 14,
+  rule-11 9 warnings).
+- **Deliberate violations:** `enum`, `!` in `server/src/app.ts`, `console.log`,
+  `// TODO` and an `export default` each made ESLint exit 1. Reverted.
+- **Skipped:** the Docker build (no Docker here); the hooks, a live-session check
+  that waits for the plugin update.
+- **Deviations:** `n/no-process-env` also warns in `cli/src/index.ts` (the brief
+  scoped it to `server/src`; the house config flags it as a console file). Dated
+  line added to brief 04 saying dependency-cruiser landed here. `check:conventions`
+  also cruises `cli/src`.

@@ -343,3 +343,15 @@ stays whole in `db/` (Q54); validation before authorisation is accepted
 vps-deploy edit (Q1); the live socket is a recorded exemption (Q53); the error
 handler keeps Satchel's body (Q43). New brief 05, a redesign with Hallmark on
 the estate board (Q39). No measurement changed.
+
+## [2026-11-11] build | The house style and the quality harness
+
+Brief 01 built. Satchel holds a vendored `house-style` 1.0.0, is formatted by
+Prettier at width 120 in one commit (no bundle difference), has
+`verbatimModuleSyntax` and `erasableSyntaxOnly` on (eight constructors changed),
+the house ESLint config with 0 errors, knip, dependency-cruiser and the two
+checkers (`--warn-only`) in `check:conventions`, `pretest`, a root `CLAUDE.md`
+and `.claude/rules/`. `jose` and `ws` are gone from the server. `check` takes
+about 51 s, `check:fast` about 8 s. Owner steps: `git config
+blame.ignoreRevsFile .git-blame-ignore-revs`, and the deploy. See
+[decisions-tooling.md](wiki/decisions-tooling.md).

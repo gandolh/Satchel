@@ -1,6 +1,6 @@
 ---
 summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. 577 tests. What waits on the owner and what is still open.
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Status
@@ -14,6 +14,7 @@ typecheck and lint clean.
 
 ## By area
 
+- **House style and gate** (2026-11-11). Prettier at width 120, a vendored `house-style` 1.0.0, typed ESLint, knip, dependency-cruiser and the two convention checkers behind `npm run check`; `pretest` builds the workspaces; root `CLAUDE.md` and `.claude/rules/`. Not deployed ([decisions-tooling.md](decisions-tooling.md)).
 - **Ideas inbox** (2026-10-09). The shared contract, append-only storage,
   the conversation routes, Claude's bearer routes and tokens, the `satchel`
   CLI and its guide, the web shell and the inbox thread with ticks and

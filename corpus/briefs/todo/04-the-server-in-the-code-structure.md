@@ -274,6 +274,7 @@ Follow `migrating-a-server.md`. One commit per step; after each, `npm run check`
    - types the plugin as `FastifyPluginAsyncZod<RouteDeps>`;
    - adds the new tests that apply.
 6. **After.** Save the same JSON again and diff it against step 1's. A field that disappeared is a leak (keep it dropped and list it) or a missing schema field (add it). The two known differences (decision 5's order, and a serialization failure's 500) are expected; anything else is a finding. Put the diff's summary in the `log.md` entry.
+(2026-11-11: dependency-cruiser landed in brief 01 instead, as `.dependency-cruiser.cjs` and in `check:conventions`. It lowers `no-circular` to a warning, because the route files import `FeatureContext`'s twin `RouteDeps` from `app.ts`; this brief raises it again, and keeps its deliberate cross-feature import check.)
 7. **Strict.** Drop `check-structure`'s `--warn-only` and make dependency-cruiser part of `check:conventions`.
 8. **Corpus.**
    - Add an entry to `corpus/wiki/decisions-tooling.md` adopting the structure, with what was rejected (the layer split Satchel had, autoload, TypeBox, splitting the store) and why.
