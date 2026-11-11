@@ -131,3 +131,6 @@ One commit per numbered step. After each, `npm run check` passes, with `check-ba
 
 - Brief 03 styles `web/src/components/ui/` with Tailwind on the parts, and removes the CSS rules this brief renamed.
 - The skills library's `check-base-ui` rule 13 has no check for hand-built confirms; the owner decided inline confirms stay (Q58), so the checker should not flag them.
+
+## Outcome (2026-11-11)
+Wrappers `Switch.tsx` and `Checkbox.tsx` built with static-markup tests. check-base-ui: rules 1-3, 9-11 at 0; rule 5 at 10 (brief 03). `.person__check*` CSS renamed `.checkbox*`. Screenshots skipped (no sign-in path set up). Inline confirms untouched.
