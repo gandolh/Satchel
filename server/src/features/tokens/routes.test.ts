@@ -4,9 +4,13 @@ import {
   createClaudeTokenResponseSchema,
   errorResponseSchema,
   revokeClaudeTokenResponseSchema,
+  routes,
 } from "@satchel/shared";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Store } from "../../db/store.js";
+import { routeSchemas } from "../../testing/routeSchemas.js";
 import { startTestApp, type TestApp } from "../../testing/testApp.js";
+import { tokenRoutes } from "./routes.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };
@@ -221,10 +225,49 @@ describe("owner-only", () => {
     expect((await list(cookieA)).tokens[0]?.revokedAt).toBeNull();
   });
 
+  it("a malformed token id is a 400 for a friend too: the route's schema runs before the owner check", async () => {
+    // An empty id matches the route and fails `claudeTokenParamsSchema`. It was a 403 when the handler checked
+    // the owner first and parsed after.
+    expectError(await revoke(friend, ""), 400, "invalid_request");
+    expectError(await revoke(cookieA, ""), 400, "invalid_request");
+  });
+
   it("the owner still creates, lists and revokes", async () => {
     const { id } = await create(cookieA);
     expect((await list(cookieA)).tokens.map((summary) => summary.id)).toEqual([id]);
     expect((await revoke(cookieA, id)).statusCode).toBe(200);
+  });
+});
+
+describe("the response schemas", () => {
+  it("are the contract's", async () => {
+    expect(await routeSchemas(tokenRoutes, { store: {} as Store })).toEqual({
+      [`GET ${routes.listClaudeTokens.path}`]: { response: { 200: routes.listClaudeTokens.response } },
+      [`POST ${routes.createClaudeToken.path}`]: { response: { 201: routes.createClaudeToken.response } },
+      [`POST ${routes.revokeClaudeToken.path}`]: {
+        params: routes.revokeClaudeToken.params,
+        response: { 200: routes.revokeClaudeToken.response },
+      },
+    });
+  });
+
+  it("a stored value the list's schema refuses is a 500 internal, no longer a 400 blaming the client", async () => {
+    await create(cookieA);
+    t.db.prepare("UPDATE agent_tokens SET created_at = 'not a time'").run();
+    const res = await t.app.inject({ method: "GET", url: "/api/claude-tokens", headers: { cookie: cookieA } });
+    expectError(res, 500, "internal");
+    expect(res.body).not.toContain("not a time");
+    expect(t.logs.join("\n")).toContain("GET /api/claude-tokens: the reply doesn't match its response schema");
+  });
+
+  it("a hash on a listed row fails the strict schema: a 500, never stripped and sent", async () => {
+    const { id } = await create(cookieA);
+    const [summary] = t.store.listClaudeTokens(A.subject);
+    vi.spyOn(t.store, "listClaudeTokens").mockReturnValue([{ ...summary, id, tokenHash: "LEAKED-HASH" } as never]);
+    const res = await t.app.inject({ method: "GET", url: "/api/claude-tokens", headers: { cookie: cookieA } });
+    expectError(res, 500, "internal");
+    expect(res.body).not.toContain("LEAKED-HASH");
+    expect(t.logs.join("\n")).not.toContain("LEAKED-HASH");
   });
 });
 
