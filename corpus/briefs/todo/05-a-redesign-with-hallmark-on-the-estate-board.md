@@ -2,7 +2,7 @@
 
 **Depends on:**
 
-- In Satchel: [brief 03](03-the-web-app-to-tailwind.md), which puts the web app on Tailwind tokens in one `@theme`, with a named type scale and the Light / Dark / System switch. A redesign is then mostly a new token set and layout. [Brief 02](../done/02-base-ui-by-the-conventions.md) fixes the two Base UI wrappers it restyles.
+- In Satchel: [brief 03](../done/03-the-web-app-to-tailwind.md), which puts the web app on Tailwind tokens in one `@theme`, with a named type scale and the Light / Dark / System switch. A redesign is then mostly a new token set and layout. [Brief 02](../done/02-base-ui-by-the-conventions.md) fixes the two Base UI wrappers it restyles.
 - In the owner's skills library:
   - brief 24, which vendors Hallmark as the design skill and adopts taste-skill 2.5's ideas (palettes and type dealt by trade, its copy layer);
   - the estate redesign board: one artifact with a page per app, owned by the skills library.
