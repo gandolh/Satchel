@@ -1,10 +1,9 @@
-import { Checkbox } from "@base-ui/react/checkbox";
 import { GROUP_MEMBERS_MAX, GROUP_MEMBERS_MIN, GROUP_TITLE_MAX_LENGTH, type Person } from "@satchel/shared";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, createConversation, listPeople, NetworkError, SignedOut } from "../api";
+import { Checkbox } from "../components/ui/Checkbox";
 import { refreshConversations } from "../chats/conversations";
 import { Avatar } from "../layout/Avatar";
-import { CheckIcon } from "../layout/icons";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { CHATS, navigate, threadRoute } from "../router";
 import { filterPeople } from "./people";
@@ -147,16 +146,11 @@ export function NewChat() {
                       <label className="person">
                         <Avatar name={person.displayName} />
                         <span className="person__name">{person.displayName}</span>
-                        <Checkbox.Root
-                          className="person__check"
+                        <Checkbox
                           checked={checked}
                           disabled={!checked && atMax}
                           onCheckedChange={() => toggle(person.subject)}
-                        >
-                          <Checkbox.Indicator className="person__tick">
-                            <CheckIcon />
-                          </Checkbox.Indicator>
-                        </Checkbox.Root>
+                        />
                       </label>
                     ) : (
                       <button

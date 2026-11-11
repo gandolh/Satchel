@@ -1,5 +1,5 @@
-import { Switch } from "@base-ui/react/switch";
 import { useEffect, useId, useState } from "react";
+import { Switch } from "../components/ui/Switch";
 import { ApiError, deletePushSubscription, getPushKey, savePushSubscription, SignedOut } from "../api";
 import {
   base64UrlToBytes,
@@ -94,15 +94,12 @@ export function NotificationsCard({
                 Notify this device when someone writes to you.
               </span>
             </span>
-            <Switch.Root
-              className="switch"
+            <Switch
               checked={view.on}
               aria-describedby={hintId}
               disabled={busy || view.permission === "denied"}
               onCheckedChange={(checked) => onToggle?.(checked)}
-            >
-              <Switch.Thumb className="switch__thumb" />
-            </Switch.Root>
+            />
           </label>
           {view.permission === "denied" && <p className="notify-hint">{deniedHelp(view.ios)}</p>}
         </>

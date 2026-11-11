@@ -68,7 +68,7 @@
 }
 
 /* Base UI's Checkbox: a role="checkbox" span over a hidden input, the state in data attributes. */
-.person__check {
+.checkbox {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -81,20 +81,20 @@
   color: var(--surface);
 }
 
-.person__check[data-checked] {
+.checkbox[data-checked] {
   border-color: var(--accent);
   background: var(--accent);
 }
 
-.person__check[data-disabled] {
+.checkbox[data-disabled] {
   opacity: 0.5;
 }
 
-.person__tick {
+.checkbox__tick {
   display: flex;
 }
 
-.person__tick svg {
+.checkbox__tick svg {
   width: 18px;
   height: 18px;
 }
