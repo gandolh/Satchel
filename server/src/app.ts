@@ -5,6 +5,7 @@ import { wardAuth, type Accounts, type WardClient } from "../vendor/ward/ward-au
 import { registerAccountGuard } from "./auth/guard.js";
 import type { Clock } from "./clock.js";
 import type { VapidKeys } from "./config.js";
+import type { Db } from "./db/open.js";
 import { registerErrorHandling } from "./errors.js";
 import { createHub } from "./live/hub.js";
 import { registerUpgradeChecks } from "./live/origin.js";
@@ -56,11 +57,23 @@ export interface PushOptions {
 /** The session cookie's name. Unique in the estate: every app shares one origin. */
 export const SESSION_COOKIE = "satchel_session";
 
+/** Fastify's options that belong to the process. `server.ts` sets them; tests leave them out. */
+export type ServerOptions = Pick<
+  FastifyServerOptions,
+  "trustProxy" | "connectionTimeout" | "requestTimeout" | "keepAliveTimeout"
+>;
+
 export interface AppDeps {
   store: Store;
   /** The local accounts, on the same SQLite handle as `store` (`createAccounts({ store: createSqliteStore(db) })`). */
   accounts: Accounts;
-  /** "Sign in with Ward". Absent means local accounts only, and the Ward button is hidden. `index.ts` builds it from the environment. */
+  /**
+   * The database `store` and `accounts` are on. When given, closing the app
+   * closes it, once every request and the pushes already started are done.
+   * Tests leave it out and close their own.
+   */
+  db?: Db;
+  /** "Sign in with Ward". Absent means local accounts only, and the Ward button is hidden. `server.ts` builds it from the environment. */
   ward?: WardClient;
   /** The app's origin as the browser sees it. The guard refuses writes and WebSocket upgrades from any other. */
   publicOrigin: string;
@@ -68,13 +81,17 @@ export interface AppDeps {
   apiPrefix: string;
   /** The web app's base path with a trailing slash (`/satchel/`): where Ward sends the browser back to. */
   webBase: string;
+  /** The proxies whose `X-Forwarded-For` the sign-in lockout believes, besides loopback (`AUTH_TRUSTED_PROXIES`). Default: none. */
+  trustedProxies?: readonly string[];
   clock: Clock;
-  /** Web Push. Default: off (`GET /api/push/key` is a 404 and nothing is sent). `index.ts` passes it when VAPID is configured. */
+  /** Web Push. Default: off (`GET /api/push/key` is a 404 and nothing is sent). `server.ts` passes it when VAPID is configured. */
   push?: PushOptions;
   /** How often an open live socket asks the guard again, in ms. Default `LIVE_RECHECK_MS`. Tests shorten it. */
   liveRecheckMs?: number;
-  /** Default: on, except when `NODE_ENV=test`. Redaction applies either way. */
+  /** Default: on. Redaction applies either way. */
   logger?: boolean | LogOptions;
+  /** Timeouts and `trustProxy`. Default: Fastify's. */
+  server?: ServerOptions;
 }
 
 /** What every route plugin is registered with. `/claude/*` gets no Ward client on purpose. */
@@ -88,7 +105,7 @@ export interface RouteDeps {
 }
 
 function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"] {
-  const setting = logger ?? process.env.NODE_ENV !== "test";
+  const setting = logger ?? true;
   if (setting === false) return false;
   const options = setting === true ? {} : setting;
   return {
@@ -99,7 +116,7 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
 }
 
 /**
- * The Fastify app, not listening. Tests `inject` into it; `index.ts` listens.
+ * The Fastify app, not listening. Tests `inject` into it; `server.ts` listens.
  *
  * - The vendored `wardAuth` plugin is the guard: one root `onRequest` hook that
  *   refuses every route without a live session except `GET /api/health` and
@@ -123,16 +140,19 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
 export async function buildApp({
   store,
   accounts,
+  db,
   ward,
   publicOrigin,
   apiPrefix,
   webBase,
+  trustedProxies = [],
   clock,
   push: pushOptions,
   liveRecheckMs,
   logger,
+  server,
 }: AppDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
+  const app = Fastify({ ...server, logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
 
   // A POST with `Content-Type: application/json` and no body is a body of
   // `undefined`, not a 400: the token routes take no body and a client may
@@ -160,6 +180,8 @@ export async function buildApp({
     cookiePath: apiPrefix,
     publicOrigin,
     routePrefix: AUTH_ROUTE_PREFIX,
+    // Given, even when empty, so the plugin doesn't read AUTH_TRUSTED_PROXIES itself: config.ts did.
+    trustedProxies,
     // `/claude/*` takes a Claude token and has no session. `isPublic` sees the matched route pattern.
     publicRoutes: [`GET ${routes.health.path}`],
     isPublic: (request) => (request.routeOptions.url ?? "").startsWith("/claude/"),
@@ -195,8 +217,10 @@ export async function buildApp({
         log: app.log,
       })
     : pushOff;
+  // One hook, so the order holds: Fastify runs onClose hooks last-added first.
   app.addHook("onClose", async () => {
     await push.whenIdle();
+    db?.close();
   });
   const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }), push };
   void app.register(meRoutes, deps);

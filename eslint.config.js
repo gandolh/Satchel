@@ -14,17 +14,17 @@ export default [
     scripts: ["scripts", "docs/images"],
     // Allowed to print: the CLI talks to the person running it, the server entry logs before its logger
     // exists, and the seed command reports to its operator.
-    console: ["cli/src/index.ts", "server/src/index.ts", "server/src/seed.ts"],
+    console: ["cli/src/index.ts", "server/src/server.ts", "server/src/seed.ts"],
     // The two helpers the route tests define assert inside: they count as assertions.
     assertFunctionNames: ["expect", "expectTypeOf", "expectError", "expectUnauthorized"],
     // data/ is the local database.
     ignores: ["data/**"],
   }),
   {
-    // A warning for now (2026-11-11): these files still read the environment themselves. When the
-    // server takes its settings from config.ts, this block goes and the rule is an error again.
+    // A warning for now (2026-11-11): the CLI's entry hands process.env to main(). The server's files
+    // read the environment through config.ts only, so the rule is an error everywhere else.
     name: "satchel/process-env-warns",
-    files: ["server/src/app.ts", "server/src/index.ts", "server/src/seed.ts", "cli/src/index.ts"],
+    files: ["cli/src/index.ts"],
     rules: { "n/no-process-env": "warn" },
   },
 ];

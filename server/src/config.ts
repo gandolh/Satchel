@@ -1,5 +1,14 @@
 import { createECDH } from "node:crypto";
+import { isAbsolute, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { parseTrustedProxies, wardClientOptionsFromEnv, type WardClientOptions } from "../vendor/ward/ward-auth.js";
+
+/** The repo root. `src/` (tsx in dev) and `dist/` (built) sit at the same depth under `server/`, so this holds for both. */
+const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/** The repo's `.env`, found from this file, never from the working directory. */
+export const ENV_FILE = resolve(REPO_ROOT, ".env");
 
 /** The server's Web Push identity, from `npx web-push generate-vapid-keys`. */
 export interface VapidKeys {
@@ -18,7 +27,7 @@ export type PushSettings = { enabled: true; vapid: VapidKeys } | { enabled: fals
 export interface Config {
   host: string;
   port: number;
-  /** As given. `index.ts` resolves a relative path against the repo root. */
+  /** As given. `resolveDataDir` turns a relative path into one under the repo root. */
   dataDir: string;
   /**
    * The app's own origin as the browser sees it, bare: the session cookie's
@@ -32,6 +41,13 @@ export interface Config {
   webBase: string;
   /** Off, naming what is missing, unless VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT are all set. */
   push: PushSettings;
+  /**
+   * `AUTH_TRUSTED_PROXIES`, comma-separated addresses or CIDR ranges: the
+   * proxies whose `X-Forwarded-For` is believed, besides loopback. The sign-in
+   * lockout keys on it, and Fastify's `trustProxy` gets the same list. In a
+   * container it is the network Caddy connects from. Empty by default.
+   */
+  trustedProxies: string[];
 }
 
 /** The environment cannot run the server. The message names every key at fault. */
@@ -64,12 +80,27 @@ function isVapidSubject(value: string): boolean {
 const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
 
+/** `DATA_DIR`, the server's and the seed command's: `./data` (the repo root's) when unset. */
+const dataDirSchema = optional(z.string()).transform((value) => value ?? "./data");
+
+/** A list Ward's own parser reads exactly: a typo stops the start here, naming the variable. */
+function trustedProxiesValid(value: string, context: z.RefinementCtx): void {
+  try {
+    parseTrustedProxies(value);
+  } catch (error) {
+    context.addIssue({
+      code: "custom",
+      message: `AUTH_TRUSTED_PROXIES must be comma-separated addresses or CIDR ranges: ${error instanceof Error ? error.message : String(error)}.`,
+    });
+  }
+}
+
 const envSchema = z.object({
   HOST: optional(z.string()).transform((value) => value ?? "127.0.0.1"),
   PORT: optional(
     z.coerce.number<string>().int().min(1).max(65535, { message: "PORT must be a port number (1-65535)." }),
   ).transform((value) => value ?? 8807),
-  DATA_DIR: optional(z.string()).transform((value) => value ?? "./data"),
+  DATA_DIR: dataDirSchema,
   PUBLIC_ORIGIN: optional(
     z.string().refine((value) => URL.canParse(value) && new URL(value).origin === value, {
       message: "PUBLIC_ORIGIN must be a bare origin such as https://example.com: no path and no trailing slash.",
@@ -102,6 +133,12 @@ const envSchema = z.object({
       message:
         "VAPID_SUBJECT must be a mailto: URL with an address, such as mailto:johndoe@example.com, or an https: URL with a host name.",
     }),
+  ),
+  AUTH_TRUSTED_PROXIES: optional(z.string().superRefine(trustedProxiesValid)).transform((value) =>
+    (value ?? "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== ""),
   ),
 });
 
@@ -158,6 +195,59 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     apiPrefix: values.SATCHEL_API_PREFIX,
     webBase: values.SATCHEL_BASE,
     push,
+    trustedProxies: values.AUTH_TRUSTED_PROXIES,
+  };
+}
+
+/** `dataDir` as an absolute path. A relative one is the repo root's: `npm run dev` runs the server from `server/`. */
+export function resolveDataDir(dataDir: string): string {
+  return isAbsolute(dataDir) ? dataDir : resolve(REPO_ROOT, dataDir);
+}
+
+/**
+ * Reads the repo's `.env` into the environment when there is one, and returns
+ * its path. A container has none: the deploy sets its environment. A variable
+ * the environment already has keeps its value.
+ */
+export function loadEnvFile(path: string = ENV_FILE): string | undefined {
+  try {
+    process.loadEnvFile(path);
+    return path;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw err;
+  }
+}
+
+/**
+ * "Sign in with Ward"'s client settings, the `WARD_OIDC_*` variables, through
+ * the vendored library's own reader. Undefined when `WARD_OIDC_ISSUER` is not
+ * set; throws a `TypeError` naming what is missing when it is set without the
+ * rest.
+ */
+export function loadWardOptions(env: NodeJS.ProcessEnv = process.env): WardClientOptions | undefined {
+  return wardClientOptionsFromEnv(env);
+}
+
+/** What `npm run seed` takes. An empty value is asked for on a terminal. */
+export interface SeedConfig {
+  /** `SEED_USERNAME`, trimmed. */
+  username: string;
+  /** `SEED_PASSWORD`, as given. */
+  password: string;
+  /** `SEED_ROLE`, trimmed: `admin` (the owner) or `member`. */
+  role: string;
+  /** `DATA_DIR`, as the server reads it. */
+  dataDir: string;
+}
+
+/** The seed command's settings. It needs no `PUBLIC_ORIGIN`, so it doesn't go through `loadConfig`. */
+export function loadSeedConfig(env: NodeJS.ProcessEnv = process.env): SeedConfig {
+  return {
+    username: env.SEED_USERNAME?.trim() ?? "",
+    password: env.SEED_PASSWORD ?? "",
+    role: env.SEED_ROLE?.trim() ?? "",
+    dataDir: dataDirSchema.parse(env.DATA_DIR),
   };
 }
 

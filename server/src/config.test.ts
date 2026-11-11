@@ -1,6 +1,17 @@
 import { createECDH } from "node:crypto";
+import { isAbsolute, join } from "node:path";
+import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
-import { ConfigError, loadConfig, pushOffMessage } from "./config.js";
+import {
+  ConfigError,
+  ENV_FILE,
+  loadConfig,
+  loadEnvFile,
+  loadSeedConfig,
+  loadWardOptions,
+  pushOffMessage,
+  resolveDataDir,
+} from "./config.js";
 
 const ENV = { PUBLIC_ORIGIN: "http://localhost:5175" };
 
@@ -24,6 +35,7 @@ describe("loadConfig", () => {
       apiPrefix: "/satchel-api",
       webBase: "/satchel/",
       push: { enabled: false, missing: ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] },
+      trustedProxies: [],
     });
   });
 
@@ -65,6 +77,76 @@ describe("loadConfig", () => {
   it("refuses a PORT that is not a port", () => {
     expect(problems({ ...ENV, PORT: "eighty" })).toContain("PORT");
     expect(problems({ ...ENV, PORT: "70000" })).toContain("PORT");
+  });
+});
+
+describe("the trusted proxies", () => {
+  it("splits AUTH_TRUSTED_PROXIES, and an empty one trusts no proxy but loopback", () => {
+    const list = " 172.16.0.0/12, ,10.0.0.5,::1, fd00::/8,::ffff:10.0.0.0/104 ";
+    expect(loadConfig({ ...ENV, AUTH_TRUSTED_PROXIES: list }).trustedProxies).toEqual([
+      "172.16.0.0/12",
+      "10.0.0.5",
+      "::1",
+      "fd00::/8",
+      "::ffff:10.0.0.0/104",
+    ]);
+    expect(loadConfig({ ...ENV, AUTH_TRUSTED_PROXIES: "" }).trustedProxies).toEqual([]);
+  });
+
+  it("stops the start on an entry the sign-in lockout couldn't read, naming the variable", () => {
+    expect(problems({ ...ENV, AUTH_TRUSTED_PROXIES: "172.16.0.0/12, proxy" })).toContain("AUTH_TRUSTED_PROXIES");
+    expect(problems({ ...ENV, AUTH_TRUSTED_PROXIES: "0.0.0.0/0" })).toContain("AUTH_TRUSTED_PROXIES");
+  });
+
+  it("is a list Fastify's trustProxy takes as it is", () => {
+    const { trustedProxies } = loadConfig({
+      ...ENV,
+      AUTH_TRUSTED_PROXIES: "172.16.0.0/12,10.0.0.5,::1,fd00::/8,::ffff:10.0.0.0/104",
+    });
+    expect(() => Fastify({ trustProxy: ["loopback", ...trustedProxies] })).not.toThrow();
+  });
+});
+
+describe("the other settings readers", () => {
+  it("resolves a relative DATA_DIR from the repo root, and keeps an absolute one", () => {
+    expect(resolveDataDir("/srv/satchel")).toBe("/srv/satchel");
+    expect(resolveDataDir("./data")).toBe(join(ENV_FILE, "..", "data"));
+    expect(isAbsolute(resolveDataDir("data"))).toBe(true);
+  });
+
+  it("reads the seed command's settings, trimmed, with the server's DATA_DIR default", () => {
+    expect(loadSeedConfig({ SEED_USERNAME: " ana ", SEED_PASSWORD: " pass ", SEED_ROLE: " admin " })).toEqual({
+      username: "ana",
+      password: " pass ",
+      role: "admin",
+      dataDir: "./data",
+    });
+    expect(loadSeedConfig({ DATA_DIR: "" })).toEqual({ username: "", password: "", role: "", dataDir: "./data" });
+    expect(loadSeedConfig({ DATA_DIR: "/data" }).dataDir).toBe("/data");
+  });
+
+  it("reads Sign in with Ward's settings only when WARD_OIDC_ISSUER is set, and all of them then", () => {
+    expect(loadWardOptions({})).toBeUndefined();
+    expect(() => loadWardOptions({ WARD_OIDC_ISSUER: "https://ward.example.com" })).toThrow(
+      "WARD_OIDC_CLIENT_ID, WARD_OIDC_CLIENT_KEY, WARD_OIDC_REDIRECT_URI",
+    );
+    expect(
+      loadWardOptions({
+        WARD_OIDC_ISSUER: "https://ward.example.com",
+        WARD_OIDC_CLIENT_ID: "satchel",
+        WARD_OIDC_CLIENT_KEY: "key",
+        WARD_OIDC_REDIRECT_URI: "https://example.com/satchel-api/auth/ward/callback",
+      }),
+    ).toEqual({
+      issuer: "https://ward.example.com",
+      clientId: "satchel",
+      clientKey: "key",
+      redirectUri: "https://example.com/satchel-api/auth/ward/callback",
+    });
+  });
+
+  it("loads an .env file only when there is one", () => {
+    expect(loadEnvFile(join(ENV_FILE, "..", "no-such-dir", ".env"))).toBeUndefined();
   });
 });
 

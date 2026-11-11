@@ -1,8 +1,7 @@
 import { createInterface } from "node:readline/promises";
-import { isAbsolute, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createAccounts, createSqliteStore, seedUsers } from "../vendor/ward/ward-auth.js";
 import { OWNER_ROLE } from "./auth/guard.js";
+import { loadEnvFile, loadSeedConfig, resolveDataDir } from "./config.js";
 import { databasePath, openDb } from "./db/open.js";
 
 /**
@@ -19,14 +18,9 @@ import { databasePath, openDb } from "./db/open.js";
  * `member` (a friend).
  */
 
-const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const ROLES = [OWNER_ROLE, "member"];
 
-try {
-  process.loadEnvFile(`${REPO_ROOT}.env`);
-} catch (err) {
-  if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-}
+loadEnvFile();
 
 /** The answer to `question`, with what is typed hidden when `secret`. */
 async function ask(question: string, secret = false): Promise<string> {
@@ -49,18 +43,17 @@ async function ask(question: string, secret = false): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  const username = process.env.SEED_USERNAME?.trim() || (await ask("Username: "));
-  const password = process.env.SEED_PASSWORD || (await ask("Password: ", true));
-  const role = process.env.SEED_ROLE?.trim() || (await ask(`Role (${ROLES.join(" or ")}): `));
+  const seed = loadSeedConfig();
+  const username = seed.username || (await ask("Username: "));
+  const password = seed.password || (await ask("Password: ", true));
+  const role = seed.role || (await ask(`Role (${ROLES.join(" or ")}): `));
   if (username === "" || password === "" || role === "") {
     throw new Error("Set SEED_USERNAME, SEED_PASSWORD and SEED_ROLE in the environment, or run this in a terminal.");
   }
   if (!ROLES.includes(role)) throw new Error(`SEED_ROLE must be ${ROLES.join(" or ")}.`);
 
-  // The same DATA_DIR rule as `index.ts`: relative means the repo root's.
-  const configured = process.env.DATA_DIR || "./data";
-  const dataDir = isAbsolute(configured) ? configured : resolve(REPO_ROOT, configured);
-  const db = openDb(databasePath(dataDir));
+  // The server's DATA_DIR rule: relative means the repo root's.
+  const db = openDb(databasePath(resolveDataDir(seed.dataDir)));
   try {
     const accounts = createAccounts({ store: createSqliteStore(db) });
     const result = await seedUsers(accounts, [{ username, password, role }]);

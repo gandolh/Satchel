@@ -1,9 +1,11 @@
 import { errorResponseSchema, routes, sendMessageRequestSchema } from "@satchel/shared";
 import type { InjectOptions } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { BODY_LIMIT_BYTES } from "./app.js";
+import { createAccounts, createSqliteStore } from "../vendor/ward/ward-auth.js";
+import { BODY_LIMIT_BYTES, buildApp } from "./app.js";
+import { openDb } from "./db/open.js";
 import { ApiError } from "./errors.js";
-import { ClientIdConflict, NotAMember } from "./store.js";
+import { ClientIdConflict, NotAMember, createStore } from "./store.js";
 import { startTestApp, type TestApp } from "./testing/testApp.js";
 
 let t: TestApp;
@@ -164,6 +166,46 @@ describe("logging", () => {
     expect(output).toContain("[redacted]");
     expect(output).not.toContain(token);
     expect(output).not.toContain(bearer);
+  });
+});
+
+describe("what server.ts relies on", () => {
+  it("startTestApp keeps the logger off with NODE_ENV unset, and captureLogs turns it on", async () => {
+    // buildApp's logger is on by default; nothing reads NODE_ENV any more.
+    const saved = process.env.NODE_ENV;
+    delete process.env.NODE_ENV;
+    try {
+      t = await startTestApp();
+      // A logger that is on has a level; Fastify's stand-in for `logger: false` has none.
+      expect(t.app.log.level).toBeUndefined();
+      await t.close();
+      t = await startTestApp({ captureLogs: true });
+      expect(t.app.log.level).toBe("info");
+    } finally {
+      if (saved !== undefined) process.env.NODE_ENV = saved;
+    }
+  });
+
+  it("closing the app closes the database it was given, and only that one", async () => {
+    t = await startTestApp();
+    await t.app.close();
+    // startTestApp doesn't hand its database over: it closes it itself.
+    expect(t.db.open).toBe(true);
+
+    const db = openDb(":memory:");
+    const app = await buildApp({
+      store: createStore(db, () => new Date()),
+      accounts: createAccounts({ store: createSqliteStore(db) }),
+      db,
+      publicOrigin: t.origin,
+      apiPrefix: "/satchel-api",
+      webBase: "/satchel/",
+      clock: () => new Date(),
+      logger: false,
+    });
+    expect((await app.inject({ method: "GET", url: "/api/health" })).statusCode).toBe(200);
+    await app.close();
+    expect(db.open).toBe(false);
   });
 });
 

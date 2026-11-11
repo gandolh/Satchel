@@ -1,40 +1,43 @@
-import { isAbsolute, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import {
-  createAccounts,
-  createSqliteStore,
-  createWardClient,
-  wardClientOptionsFromEnv,
-  type WardClient,
-} from "../vendor/ward/ward-auth.js";
+import closeWithGrace from "close-with-grace";
+import { createAccounts, createSqliteStore, createWardClient, type WardClient } from "../vendor/ward/ward-auth.js";
 import { buildApp } from "./app.js";
 import { linkExistingAccounts } from "./auth/migrate.js";
 import { systemClock } from "./clock.js";
-import { ConfigError, loadConfig, pushOffMessage, type Config } from "./config.js";
+import {
+  ConfigError,
+  loadConfig,
+  loadEnvFile,
+  loadWardOptions,
+  pushOffMessage,
+  resolveDataDir,
+  type Config,
+} from "./config.js";
 import { databasePath, openDb } from "./db/open.js";
 import { createStore } from "./store.js";
 
-/** `src/` (tsx in dev) and `dist/` (built) sit at the same depth, so this resolves the same from both. */
-const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+/**
+ * Starts Satchel: the API under `/api`, Claude's routes under `/claude`, sign-in
+ * under `/auth`, on 127.0.0.1:8807 by default. Locally the owner runs it with
+ * `npm start` or `npm run dev`; on the VPS it is the `satchel-api` container.
+ * Nothing else in the server listens.
+ *
+ * Settings come from the environment, and from the repo root's `.env` for what
+ * the environment leaves unset. `config.ts` lists them and stops the start with
+ * a message naming any that is wrong.
+ */
 
-try {
-  process.loadEnvFile(`${REPO_ROOT}.env`);
-} catch (err) {
-  if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-}
+const envFile = loadEnvFile();
 
 let config: Config;
 try {
-  config = loadConfig(process.env);
+  config = loadConfig();
 } catch (err) {
   if (!(err instanceof ConfigError)) throw err;
   console.error(`Satchel cannot start:\n${err.message}`);
   process.exit(1);
 }
 
-// `npm run dev` runs the server from `server/`, so a relative DATA_DIR means the repo root's.
-const dataDir = isAbsolute(config.dataDir) ? config.dataDir : resolve(REPO_ROOT, config.dataDir);
-const db = openDb(databasePath(dataDir));
+const db = openDb(databasePath(resolveDataDir(config.dataDir)));
 const store = createStore(db, systemClock);
 
 // The library's tables (`auth_users`, `auth_sessions`, ...) live in the same database.
@@ -53,7 +56,7 @@ if (linked.created.length > 0 || linked.failed.length > 0) {
 // No WARD_OIDC_ISSUER: local accounts only. Does not contact Ward: it starts while Ward is down.
 let ward: WardClient | undefined;
 try {
-  const wardOptions = wardClientOptionsFromEnv();
+  const wardOptions = loadWardOptions();
   ward = wardOptions === undefined ? undefined : await createWardClient(wardOptions);
 } catch (err) {
   console.error(`Satchel cannot start: ${err instanceof Error ? err.message : String(err)}`);
@@ -64,13 +67,30 @@ try {
 const app = await buildApp({
   store,
   accounts,
+  db,
   ...(ward ? { ward } : {}),
   publicOrigin: config.publicOrigin,
   apiPrefix: config.apiPrefix,
   webBase: config.webBase,
+  trustedProxies: config.trustedProxies,
   clock: systemClock,
   ...(config.push.enabled ? { push: { vapid: config.push.vapid } } : {}),
+  server: {
+    // Loopback, plus the proxies the sign-in lockout already trusts. Satchel reads no `request.ip`
+    // itself, so this changes only the address in the request log.
+    trustProxy: ["loopback", ...config.trustedProxies],
+    // A connection silent this long mid-request is cut. No route waits on anything slow, and an open
+    // live socket belongs to `ws` once upgraded, outside this timer.
+    connectionTimeout: 10_000,
+    // The whole request, body included (64 KiB at most), must arrive within this. A push fan-out
+    // starts after the reply, so it is not bounded by it.
+    requestTimeout: 30_000,
+    // Longer than Caddy keeps an idle upstream connection (2 minutes), so it never sends a request
+    // down a connection the server has just closed.
+    keepAliveTimeout: 125_000,
+  },
 });
+app.log.info(envFile === undefined ? "no .env: settings from the environment" : `settings from ${envFile}`);
 if (ward === undefined) app.log.info("WARD_OIDC_ISSUER is not set: local accounts only, no Sign in with Ward.");
 // Once, at startup. A warning when one key of the pair is there without the
 // other (or without a subject): that looks like a mistake. VAPID_SUBJECT alone
@@ -81,21 +101,15 @@ if (!config.push.enabled) {
   app.log[someKey ? "warn" : "info"](pushOffMessage(missing));
 }
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.once(signal, () => {
-    app.close().then(
-      () => {
-        db.close();
-        process.exit(0);
-      },
-      (err: unknown) => {
-        app.log.error({ err }, `shutdown on ${signal} failed`);
-        db.close();
-        process.exit(1);
-      },
-    );
-  });
-}
+// SIGINT, SIGTERM, an uncaught error: close every live socket (the websocket plugin's preClose),
+// finish the requests in flight, wait for the pushes already started, close the database (the app's
+// onClose hook), and exit. After 5 seconds it exits anyway, under the 10 seconds Docker gives a
+// container to stop.
+closeWithGrace({ delay: 5_000, logger: app.log }, async ({ signal, err }) => {
+  if (err) app.log.error({ err }, "closing after an uncaught error");
+  else app.log.info(`closing on ${signal ?? "exit"}`);
+  await app.close();
+});
 
 try {
   await app.listen({ host: config.host, port: config.port });

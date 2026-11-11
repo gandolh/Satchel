@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "tsc -b shared && concurrently --names server,web --kill-others-on-fail \"npm run dev -w @satchel/server\" \"npm run dev -w @satchel/web\"",
     "build": "tsc -b && npm run build -w @satchel/web",
-    "start": "node server/dist/index.js",
+    "start": "node server/dist/server.js",
     "test": "vitest run",
     "typecheck": "tsc -b && tsc -p web --noEmit",
     "lint": "eslint .",
