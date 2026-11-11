@@ -44,27 +44,44 @@ no access to this chat". The inbox doesn't.
 
 ## Tokens
 
+The tokens live in `@theme` in `web/src/styles/index.css`, the app's one
+stylesheet. A colour is `--color-<name>` (so `bg-surface`, `text-muted`) and holds
+both themes in one `light-dark()` value; `color-scheme` on `<html>` picks one.
 Light values first, dark in brackets. Neutrals lean slightly green.
 
 ```
---bg        #F2F5F4  (#0E1412)    page and thread background
---surface   #FFFFFF  (#161F1C)    bars, list rows, other people's bubbles
---sunk      #E8EDEB  (#1C2723)    day separators, input fill
---ink       #14201C  (#E3EAE7)    text
---muted     #56645F  (#98A6A1)    secondary text, times
---line      #D3DCD8  (#2A3631)    borders, dividers
---accent    #2A45C4  (#8DA0FF)    my bubbles, links, badges, Send
---accent-ink #FFFFFF (#0E1412)    text on accent
---accent-soft #E6EAFB (#1D2547)   the pinned inbox row, soft highlights
---ok        #1D7650  (#62C796)    Claude's avatar
---bad       #B3261E  (#FF8A80)    not-sent state
+bg        #F2F5F4  (#0E1412)    page and thread background
+surface   #FFFFFF  (#161F1C)    bars, list rows, other people's bubbles
+sunk      #E8EDEB  (#1C2723)    day separators, input fill
+ink       #14201C  (#E3EAE7)    text
+muted     #56645F  (#98A6A1)    secondary text, times
+line      #D3DCD8  (#2A3631)    borders, dividers
+accent    #2A45C4  (#8DA0FF)    my bubbles, links, badges, Send
+accent-ink #FFFFFF (#0E1412)    text on accent
+accent-soft #E6EAFB (#1D2547)   the pinned inbox row, soft highlights
+ok        #1D7650  (#62C796)    Claude's avatar
+bad       #B3261E  (#FF8A80)    not-sent state
 ```
+
+Four mixes of these (`row-hover`, `row-pinned-hover`, `row-pinned-current`,
+`accent-press`) and two shadows (`thumb`, `lift`) are tokens too. Spacing is
+Tailwind's own scale (4 px a step). Radii: `box` 3, `sm` 6, `md` 10, `lg` 14,
+`pill`. Sizes: `--width-list` (the 320 px column) and `--height-bar` (56 px). The type scale,
+each size in px, named for its role: `micro` 10, `tiny` 11, `small` 12, `meta` 13,
+`compact` 14, `body` 15 (the page), `input` 16, `title` 18, `heading` 20,
+`display` 22, `hero` 32. Tailwind's own colour, text, radius, shadow and
+breakpoint scales are cleared, so `text-sm` yields nothing.
 
 Type: Familjen Grotesk (600, 700) for titles and names, Instrument Sans (400,
 500, 600) for everything else, IBM Plex Mono only in Settings for the token.
 Self-host the font files with the build; don't load Google Fonts at runtime.
 
-Theme follows the system (`prefers-color-scheme`). No toggle in phase 1.
+Theme: a Light / Dark / System choice in Settings, kept on the device
+(`localStorage`), light on a first visit even when the system is dark. A script
+in `index.html` sets `data-theme` on `<html>` before the first paint, and the
+browser bar's colour follows it. A dark theme is the same tokens, not `dark:`
+classes. The two-pane layout starts at 900 px: the `wide:` variant, and
+`WIDE_QUERY` in `web/src/polling.ts`, which a test keeps equal.
 
 ## PWA
 

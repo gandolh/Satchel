@@ -1,6 +1,6 @@
 ---
-summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls; Android first with the iPhone kept working; Claude may reply in the inbox (2026-10-28). Read before proposing to change any of these.
-updated: 2026-11-02
+summary: Locked calls for Satchel, each with date, rejected alternatives and reason. Own app on the house stack; Claude reads through a CLI, not MCP; reading and marking seen are two calls; one forward-only seen marker per member; order from a server seq; messages are append-only; Claude's token is bound to the inbox; the inbox is owner-only; text only; inbox before friends; local accounts with Ward as a linked second way in; a live socket re-checks its session every 10 seconds; served at the root of its own host, satchel.<domain>; Base UI for interactive controls, styled with Tailwind; Android first with the iPhone kept working; Claude may reply in the inbox (2026-10-28). Read before proposing to change any of these.
+updated: 2026-11-11
 ---
 
 # Decisions
@@ -177,16 +177,22 @@ but gets no share sheet, since only a native wrapper could give it one.
 Rejected: an Expo wrapper for the iPhone, which means a second build and an
 Apple developer account; and no share target on either phone.
 
-## Base UI for interactive controls, styled by our own CSS
+## Base UI for interactive controls, styled with Tailwind
 _2026-10-23_. The Notifications switch is Base UI's `Switch` and the New group
-rows use its `Checkbox`. They keep Satchel's tokens and key off the attributes
-Base UI sets (`data-checked`, `data-disabled`). The owner asked for this on
-2026-10-23, after a survey showed most of their other apps already on Base UI.
-Rejected: native inputs restyled by hand (what the switch was), and a styled kit
-such as shadcn, which would bring Tailwind. New interactive widgets (a menu, a
-dialog, a popover) start from Base UI rather than being built by hand.
+rows use its `Checkbox`. They key off the attributes Base UI sets
+(`data-checked`, `data-disabled`). The owner asked for this on 2026-10-23, after
+a survey showed most of their other apps already on Base UI. Rejected: native
+inputs restyled by hand (what the switch was). New interactive widgets (a menu,
+a dialog, a popover) start from Base UI rather than being built by hand.
 
 _2026-11-11 (conventions)_. Base UI is imported only under `web/src/components/ui/`
 (`Switch.tsx`, `Checkbox.tsx`); features import the wrappers. The two inline
 confirms (revoke a Claude token, unlink Ward) stay inline, per the owner's Q58.
-Styling moves to Tailwind in brief 03.
+
+_2026-11-11 (revisited, brief 03)_. The first version said "styled by our own
+CSS" and rejected a styled kit "which would bring Tailwind". The owner's call of
+2026-11-09 changes the first half: Base UI is styled with Tailwind 4, and the
+whole web app moved to it (one stylesheet, `web/src/styles/index.css`). shadcn
+stays rejected for a reason of its own: Base UI is used directly, with no styled
+kit on top. The theme became a Light / Dark / System switch (Q18), kept on the
+device, light on a first visit.

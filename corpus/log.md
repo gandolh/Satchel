@@ -388,3 +388,34 @@ Shutdown: the live sockets close with 1001 in `preClose` and a client that
 doesn't answer is cut after 1 s, so SIGTERM exits 0 in about a second; one
 silent client held it 30 s before. The web client reconnects on 1001.
 Owner step: `node cli.ts satchel server` from vps-deploy.
+
+## [2026-11-11] decision | Base UI for interactive controls: revisited, now styled with Tailwind
+
+The 2026-10-23 entry in [wiki/decisions.md](wiki/decisions.md) said "styled by our
+own CSS" and rejected a styled kit "which would bring Tailwind". The owner's call
+of 2026-11-09 changes the first half: Base UI is styled with Tailwind 4, and the
+whole web app moved (brief 03). shadcn stays rejected, for its own reason: Base UI
+is used directly. The heading is now "Base UI for interactive controls, styled
+with Tailwind". [wiki/design.md](wiki/design.md)'s "Theme follows the system. No
+toggle in phase 1" is revisited too: a Light / Dark / System switch, light on a
+first visit (the owner's Q18).
+
+## [2026-11-11] build | Brief 03: the web app to Tailwind
+
+Tailwind 4.3.5 with `@tailwindcss/vite`; all ten stylesheets gone, one left
+(`web/src/styles/index.css`: layer order, fonts in the vendor layer, 27 tokens
+plus 4 mixes and 2 shadows in `@theme`, `light-dark()` for both themes, a named
+type scale of 11 sizes from 13, `--breakpoint-wide: 900px`). `check-base-ui` runs
+strict at 0 errors and 0 warnings; `better-tailwindcss` is on.
+
+Screenshots at 1280 and 390 (light and dark) and 899, 900, 901, before and after:
+no change to layout or colour beyond a 1 px line-height drift on a few rows, and
+`hover:` no longer sticking on a tap (expected). The comparison found one bug
+(the sending and failed bubbles read a shadowed name); fixed. Built size, before
+and after: CSS 20.2 kB (4.3 gzip) to 27.1 kB (6.2); JS 370.9 kB (112.6 gzip) to
+422.7 kB (129.8), of which `tailwind-merge` is about 9; precache 531 to 589 KiB.
+
+The theme switch: `web/src/settings/theme.ts` (store, `localStorage` key `theme`),
+a `RadioGroup` wrapper, an Appearance card on Settings, and a boot script in
+`index.html` that also sets the `color-scheme` and `theme-color` metas. Owner
+step: `node cli.ts satchel deploy` from vps-deploy.

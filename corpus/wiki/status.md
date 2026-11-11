@@ -14,6 +14,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 608 tests
 
 ## By area
 
+- **Tailwind and the theme switch** (2026-11-11). The web app is Tailwind 4 with one stylesheet (`web/src/styles/index.css`, the tokens in `@theme`); Settings has a Light / Dark / System choice kept on the device, light on a first visit ([design.md](design.md)). `check-base-ui` strict at 0, 23 new tests. Ready for deploy: `node cli.ts satchel deploy` from vps-deploy (web client only).
 - **Server structure** (2026-11-11). `server.ts`, `buildApp`, `config.ts` as the only reader of the environment, `plugins/`, `features/` and the store in `db/`; every route but the live socket declares its zod schemas; the live sockets close with 1001 at shutdown; `check-structure` strict at 0. Ready for deploy: `node cli.ts satchel server` from vps-deploy, which rebuilds the API container ([decisions-tooling.md](decisions-tooling.md)). 608 tests.
 - **House style and gate** (2026-11-11). Prettier at width 120, a vendored `house-style` 1.0.0, typed ESLint, knip, dependency-cruiser and the two convention checkers behind `npm run check`; `pretest` builds the workspaces; root `CLAUDE.md` and `.claude/rules/`. Not deployed ([decisions-tooling.md](decisions-tooling.md)).
 - **Ideas inbox** (2026-10-09). The shared contract, append-only storage,
@@ -34,7 +35,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 608 tests
 - **Controls** (2026-10-23). Base UI `Switch` and `Checkbox`; no hand-built
   widgets left ([design.md](design.md)). Since 2026-11-11 they sit in
   `web/src/components/ui/` wrappers; check-base-ui reads 0 for rules 1-3 and
-  9-11, and rule 5 (10 stylesheets) waits for the Tailwind brief.
+  9-11, and rule 5 went to 0 with the Tailwind brief (2026-11-11).
 - **Android share target** (2026-10-28). Share → Satchel opens the Ideas
   inbox with the text in the composer, unsent ([design.md](design.md)).
 - **Claude's replies** (2026-10-28). `satchel reply` posts into the inbox,
