@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, createClaudeToken, listClaudeTokens, revokeClaudeToken, SignedOut } from "../api";
 import { useMe } from "../auth/session";
 import { clockTime } from "../chats/time";
-import "./connect-claude.css";
 
 const dayMonth = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
 

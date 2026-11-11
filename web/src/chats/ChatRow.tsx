@@ -53,7 +53,7 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
           {unread > 0 && (
             <span className="badge">
               <span aria-hidden="true">{unread > 99 ? "99+" : unread}</span>
-              <span className="visually-hidden">{unread === 1 ? "1 unread message" : `${unread} unread messages`}</span>
+              <span className="sr-only">{unread === 1 ? "1 unread message" : `${unread} unread messages`}</span>
             </span>
           )}
         </span>

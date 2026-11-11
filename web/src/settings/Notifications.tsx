@@ -11,7 +11,6 @@ import {
   subscribeWith,
   subscriptionBody,
 } from "../push/subscription";
-import "../push/notifications.css";
 
 /** What the card shows. `ready` is the only state with a working switch. */
 export type NotificationsView =

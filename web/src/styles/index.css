@@ -1,0 +1,187 @@
+/* Satchel's one stylesheet (base-ui rule 5). The layer order comes first: the first @layer statement fixes the order
+   for the whole page. */
+@layer theme, base, vendor, legacy, components, utilities;
+
+/* The self-hosted fonts hold @font-face only, so they sit in the vendor layer, above Tailwind's reset and below the
+   app's own rules. They are local files: the build keeps them where they are written. */
+@import "@fontsource/familjen-grotesk/latin-600.css" layer(vendor);
+@import "@fontsource/familjen-grotesk/latin-700.css" layer(vendor);
+@import "@fontsource/familjen-grotesk/latin-ext-600.css" layer(vendor);
+@import "@fontsource/familjen-grotesk/latin-ext-700.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-400.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-500.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-600.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-ext-400.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-ext-500.css" layer(vendor);
+@import "@fontsource/instrument-sans/latin-ext-600.css" layer(vendor);
+@import "@fontsource/ibm-plex-mono/latin-400.css" layer(vendor);
+
+@import "tailwindcss";
+
+/* The old stylesheets, until each is moved to utilities on its components. They sit below utilities, so a leftover
+   rule never beats a class (migration step 2). */
+@import "./tokens.css" layer(legacy);
+@import "./layout.css" layer(legacy);
+@import "./chats.css" layer(legacy);
+@import "./settings.css" layer(legacy);
+@import "../thread/thread.css" layer(legacy);
+@import "../people/people.css" layer(legacy);
+@import "../auth/auth.css" layer(legacy);
+@import "../push/notifications.css" layer(legacy);
+@import "../settings/connect-claude.css" layer(legacy);
+
+/* Tailwind scans every file under the web root for class names; the vendored Ward client isn't the app's. */
+@source not "../../vendor";
+
+/* dark: follows the theme switch (base-ui rule 14), never the system alone. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme="system"], [data-theme="system"] *) {
+      @slot;
+    }
+  }
+}
+
+/* Satchel keeps its own token names until its redesign (decision Q17); a name says a role, never a value.
+   Colours: --color-bg, surface, sunk, ink, muted, line, accent, accent-ink, accent-soft, ok, bad, and four mixes of
+   them (row-hover, row-pinned-hover, row-pinned-current, accent-press).
+   Fonts: --font-title, body, mono. Radii: --radius-sm, md, lg, pill. Shadows: --shadow-thumb, lift.
+   Sizes: --width-list, --height-bar, --breakpoint-wide, and the type scale below.
+   Spacing is Tailwind's own, 0.25rem a step, which is 4 px: the old --space-1..4 are 1..4, --space-5 is 6, --space-6 is 8. */
+@theme {
+  /* Tailwind's own scales are cleared, so a stray bg-red-500 or text-sm produces nothing. */
+  --color-*: initial;
+  --text-*: initial;
+  --leading-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --font-*: initial;
+  --breakpoint-*: initial;
+  --container-*: initial;
+  --blur-*: initial;
+  --ease-*: initial;
+
+  /* Both themes in one value: light-dark() takes the first for a light page and the second for a dark one, and
+     color-scheme on <html> (the base layer below) picks. */
+  --color-bg: light-dark(#f2f5f4, #0e1412); /* page and thread background */
+  --color-surface: light-dark(#ffffff, #161f1c); /* bars, list rows, other people's bubbles */
+  --color-sunk: light-dark(#e8edeb, #1c2723); /* day separators, input fill */
+  --color-ink: light-dark(#14201c, #e3eae7); /* text */
+  --color-muted: light-dark(#56645f, #98a6a1); /* secondary text, times */
+  --color-line: light-dark(#d3dcd8, #2a3631); /* borders, dividers */
+  --color-accent: light-dark(#2a45c4, #8da0ff); /* my bubbles, links, badges, Send */
+  --color-accent-ink: light-dark(#ffffff, #0e1412); /* text on accent */
+  --color-accent-soft: light-dark(#e6eafb, #1d2547); /* the pinned inbox row, selected tab wash */
+  --color-ok: light-dark(#1d7650, #62c796); /* Claude's avatar */
+  --color-bad: light-dark(#b3261e, #ff8a80); /* not-sent state, Sign out */
+
+  /* Mixes of the tokens above. They stay srgb, as they were: Tailwind's /60 opacity suffix compiles to oklab. */
+  --color-row-hover: color-mix(in srgb, var(--color-sunk) 60%, var(--color-surface));
+  --color-row-pinned-hover: color-mix(in srgb, var(--color-accent-soft) 80%, var(--color-accent) 6%);
+  --color-row-pinned-current: color-mix(in srgb, var(--color-accent-soft) 70%, var(--color-accent) 12%);
+  --color-accent-press: color-mix(in srgb, var(--color-accent) 88%, var(--color-ink));
+
+  --shadow-thumb: 0 1px 2px color-mix(in srgb, var(--color-ink) 25%, transparent);
+  --shadow-lift: 0 2px 8px color-mix(in srgb, var(--color-ink) 25%, transparent);
+
+  --font-title: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* The type scale (Q62), in rem against the browser's 16 px, so each is the pixel size it was. The old CSS used 13
+     sizes: 9 and 10 px merged into micro, and 17 into title. No size carries a line height: each element inherits
+     body's 1.45 unless it takes a leading-* of its own.
+       micro 10 (avatar letters), tiny 11 (the composer count, bubble times), small 12 (times, ticks, tab labels,
+       badges), meta 13 (labels, subtitles, sender names), compact 14 (previews, hints, errors), body 15 (the page),
+       input 16 (fields, card titles, names), title 18 (bars, names, avatar letters), heading 20 (the large avatar),
+       display 22 (the large bar, the gate), hero 32 (the brand mark). */
+  --text-micro: 0.625rem;
+  --text-tiny: 0.6875rem;
+  --text-small: 0.75rem;
+  --text-meta: 0.8125rem;
+  --text-compact: 0.875rem;
+  --text-body: 0.9375rem;
+  --text-input: 1rem;
+  --text-title: 1.125rem;
+  --text-heading: 1.25rem;
+  --text-display: 1.375rem;
+  --text-hero: 2rem;
+
+  --width-list: 320px; /* the chat list column from 900 px up */
+  --height-bar: 56px;
+
+  /* The phone and the wide layout meet here: wide: is min-width 900px, and polling.ts's WIDE_QUERY says the same. */
+  --breakpoint-wide: 900px;
+}
+
+@layer base {
+  /* Until the theme switch lands, System: the operating system picks. */
+  :root {
+    color-scheme: light dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* The app's 15 px and its line height live on body, so html keeps the reader's own size and rem utilities
+     measure from it (Q44). */
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-title);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  /* Preflight takes a link's colour and underline away; the page leaned on the browser's. */
+  a {
+    color: var(--color-accent);
+    text-underline-offset: 2px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  /* Tailwind 4's preflight leaves buttons on the default cursor; the page showed a pointer on every enabled one. */
+  button:disabled {
+    cursor: default;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* The one rule that keeps !important: it has to beat the transition and animation utilities (base-ui rule 7). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}

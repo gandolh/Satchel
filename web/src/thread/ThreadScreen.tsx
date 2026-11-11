@@ -20,7 +20,6 @@ import {
   threadReducer,
   type PendingMessage,
 } from "./model";
-import "./thread.css";
 
 export interface ThreadScreenProps {
   /** The conversation id from `/satchel/c/:id`. */

@@ -1,5 +1,6 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type ProxyOptions } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -39,6 +40,7 @@ export default defineConfig(({ mode }) => {
     base,
     plugins: [
       react(),
+      tailwindcss(),
       VitePWA({
         // Our own worker, src/sw.ts, so it can show pushes. It
         // precaches the app shell exactly as the generated one did; workbox
@@ -71,8 +73,9 @@ export default defineConfig(({ mode }) => {
             enctype: "application/x-www-form-urlencoded",
             params: { title: "title", text: "text", url: "url" },
           },
-          // Raw hex only here: the manifest can't read CSS tokens. Keep in
-          // step with --accent and --bg (light) in src/styles/tokens.css.
+          // Raw hex only here: the manifest can't read CSS tokens, and has no
+          // dark variant. Keep in step with --color-accent and --color-bg
+          // (their light values) in src/styles/index.css.
           theme_color: "#2A45C4",
           background_color: "#F2F5F4",
           // Relative, so they resolve against the manifest under `base`.

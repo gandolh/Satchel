@@ -133,7 +133,7 @@ function Gate({ title, busy = false, children }: { title?: string; busy?: boolea
         <span className="mark" aria-hidden="true">
           S
         </span>
-        <h1 className={title ? "gate__title" : "visually-hidden"}>{title ?? "Satchel"}</h1>
+        <h1 className={title ? "gate__title" : "sr-only"}>{title ?? "Satchel"}</h1>
         {children}
       </div>
     </main>

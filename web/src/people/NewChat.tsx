@@ -7,7 +7,6 @@ import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { CHATS, navigate, threadRoute } from "../router";
 import { filterPeople } from "./people";
-import "./people.css";
 
 function describe(error: unknown): string {
   if (error instanceof ApiError) return error.message;

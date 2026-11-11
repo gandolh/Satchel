@@ -2,7 +2,6 @@ import { useId, useState, type FormEvent } from "react";
 import { useLogin, useSession, useWardSignIn, type AuthError } from "../../vendor/ward/ward-auth-react.js";
 import { returnToFor } from "../ward";
 import { loginMessage, sessionReasonMessage, wardSignInMessage } from "./messages";
-import "./auth.css";
 
 export interface LoginViewProps {
   /** Whether the server has Ward configured: the button shows only then. */

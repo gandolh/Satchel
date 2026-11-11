@@ -2,26 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 
-// Fonts, self-hosted from the fontsource packages: never Google at runtime.
-// Latin and Latin Extended cover English and Romanian; the mono face only
-// ever shows a token.
-import "@fontsource/familjen-grotesk/latin-600.css";
-import "@fontsource/familjen-grotesk/latin-700.css";
-import "@fontsource/familjen-grotesk/latin-ext-600.css";
-import "@fontsource/familjen-grotesk/latin-ext-700.css";
-import "@fontsource/instrument-sans/latin-400.css";
-import "@fontsource/instrument-sans/latin-500.css";
-import "@fontsource/instrument-sans/latin-600.css";
-import "@fontsource/instrument-sans/latin-ext-400.css";
-import "@fontsource/instrument-sans/latin-ext-500.css";
-import "@fontsource/instrument-sans/latin-ext-600.css";
-import "@fontsource/ibm-plex-mono/latin-400.css";
-
-import "./styles/tokens.css";
-import "./styles/base.css";
-import "./styles/layout.css";
-import "./styles/chats.css";
-import "./styles/settings.css";
+// The one stylesheet: Tailwind, the tokens, and the self-hosted fonts (never Google at runtime).
+import "./styles/index.css";
 
 import { App } from "./App";
 import { captureShare } from "./share/share";

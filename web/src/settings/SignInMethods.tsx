@@ -9,7 +9,6 @@ import {
   type AuthError,
 } from "../../vendor/ward/ward-auth-react.js";
 import { settingsMessage } from "../auth/messages";
-import "../auth/auth.css";
 
 /**
  * Settings: how this account signs in. A local password (set one, or change
