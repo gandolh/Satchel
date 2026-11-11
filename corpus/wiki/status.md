@@ -1,5 +1,5 @@
 ---
-summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. 577 tests. What waits on the owner and what is still open.
+summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. The server is in the estate's code structure (2026-11-11), waiting for a deploy. 608 tests. What waits on the owner and what is still open.
 updated: 2026-11-11
 ---
 
@@ -9,11 +9,12 @@ _2026-11-02_. Everything is on `main` and pushed through `14e9dc5`
 (2026-11-01). Nothing is deployed. Four briefs are queued (2026-11-10): the house style and
 quality harness, Base UI by the conventions, the web app to Tailwind, and the
 server in the house code structure, in `corpus/briefs/todo/`. Brief numbering
-restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 577 tests;
-typecheck and lint clean.
+restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 608 tests
+(2026-11-11); typecheck and lint clean.
 
 ## By area
 
+- **Server structure** (2026-11-11). `server.ts`, `buildApp`, `config.ts` as the only reader of the environment, `plugins/`, `features/` and the store in `db/`; every route but the live socket declares its zod schemas; the live sockets close with 1001 at shutdown; `check-structure` strict at 0. Ready for deploy: `node cli.ts satchel server` from vps-deploy, which rebuilds the API container ([decisions-tooling.md](decisions-tooling.md)). 608 tests.
 - **House style and gate** (2026-11-11). Prettier at width 120, a vendored `house-style` 1.0.0, typed ESLint, knip, dependency-cruiser and the two convention checkers behind `npm run check`; `pretest` builds the workspaces; root `CLAUDE.md` and `.claude/rules/`. Not deployed ([decisions-tooling.md](decisions-tooling.md)).
 - **Ideas inbox** (2026-10-09). The shared contract, append-only storage,
   the conversation routes, Claude's bearer routes and tokens, the `satchel`

@@ -358,3 +358,33 @@ blame.ignoreRevsFile .git-blame-ignore-revs`, and the deploy. See
 
 ## 2026-11-11: Base UI by the conventions (brief 02)
 `Switch` and `Checkbox` moved into `web/src/components/ui/` with static-markup tests; the two callers import them, and the CSS rules `.person__check*` became `.checkbox*`. check-base-ui: rule 3 from 2 to 0; rule 5 stays at 10 (brief 03). Before/after screenshots skipped: sign-in needs a seeded account and the Ward path, which the build run didn't set up.
+
+## [2026-11-11] build | The server in the house code structure (brief 04)
+
+Brief 04 built in 14 commits, `3a9f950` to `7e29b18`. `server.ts` and
+`buildApp`, `config.ts` as the only reader of the environment, `plugins/`
+(errors, JSON body, auth) wrapped in `fastify-plugin`, `features/` used
+through their indexes, the store whole in `db/`, and the contract's zod
+schemas declared on every route but the live socket, through
+`@fastify/type-provider-zod`. check-structure strict at 0 (21 errors before);
+dependency-cruiser at 0 with `no-circular` an error. 608 tests.
+
+The JSON comparison: 169 replies captured through the built app before the
+first step and after each one. 160 are byte-identical. Nine changed, all
+expected:
+
+- validation before authorisation (decision 5): a friend's revoke with an
+  empty id is 400 `invalid_request` (was 403), and with push off a malformed
+  subscription, or none, is 400 (was 404). Three replies;
+- a POST or DELETE with no body reads "expected object, received null" (was
+  "received undefined"): send, seen, Claude's seen and reply, push save and
+  delete. Six replies.
+
+No field disappeared, so no leak and no missing schema field. A reply that
+fails its response schema is now a 500 `internal`, logged without values
+(was a 400 `invalid_request`); tests pin it on the token list.
+
+Shutdown: the live sockets close with 1001 in `preClose` and a client that
+doesn't answer is cut after 1 s, so SIGTERM exits 0 in about a second; one
+silent client held it 30 s before. The web client reconnects on 1001.
+Owner step: `node cli.ts satchel server` from vps-deploy.
