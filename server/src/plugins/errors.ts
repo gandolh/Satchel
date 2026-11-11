@@ -1,4 +1,5 @@
 import { ERROR_STATUS, apiError, type ErrorCode } from "@satchel/shared";
+import { ResponseSerializationError, hasZodFastifySchemaValidationErrors } from "@fastify/type-provider-zod";
 import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import { z } from "zod";
@@ -36,10 +37,15 @@ function statusOf(error: unknown): number | undefined {
  * set on the root and every route inherits them.
  *
  * - `ApiError` → its code.
- * - A zod error (a route parsing with a shared schema) → 400 `invalid_request`
- *   with the first issue's message. `z.core.$ZodError`'s `instanceof` checks
- *   traits, so it also matches errors from `@satchel/shared`'s own zod copy.
+ * - A request that fails its route schema → 400 `invalid_request` with the
+ *   first issue's message, never the value. The handler never runs.
+ * - A zod error thrown in a handler (a `parse` that is not a route's input) →
+ *   the same. `z.core.$ZodError`'s `instanceof` checks traits, so it also
+ *   matches errors from `@satchel/shared`'s own zod copy.
  * - `ClientIdConflict` → 409 `client_id_conflict`.
+ * - A reply that doesn't match its response schema → 500 `internal`: a bug in
+ *   the server, never the client's fault. Logged with the route and the
+ *   failing fields' paths, never their values, which can be message text.
  * - A 4xx Fastify raised (bad JSON, a body over the limit, an unsupported
  *   content type) → the matching code, keeping Fastify's status (413, 415).
  * - Anything else, `NotAMember` included → 500 `internal`. Logged; the
@@ -49,11 +55,24 @@ const errorHandling: FastifyPluginAsync = async (app) => {
   app.setErrorHandler((error: unknown, request, reply) => {
     if (error instanceof ApiError) return sendError(reply, error.code, error.message);
 
+    if (hasZodFastifySchemaValidationErrors(error)) {
+      return sendError(reply, "invalid_request", error.validation[0]?.message ?? "The request is not valid.");
+    }
+
     if (error instanceof z.core.$ZodError) {
       return sendError(reply, "invalid_request", error.issues[0]?.message ?? "The request is not valid.");
     }
 
     if (error instanceof ClientIdConflict) return sendError(reply, "client_id_conflict", error.message);
+
+    if (error instanceof ResponseSerializationError) {
+      const fields = error.cause.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code }));
+      request.log.error(
+        { err: { name: error.name, code: error.code }, fields },
+        `${error.method} ${error.url}: the reply doesn't match its response schema`,
+      );
+      return sendError(reply, "internal", INTERNAL_MESSAGE);
+    }
 
     const status = statusOf(error);
     if (status !== undefined && status >= 400 && status < 500) {

@@ -1,6 +1,7 @@
 import { errorResponseSchema, routes, sendMessageRequestSchema } from "@satchel/shared";
 import type { InjectOptions } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { createAccounts, createSqliteStore } from "../vendor/ward/ward-auth.js";
 import { BODY_LIMIT_BYTES, buildApp } from "./app.js";
 import { openDb } from "./db/open.js";
@@ -10,6 +11,7 @@ import { startTestApp, type TestApp } from "./testing/testApp.js";
 
 let t: TestApp;
 let cookie: string;
+let reachedHandler = false;
 
 /** Every route is behind the session guard, the test routes below included, so a request carries a session unless it says otherwise. */
 function inject(options: InjectOptions) {
@@ -34,6 +36,22 @@ async function start(options: { captureLogs?: boolean } = {}) {
   t.app.get("/test/api-error", () => {
     throw new ApiError("not_found", "No such conversation.");
   });
+  // Through the zod type provider, as the routes declare their schemas.
+  t.app.post(
+    "/test/schema",
+    {
+      schema: {
+        body: z.object({ upTo: z.number().int().nonnegative() }),
+        response: { 200: z.object({ seenUpTo: z.number() }) },
+      },
+    },
+    (request) => {
+      reachedHandler = true;
+      const { upTo } = request.body as { upTo: number };
+      // 7 is the bug: a reply its own schema refuses, carrying text the log must not hold.
+      return upTo === 7 ? { seenUpTo: "PRIVATE-MESSAGE-TEXT" } : { seenUpTo: upTo };
+    },
+  );
   t.app.get("/test/log-headers", (request) => {
     request.log.info({ headers: request.headers, request: { headers: request.headers } }, "headers");
     return { ok: true };
@@ -113,6 +131,27 @@ describe("error mapping", () => {
     const expected = sendMessageRequestSchema.safeParse({ clientId: "not-a-uuid", text: "hi" }).error?.issues[0]
       ?.message;
     expect(message).toBe(expected);
+  });
+
+  it("a request that fails its route schema is 400 invalid_request with the first issue's message, before the handler", async () => {
+    reachedHandler = false;
+    const res = await inject({ method: "POST", url: "/test/schema", payload: { upTo: -1 } });
+    const message = expectError(res, 400, "invalid_request");
+    expect(message).toBe("Too small: expected number to be >=0");
+    expect(reachedHandler).toBe(false);
+    expect((await inject({ method: "POST", url: "/test/schema", payload: { upTo: 3 } })).json()).toEqual({
+      seenUpTo: 3,
+    });
+  });
+
+  it("a reply that fails its response schema is 500 internal, logged with the field and never its value", async () => {
+    const res = await inject({ method: "POST", url: "/test/schema", payload: { upTo: 7 } });
+    expect(expectError(res, 500, "internal")).toBe("Something went wrong on the server.");
+    expect(res.body).not.toContain("PRIVATE-MESSAGE-TEXT");
+    const logs = t.logs.join("\n");
+    expect(logs).toContain("POST /test/schema: the reply doesn't match its response schema");
+    expect(logs).toContain('"path":"seenUpTo"');
+    expect(logs).not.toContain("PRIVATE-MESSAGE-TEXT");
   });
 
   it("ClientIdConflict is 409 client_id_conflict", async () => {

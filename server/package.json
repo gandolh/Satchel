@@ -12,12 +12,15 @@
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
+    "@fastify/swagger": "9.9.3",
+    "@fastify/type-provider-zod": "1.0.3",
     "@fastify/websocket": "11.3.1",
     "@satchel/shared": "0.1.0",
     "better-sqlite3": "13.0.3",
     "close-with-grace": "2.5.0",
     "fastify": "5.12.7",
     "fastify-plugin": "6.0.1",
+    "openapi-types": "12.1.3",
     "web-push": "3.6.7",
     "zod": "4.5.4"
   },

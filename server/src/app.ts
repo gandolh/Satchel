@@ -1,3 +1,4 @@
+import { serializerCompiler, validatorCompiler } from "@fastify/type-provider-zod";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import type { Accounts, WardClient } from "../vendor/ward/ward-auth.js";
@@ -162,6 +163,10 @@ export async function buildApp({
   server,
 }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({ ...server, logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
+  // Zod validates every request and encodes every reply, for the routes that declare a schema, in every
+  // plugin registered below.
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
 
   // In a fixed order: the error and 404 handlers, the JSON body parser, then sign-in and the guard, all
   // root-wide, before any route.
