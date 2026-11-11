@@ -6,7 +6,7 @@ import {
   revokeClaudeTokenResponseSchema,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../testing/testApp.js";
+import { startTestApp, type TestApp } from "../../testing/testApp.js";
 
 const A = { subject: "subject-a", username: "ana" };
 const B = { subject: "subject-b", username: "bogdan" };

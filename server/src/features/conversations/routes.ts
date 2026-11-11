@@ -1,9 +1,10 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
-import type { RouteDeps } from "../app.js";
-import { ApiError } from "../lib/api-error.js";
-import { InactiveAccount, UnknownAccount } from "../store.js";
-import { signedIn } from "../plugins/auth/guard.js";
+import { ApiError } from "../../lib/api-error.js";
+import { InactiveAccount, UnknownAccount, type Store } from "../../db/store.js";
+import { signedIn } from "../../plugins/auth/guard.js";
+import type { LivePublisher } from "../live/index.js";
+import type { PushNotifier } from "../push/index.js";
 
 /**
  * The conversation routes. Behind the session guard. A
@@ -21,7 +22,14 @@ import { signedIn } from "../plugins/auth/guard.js";
  * A stored message also goes out as Web Push to the other members'
  * devices, after the reply; a push failure never touches the response.
  */
-export const conversationRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {
+/** What the conversation routes take from the app's `RouteDeps`. */
+export interface ConversationRoutesOptions {
+  store: Store;
+  live: LivePublisher;
+  push: PushNotifier;
+}
+
+export const conversationRoutes: FastifyPluginAsync<ConversationRoutesOptions> = async (app, { store, live, push }) => {
   const notFound = () => new ApiError("not_found", "No such conversation");
 
   /**

@@ -1,9 +1,9 @@
 import { LIVE_PATH } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
-import { sendError } from "../plugins/errors.js";
-import type { Hub } from "../live/hub.js";
-import { LIVE_RECHECK_MS, serveLiveSocket, type LiveConnection } from "../live/socket.js";
-import { signedIn } from "../plugins/auth/guard.js";
+import { sendError } from "../../plugins/errors.js";
+import type { Hub } from "./hub.js";
+import { LIVE_RECHECK_MS, serveLiveSocket, type LiveConnection } from "./socket.js";
+import { signedIn } from "../../plugins/auth/guard.js";
 
 export interface LiveRouteDeps {
   hub: Hub;
@@ -19,7 +19,7 @@ export interface LiveRouteDeps {
  * `GET /api/live`: one WebSocket per open tab, for live updates.
  *
  * Before this route runs, the upgrade has passed the root `Origin` check
- * (`live/origin.ts`) and the session guard, exactly like every other `/api/*`
+ * (`plugins/auth/origin.ts`) and the session guard, exactly like every other `/api/*`
  * route: the upgrade request carries the session cookie, which is why the
  * cookie's path (`/satchel-api`) covers it. A Claude token is no session, so it
  * can't open a socket.

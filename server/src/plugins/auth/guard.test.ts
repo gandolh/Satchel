@@ -7,9 +7,9 @@ import { TEST_API_PREFIX, TEST_PASSWORD, TEST_WEB_BASE, startTestApp, type TestA
 import { OWNER_ROLE, signedIn, type SignedInAccount } from "./guard.js";
 
 /**
- * Local sign-in, the guard (the vendored plugin plus `auth/guard.ts`) over
+ * Local sign-in, the guard (the vendored plugin plus `guard.ts`) over
  * HTTP, the Ward check, and the Ward routes being wired. The guard over a
- * WebSocket is in `live/live.test.ts`.
+ * WebSocket is in `features/live/live.test.ts`.
  */
 
 const A = { subject: "subject-a", username: "ana" };

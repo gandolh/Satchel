@@ -2,7 +2,7 @@ import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import fp from "fastify-plugin";
 import { wardAuth, type Accounts, type WardClient } from "../../../vendor/ward/ward-auth.js";
-import type { Store } from "../../store.js";
+import type { Store } from "../../db/store.js";
 import { registerAccountGuard } from "./guard.js";
 import { registerUpgradeChecks } from "./origin.js";
 

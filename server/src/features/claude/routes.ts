@@ -1,8 +1,9 @@
 import { CLAUDE_MEMBER, routes } from "@satchel/shared";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
-import type { RouteDeps } from "../app.js";
-import { sendError } from "../plugins/errors.js";
-import type { ResolvedClaudeToken } from "../store.js";
+import { sendError } from "../../plugins/errors.js";
+import type { ResolvedClaudeToken, Store } from "../../db/store.js";
+import type { LivePublisher } from "../live/index.js";
+import type { PushNotifier } from "../push/index.js";
 
 /**
  * The Claude routes under `/claude/*`.
@@ -42,7 +43,14 @@ function claudeToken(request: FastifyRequest): ResolvedClaudeToken {
   return request.claudeToken;
 }
 
-export const claudeRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, live, push }) => {
+/** What the Claude routes take from the app's `RouteDeps`: no accounts and no Ward client, on purpose. */
+export interface ClaudeRoutesOptions {
+  store: Store;
+  live: LivePublisher;
+  push: PushNotifier;
+}
+
+export const claudeRoutes: FastifyPluginAsync<ClaudeRoutesOptions> = async (app, { store, live, push }) => {
   app.decorateRequest("claudeToken", null);
 
   // Scoped to this plugin's routes. `onRequest` runs before the body is

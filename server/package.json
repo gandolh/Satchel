@@ -40,8 +40,8 @@
       "default": "./dist/app.js"
     },
     "./store": {
-      "types": "./dist/store.d.ts",
-      "default": "./dist/store.js"
+      "types": "./dist/db/store.d.ts",
+      "default": "./dist/db/store.js"
     }
   }
 }

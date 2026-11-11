@@ -13,8 +13,8 @@ import {
 } from "@satchel/shared";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { migrate, migrations } from "./db/migrations.js";
-import { databasePath, openDb, type Db } from "./db/open.js";
+import { migrate, migrations } from "./migrations.js";
+import { databasePath, openDb, type Db } from "./open.js";
 import {
   ClientIdConflict,
   InactiveAccount,

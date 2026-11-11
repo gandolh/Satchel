@@ -3,7 +3,7 @@ import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import { z } from "zod";
 import { ApiError } from "../lib/api-error.js";
-import { ClientIdConflict } from "../store.js";
+import { ClientIdConflict } from "../db/store.js";
 
 /**
  * Every error a route sends is the shared shape `{ error: { code, message } }`.

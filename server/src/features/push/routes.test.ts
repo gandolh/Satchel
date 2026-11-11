@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { errorResponseSchema, routes } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { PushTarget, SendPush } from "../push/sender.js";
-import { startTestApp, type TestApp } from "../testing/testApp.js";
+import type { PushTarget, SendPush } from "./sender.js";
+import { startTestApp, type TestApp } from "../../testing/testApp.js";
 
 /**
  * The push routes and the pushes a stored message sends, with

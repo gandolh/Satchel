@@ -13,7 +13,7 @@ import {
   type LiveEvent,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startTestApp, type TestApp } from "../testing/testApp.js";
+import { startTestApp, type TestApp } from "../../testing/testApp.js";
 import { LIVE_CLOSE_GOING_AWAY, LIVE_CLOSE_TIMEOUT_MS } from "./socket.js";
 
 /**

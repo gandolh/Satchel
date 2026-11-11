@@ -2,7 +2,7 @@ import { CLAUDE_MEMBER, meResponseSchema, routes } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createSqliteStore, createAccounts, createWardIdentities } from "../../../vendor/ward/ward-auth.js";
 import { openDb, type Db } from "../../db/open.js";
-import { createStore } from "../../store.js";
+import { createStore } from "../../db/store.js";
 import { startTestApp, type TestApp } from "../../testing/testApp.js";
 import { linkExistingAccounts } from "./migrate.js";
 

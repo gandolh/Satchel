@@ -1,5 +1,5 @@
 import type { Message } from "@satchel/shared";
-import type { StoredPushSubscription, Store } from "../store.js";
+import type { StoredPushSubscription, Store } from "../../db/store.js";
 import { pushPayloadFor, pushRecipients } from "./payload.js";
 import type { SendPush } from "./sender.js";
 

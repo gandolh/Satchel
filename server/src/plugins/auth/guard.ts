@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { ApiError } from "../../lib/api-error.js";
 import { sendError } from "../errors.js";
-import type { Store } from "../../store.js";
+import type { Store } from "../../db/store.js";
 
 /**
  * Satchel's half of the guard. The vendored `wardAuth` plugin (`app.ts`) is

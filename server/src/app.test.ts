@@ -5,7 +5,7 @@ import { createAccounts, createSqliteStore } from "../vendor/ward/ward-auth.js";
 import { BODY_LIMIT_BYTES, buildApp } from "./app.js";
 import { openDb } from "./db/open.js";
 import { ApiError } from "./lib/api-error.js";
-import { ClientIdConflict, NotAMember, createStore } from "./store.js";
+import { ClientIdConflict, NotAMember, createStore } from "./db/store.js";
 import { startTestApp, type TestApp } from "./testing/testApp.js";
 
 let t: TestApp;

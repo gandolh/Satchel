@@ -1,8 +1,9 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
-import type { RouteDeps } from "../app.js";
-import { ApiError } from "../lib/api-error.js";
-import { signedIn } from "../plugins/auth/guard.js";
+import { ApiError } from "../../lib/api-error.js";
+import type { Store } from "../../db/store.js";
+import { signedIn } from "../../plugins/auth/guard.js";
+import type { PushNotifier } from "./notifier.js";
 
 /**
  * The push routes under `/api/push`. Behind the session guard, for
@@ -13,7 +14,13 @@ import { signedIn } from "../plugins/auth/guard.js";
  * subscribe to, so `GET /api/push/key` and `POST /api/push/subscriptions` are
  * 404. Deleting still works, so a browser can always clean up after itself.
  */
-export const pushRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store, push }) => {
+/** What the push routes take from the app's `RouteDeps`. */
+export interface PushRoutesOptions {
+  store: Store;
+  push: PushNotifier;
+}
+
+export const pushRoutes: FastifyPluginAsync<PushRoutesOptions> = async (app, { store, push }) => {
   const pushOff = () => new ApiError("not_found", "Push notifications are off on this server.");
 
   app.get(routes.pushKey.path, (request) => {

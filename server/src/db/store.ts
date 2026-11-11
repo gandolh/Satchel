@@ -13,8 +13,8 @@ import {
   type Person,
   type RevokeClaudeTokenResponse,
 } from "@satchel/shared";
-import type { Clock } from "./lib/clock.js";
-import type { Db } from "./db/open.js";
+import type { Clock } from "../lib/clock.js";
+import type { Db } from "./open.js";
 
 /** The client ID is already stored for a different conversation, sender or text. Routes answer 409. */
 export class ClientIdConflict extends Error {

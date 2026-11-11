@@ -1,5 +1,5 @@
 import webpush, { type RequestOptions, type SendResult } from "web-push";
-import type { VapidKeys } from "../config.js";
+import type { VapidKeys } from "../../config.js";
 
 /** How long a push service keeps an undelivered push: 24 hours. */
 export const PUSH_TTL_SECONDS = 24 * 60 * 60;

@@ -1,5 +1,5 @@
 import { CLAUDE_MEMBER, type ConversationSummary, type Message } from "@satchel/shared";
-import type { Store } from "../store.js";
+import type { Store } from "../../db/store.js";
 import type { Hub, HubLog } from "./hub.js";
 
 /**

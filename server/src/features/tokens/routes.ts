@@ -1,8 +1,8 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
-import type { RouteDeps } from "../app.js";
-import { ApiError } from "../lib/api-error.js";
-import { requireOwner } from "../plugins/auth/guard.js";
+import { ApiError } from "../../lib/api-error.js";
+import type { Store } from "../../db/store.js";
+import { requireOwner } from "../../plugins/auth/guard.js";
 
 /** The 403 a friend gets from every route here. */
 export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";
@@ -21,7 +21,12 @@ export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";
  * Only `POST /api/claude-tokens` ever carries a token, once. The list is the
  * strict summary shape, so a token or hash in it fails validation.
  */
-export const tokenRoutes: FastifyPluginAsync<RouteDeps> = async (app, { store }) => {
+/** What the token routes take from the app's `RouteDeps`. */
+export interface TokenRoutesOptions {
+  store: Store;
+}
+
+export const tokenRoutes: FastifyPluginAsync<TokenRoutesOptions> = async (app, { store }) => {
   app.get(routes.listClaudeTokens.path, (request) => {
     const { subject } = requireOwner(request, OWNER_ONLY_MESSAGE);
     return routes.listClaudeTokens.response.parse({ tokens: store.listClaudeTokens(subject) });

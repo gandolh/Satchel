@@ -1,25 +1,35 @@
 import fastifyWebsocket from "@fastify/websocket";
-import { routes } from "@satchel/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import type { Accounts, WardClient } from "../vendor/ward/ward-auth.js";
 import type { VapidKeys } from "./config.js";
 import type { Db } from "./db/open.js";
+import type { Store } from "./db/store.js";
+import { claudeRoutes } from "./features/claude/index.js";
+import { conversationRoutes } from "./features/conversations/index.js";
+import { healthRoutes } from "./features/health/index.js";
+import {
+  LIVE_CLOSE_TIMEOUT_MS,
+  LIVE_MAX_PAYLOAD_BYTES,
+  closeLiveSockets,
+  createHub,
+  createLivePublisher,
+  liveRoutes,
+  type LivePublisher,
+} from "./features/live/index.js";
+import { meRoutes } from "./features/me/index.js";
+import {
+  createPushNotifier,
+  pushOff,
+  pushRoutes,
+  webPushSender,
+  type PushNotifier,
+  type SendPush,
+} from "./features/push/index.js";
+import { tokenRoutes } from "./features/tokens/index.js";
 import type { Clock } from "./lib/clock.js";
-import { createHub } from "./live/hub.js";
-import { createLivePublisher, type LivePublisher } from "./live/publish.js";
-import { LIVE_CLOSE_TIMEOUT_MS, LIVE_MAX_PAYLOAD_BYTES, closeLiveSockets } from "./live/socket.js";
-import { createPushNotifier, pushOff, type PushNotifier } from "./push/notifier.js";
-import { webPushSender, type SendPush } from "./push/sender.js";
-import { claudeRoutes } from "./routes/claude.js";
-import { conversationRoutes } from "./routes/conversations.js";
-import { liveRoutes } from "./routes/live.js";
-import { meRoutes } from "./routes/me.js";
-import { pushRoutes } from "./routes/push.js";
-import { tokenRoutes } from "./routes/tokens.js";
 import { authPlugin } from "./plugins/auth/index.js";
 import { errors } from "./plugins/errors.js";
 import { jsonBody } from "./plugins/json-body.js";
-import type { Store } from "./store.js";
 
 /** Where the plugin's routes sit as Fastify sees them. The proxy strips the API prefix, so the browser reaches them at `<apiPrefix>/auth/...`. */
 export const AUTH_ROUTE_PREFIX = "/auth";
@@ -98,9 +108,9 @@ export interface AppDeps {
 export interface RouteDeps {
   store: Store;
   clock: Clock;
-  /** Sends live events to open sockets after a store call succeeded (`live/publish.ts`). Never throws. */
+  /** Sends live events to open sockets after a store call succeeded (`features/live/publish.ts`). Never throws. */
   live: LivePublisher;
-  /** Sends Web Push for a stored message, after the reply (`push/notifier.ts`). Never throws. */
+  /** Sends Web Push for a stored message, after the reply (`features/push/notifier.ts`). Never throws. */
   push: PushNotifier;
 }
 
@@ -127,7 +137,7 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
  *    `/claude/*`), and Satchel's account guard, which sets `request.account`
  *    on `/api/*`. `/claude/*` takes a Claude token instead;
  * 4. `@fastify/websocket`, which serves `GET /api/live` behind the same guard;
- *    the socket re-checks its session while open (`live/socket.ts`). The hub
+ *    the socket re-checks its session while open (`features/live/socket.ts`). The hub
  *    knows who has a socket open; route plugins publish through `RouteDeps.live`;
  * 5. the route plugins, each given `RouteDeps`.
  *
@@ -169,8 +179,6 @@ export async function buildApp({
     routePrefix: AUTH_ROUTE_PREFIX,
   });
 
-  app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
-
   // Before the route plugins: it wraps the handlers of routes registered after it. Closing the app closes
   // every open socket first, with a code the web client reconnects on, and cuts a client that doesn't answer.
   await app.register(fastifyWebsocket, {
@@ -196,7 +204,8 @@ export async function buildApp({
     db?.close();
   });
   const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }), push };
-  await app.register(meRoutes, deps);
+  await app.register(healthRoutes);
+  await app.register(meRoutes);
   await app.register(conversationRoutes, deps);
   await app.register(tokenRoutes, deps);
   await app.register(pushRoutes, deps);

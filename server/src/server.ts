@@ -13,7 +13,7 @@ import {
   type Config,
 } from "./config.js";
 import { databasePath, openDb } from "./db/open.js";
-import { createStore } from "./store.js";
+import { createStore } from "./db/store.js";
 
 /**
  * Starts Satchel: the API under `/api`, Claude's routes under `/claude`, sign-in

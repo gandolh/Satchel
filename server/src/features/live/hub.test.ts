@@ -9,8 +9,8 @@ import {
   type Message,
 } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { openDb, type Db } from "../db/open.js";
-import { createStore, type Store } from "../store.js";
+import { openDb, type Db } from "../../db/open.js";
+import { createStore, type Store } from "../../db/store.js";
 import { LIVE_SOCKETS_PER_SUBJECT, SOCKET_OPEN, createHub, type Hub } from "./hub.js";
 import { createLivePublisher } from "./publish.js";
 import { LIVE_PING_MS, LIVE_RECHECK_MS, serveLiveSocket, type LiveConnection } from "./socket.js";
