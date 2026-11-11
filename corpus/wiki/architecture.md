@@ -1,6 +1,6 @@
 ---
-summary: How Satchel is put together, as built on 2026-10-09 and re-based on local accounts on 2026-10-13 (Ward's move to local accounts). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
-updated: 2026-11-02
+summary: How Satchel is put together, as built on 2026-10-09 and re-based on local accounts on 2026-10-13 (Ward's move to local accounts). Workspaces, request paths, the session guard (the vendored ward-auth plugin plus Satchel's own half), "Sign in with Ward", the live socket's session re-check, the Claude bearer door, the server's layout (the estate's code structure since 2026-11-11), ports, data, local dev, the cross-repo changes and the deploy. Four npm workspaces; the PWA at the root of its own host, satchel.<domain>, and the API in a Docker container behind Caddy's handle_path at /satchel-api on that host (since 2026-10-22; /satchel in local dev); local accounts and sessions with Ward as a linked second way in; the Claude routes behind a bearer token.
+updated: 2026-11-11
 ---
 
 # Architecture
@@ -23,6 +23,24 @@ npm workspaces, as in the-board:
   the browser only through the "Sign in with Ward" redirect.
 - `cli`: the `satchel` command. Talks only to `/satchel-api/claude/*`.
 
+## Server layout
+
+The estate's code structure since 2026-11-11
+([decisions-tooling.md](decisions-tooling.md)).
+[server/src/server.ts](../../server/src/server.ts) is the process (settings,
+database, account migration, Ward client, `buildApp`, `close-with-grace`,
+`listen`); [config.ts](../../server/src/config.ts) alone reads the
+environment. [app.ts](../../server/src/app.ts)'s `buildApp` registers, by
+name: [plugins/errors.ts](../../server/src/plugins/errors.ts),
+[plugins/json-body.ts](../../server/src/plugins/json-body.ts),
+[plugins/auth/](../../server/src/plugins/auth/) (the upgrade `Origin` check,
+`wardAuth`, the account guard), `@fastify/websocket`, then
+[features/](../../server/src/features/) (health, me, conversations, tokens,
+push, claude, live), each used through its `index.ts`. `lib/` holds `ApiError` and the clock, `db/` the whole
+store. Every route but the live socket declares the contract's zod schemas
+through `@fastify/type-provider-zod`. At shutdown the live sockets close with
+1001 in `preClose`; the database closes last, in `onClose`.
+
 ## Request paths
 
 ```
@@ -44,8 +62,9 @@ Two doors, never mixed:
 
 - **`/api/*` (except `/api/health`) and `/auth/*`**: the vendored `ward-auth`
   plugin ([server/vendor/ward/](../../server/vendor/ward/), version 0.2.0,
-  never edited), registered first in
-  [server/src/app.ts](../../server/src/app.ts) as the root guard. It owns
+  never edited), registered by
+  [server/src/plugins/auth/index.ts](../../server/src/plugins/auth/index.ts)
+  as the root guard. It owns
   local sign-in (`POST /auth/login`, `/auth/logout`, `GET /auth/session`,
   password change), the Ward routes (`POST /auth/ward/start`, `GET
   /auth/ward/callback`, link, unlink, set a password, "sign out of Ward too")
@@ -54,12 +73,12 @@ Two doors, never mixed:
   without a live session is `401 { error: "unauthorized" }`, the plugin's
   shape, not the `{ error: { code, message } }` of the rest. The routes are
   public by an allowlist: `GET /api/health`, and `/claude/*` (judged by route
-  pattern). [server/src/auth/guard.ts](../../server/src/auth/guard.ts) is
+  pattern). [server/src/plugins/auth/guard.ts](../../server/src/plugins/auth/guard.ts) is
   Satchel's half, a hook that runs after the plugin on `/api/*`: it refuses a
   cross-origin write, upserts the `accounts` row (display name = username),
   reads the role from the user row, makes the owner's inbox and revokes the
   Claude tokens of a non-admin, and sets `request.account`. Errors leave
-  through [server/src/errors.ts](../../server/src/errors.ts).
+  through [server/src/plugins/errors.ts](../../server/src/plugins/errors.ts).
 - **`/claude/*`**: the Claude token as a bearer header, resolved by hash. No
   cookie is read and no Ward call is made.
 
@@ -99,7 +118,7 @@ login page.
 
 `accounts.subject` is the local user's id (`auth_users.id`); for an account
 that predates local sign-in it is the old Ward subject, kept so no row moves
-(boot-time [server/src/auth/migrate.ts](../../server/src/auth/migrate.ts)).
+(boot-time [server/src/plugins/auth/migrate.ts](../../server/src/plugins/auth/migrate.ts)).
 `display_name` is the username, refreshed on every authenticated request. The
 guard also makes sure the owner has an Ideas inbox.
 
@@ -109,13 +128,14 @@ One SQLite file, `$DATA_DIR/satchel.db`. In the container `DATA_DIR=/data`,
 bind-mounted from `/srv/satchel-api/data` on the VPS. Schema and the
 append-only triggers: [messages-and-seen.md](messages-and-seen.md) and brief
 03. Updates reach the web app over a WebSocket at `/api/live`
-([server/src/live/](../../server/src/live/)). Polling remains the fallback
+([server/src/features/live/](../../server/src/features/live/)). Polling remains the fallback
 while the socket is down. The upgrade must carry Satchel's own `Origin` and passes
 the session guard, and the open socket asks the guard again every 10 seconds
 and closes with code 4001 when the session is over (why: [decisions.md](decisions.md)). Events
 go only to a conversation's members, never to `claude`. An account may hold
 ten sockets; an eleventh closes the oldest with 4002, and that tab then waits
-to be shown again instead of reconnecting.
+to be shown again instead of reconnecting. A server shutting down closes
+every socket with 1001, and the tab reconnects with backoff.
 
 ## Push
 
@@ -126,7 +146,7 @@ device's subscription is stored in `push_subs`. Every newly stored message
 is pushed to the other members' devices after the reply, never to Claude.
 In the inbox that means only Claude's replies push, to the owner (since 2026-10-28). The service worker
 ([web/src/sw.ts](../../web/src/sw.ts)) shows one notification per chat and
-skips it while that chat is focused. Code: [server/src/push/](../../server/src/push/).
+skips it while that chat is focused. Code: [server/src/features/push/](../../server/src/features/push/).
 A subscription's endpoint must be a public https push service (`isPushEndpoint`
 in `shared/src/api.ts`): IP literals, `localhost` and single-label names are
 refused, so a member can't aim the server's pushes into its own network. An

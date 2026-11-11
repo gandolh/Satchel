@@ -116,7 +116,7 @@ are untouched. Rejected: keeping Ward as the only credential store, because
 Satchel stops working whenever Ward does.
 
 **Existing rows keep their keys.** Every `accounts.subject` becomes a local user
-whose id is that subject, linked to it (`server/src/auth/migrate.ts`, run on
+whose id is that subject, linked to it (`server/src/plugins/auth/migrate.ts`, run on
 every boot and idempotent), so no foreign key moves. The old schema never
 stored a role, so the owner is whoever has an Ideas inbox (the old guard made
 one for `admin` only) and everyone else is `member`; the username is the
