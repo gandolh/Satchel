@@ -10,7 +10,7 @@ import {
   type WardIdentities,
 } from "../../vendor/ward/ward-auth.js";
 import { SESSION_COOKIE, buildApp, type LogOptions, type PushOptions } from "../app.js";
-import type { Clock } from "../clock.js";
+import type { Clock } from "../lib/clock.js";
 import { openDb, type Db } from "../db/open.js";
 import { createStore, type Store } from "../store.js";
 import { FAKE_ISSUER, createFakeWard, newClientKey, type FakeWard } from "./fakeWard.js";

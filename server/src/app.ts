@@ -1,14 +1,11 @@
 import fastifyWebsocket from "@fastify/websocket";
 import { routes } from "@satchel/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
-import { wardAuth, type Accounts, type WardClient } from "../vendor/ward/ward-auth.js";
-import { registerAccountGuard } from "./auth/guard.js";
-import type { Clock } from "./clock.js";
+import type { Accounts, WardClient } from "../vendor/ward/ward-auth.js";
 import type { VapidKeys } from "./config.js";
 import type { Db } from "./db/open.js";
-import { registerErrorHandling } from "./errors.js";
+import type { Clock } from "./lib/clock.js";
 import { createHub } from "./live/hub.js";
-import { registerUpgradeChecks } from "./live/origin.js";
 import { createLivePublisher, type LivePublisher } from "./live/publish.js";
 import { LIVE_CLOSE_TIMEOUT_MS, LIVE_MAX_PAYLOAD_BYTES, closeLiveSockets } from "./live/socket.js";
 import { createPushNotifier, pushOff, type PushNotifier } from "./push/notifier.js";
@@ -19,6 +16,9 @@ import { liveRoutes } from "./routes/live.js";
 import { meRoutes } from "./routes/me.js";
 import { pushRoutes } from "./routes/push.js";
 import { tokenRoutes } from "./routes/tokens.js";
+import { authPlugin } from "./plugins/auth/index.js";
+import { errors } from "./plugins/errors.js";
+import { jsonBody } from "./plugins/json-body.js";
 import type { Store } from "./store.js";
 
 /** Where the plugin's routes sit as Fastify sees them. The proxy strips the API prefix, so the browser reaches them at `<apiPrefix>/auth/...`. */
@@ -117,25 +117,24 @@ function loggerOptions(logger: AppDeps["logger"]): FastifyServerOptions["logger"
 
 /**
  * The Fastify app, not listening. Tests `inject` into it; `server.ts` listens.
+ * It registers in a fixed order:
  *
- * - The vendored `wardAuth` plugin is the guard: one root `onRequest` hook that
- *   refuses every route without a live session except `GET /api/health` and
- *   `/claude/*`, judged by route pattern, and serves `/auth/*` (local login,
- *   "Sign in with Ward", the 30-second Ward check). `auth/guard.ts` then
- *   turns the session's user into `request.account` on `/api/*`.
- *   `/claude/*` takes a Claude token instead and never has a session.
- * - Route plugins (`routes/*.ts`) take `RouteDeps`, so later briefs fill them
- *   in without editing this file.
- * - Live updates: `@fastify/websocket` serves `GET /api/live`
- *   behind the same guard, and re-checks it while open (`live/socket.ts`).
- *   A WebSocket upgrade must carry the app's own
- *   `Origin`; that check is a root hook ahead of the guard
- *   (`live/origin.ts`). The hub knows who has a socket open; route plugins
- *   publish through `RouteDeps.live`.
- * - Web Push: `RouteDeps.push` notifies the other members' devices
- *   of a stored message, after the reply; off unless `push` is passed. Closing
- *   the app waits for pushes already started.
- * - Errors leave as the shared `{ error: { code, message } }` (`errors.ts`).
+ * 1. `plugins/errors.ts`: errors leave as the shared `{ error: { code, message } }`,
+ *    and an unknown route is a 404 in the same shape;
+ * 2. `plugins/json-body.ts`: an empty JSON body is no body;
+ * 3. `plugins/auth/`: the `Origin` check on a WebSocket upgrade, the vendored
+ *    `wardAuth` session guard (every route but `GET /api/health` and
+ *    `/claude/*`), and Satchel's account guard, which sets `request.account`
+ *    on `/api/*`. `/claude/*` takes a Claude token instead;
+ * 4. `@fastify/websocket`, which serves `GET /api/live` behind the same guard;
+ *    the socket re-checks its session while open (`live/socket.ts`). The hub
+ *    knows who has a socket open; route plugins publish through `RouteDeps.live`;
+ * 5. the route plugins, each given `RouteDeps`.
+ *
+ * Web Push: `RouteDeps.push` notifies the other members' devices of a stored
+ * message, after the reply; off unless `push` is passed. Closing the app closes
+ * the live sockets first, then waits for the requests in flight and the pushes
+ * already started, then closes `db` when it was given.
  */
 export async function buildApp({
   store,
@@ -154,53 +153,27 @@ export async function buildApp({
 }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({ ...server, logger: loggerOptions(logger), bodyLimit: BODY_LIMIT_BYTES });
 
-  // A POST with `Content-Type: application/json` and no body is a body of
-  // `undefined`, not a 400: the token routes take no body and a client may
-  // still send the header. Everything else goes to Fastify's own parser, which
-  // keeps its prototype-poisoning checks and its 400 for bad JSON.
-  const parseJson = app.getDefaultJsonParser("error", "error");
-  app.removeContentTypeParser("application/json");
-  app.addContentTypeParser("application/json", { parseAs: "string" }, (request, body, done) => {
-    if (body === "") {
-      done(null, undefined);
-      return;
-    }
-    // Fastify types the default parser as a callback or a promise; this call uses the callback, which
-    // reports the result through `done`, so there is no promise to await.
-    void parseJson(request, body as string, done);
-  });
-
-  registerErrorHandling(app);
-  registerUpgradeChecks(app, publicOrigin);
-  // First of the app's own routes and plugins: the guard is a root hook, and
-  // Fastify copies hooks into a plugin's context when it is created.
-  await app.register(wardAuth, {
+  // In a fixed order: the error and 404 handlers, the JSON body parser, then sign-in and the guard, all
+  // root-wide, before any route.
+  await app.register(errors);
+  await app.register(jsonBody);
+  await app.register(authPlugin, {
+    store,
     accounts,
-    cookieName: SESSION_COOKIE,
-    cookiePath: apiPrefix,
+    ...(ward ? { ward } : {}),
     publicOrigin,
-    routePrefix: AUTH_ROUTE_PREFIX,
-    // Given, even when empty, so the plugin doesn't read AUTH_TRUSTED_PROXIES itself: config.ts did.
+    apiPrefix,
+    webBase,
     trustedProxies,
-    // `/claude/*` takes a Claude token and has no session. `isPublic` sees the matched route pattern.
-    publicRoutes: [`GET ${routes.health.path}`],
-    isPublic: (request) => (request.routeOptions.url ?? "").startsWith("/claude/"),
-    ...(ward && {
-      ward: {
-        client: ward,
-        loginPath: webBase,
-        settingsPath: `${webBase}settings`,
-        afterSignInPath: webBase,
-      },
-    }),
+    cookieName: SESSION_COOKIE,
+    routePrefix: AUTH_ROUTE_PREFIX,
   });
-  registerAccountGuard(app, { store, publicOrigin });
 
   app.get(routes.health.path, () => routes.health.response.parse({ ok: true }));
 
   // Before the route plugins: it wraps the handlers of routes registered after it. Closing the app closes
   // every open socket first, with a code the web client reconnects on, and cuts a client that doesn't answer.
-  void app.register(fastifyWebsocket, {
+  await app.register(fastifyWebsocket, {
     options: { maxPayload: LIVE_MAX_PAYLOAD_BYTES, closeTimeout: LIVE_CLOSE_TIMEOUT_MS },
     preClose(done) {
       closeLiveSockets(this.websocketServer);
@@ -223,12 +196,12 @@ export async function buildApp({
     db?.close();
   });
   const deps: RouteDeps = { store, clock, live: createLivePublisher({ hub, store, log: app.log }), push };
-  void app.register(meRoutes, deps);
-  void app.register(conversationRoutes, deps);
-  void app.register(tokenRoutes, deps);
-  void app.register(pushRoutes, deps);
-  void app.register(claudeRoutes, deps);
-  void app.register(liveRoutes, {
+  await app.register(meRoutes, deps);
+  await app.register(conversationRoutes, deps);
+  await app.register(tokenRoutes, deps);
+  await app.register(pushRoutes, deps);
+  await app.register(claudeRoutes, deps);
+  await app.register(liveRoutes, {
     hub,
     sessionUrl: `${AUTH_ROUTE_PREFIX}/session`,
     ...(liveRecheckMs ? { recheckMs: liveRecheckMs } : {}),

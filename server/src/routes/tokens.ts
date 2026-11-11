@@ -1,8 +1,8 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
-import { ApiError } from "../errors.js";
-import { requireOwner } from "../auth/guard.js";
+import { ApiError } from "../lib/api-error.js";
+import { requireOwner } from "../plugins/auth/guard.js";
 
 /** The 403 a friend gets from every route here. */
 export const OWNER_ONLY_MESSAGE = "Only Satchel's owner can connect Claude.";

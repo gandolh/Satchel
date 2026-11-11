@@ -1,9 +1,9 @@
 import { createClaudeTokenResponseSchema, errorResponseSchema, meResponseSchema } from "@satchel/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createWardIdentities } from "../../vendor/ward/ward-auth.js";
-import { SESSION_COOKIE } from "../app.js";
-import { FAKE_ISSUER } from "../testing/fakeWard.js";
-import { TEST_API_PREFIX, TEST_PASSWORD, TEST_WEB_BASE, startTestApp, type TestApp } from "../testing/testApp.js";
+import { createWardIdentities } from "../../../vendor/ward/ward-auth.js";
+import { SESSION_COOKIE } from "../../app.js";
+import { FAKE_ISSUER } from "../../testing/fakeWard.js";
+import { TEST_API_PREFIX, TEST_PASSWORD, TEST_WEB_BASE, startTestApp, type TestApp } from "../../testing/testApp.js";
 import { OWNER_ROLE, signedIn, type SignedInAccount } from "./guard.js";
 
 /**

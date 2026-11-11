@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import { createAccounts, createSqliteStore, seedUsers } from "../vendor/ward/ward-auth.js";
-import { OWNER_ROLE } from "./auth/guard.js";
+import { OWNER_ROLE } from "./plugins/auth/guard.js";
 import { loadEnvFile, loadSeedConfig, resolveDataDir } from "./config.js";
 import { databasePath, openDb } from "./db/open.js";
 

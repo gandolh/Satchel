@@ -1,24 +1,15 @@
 import { ERROR_STATUS, apiError, type ErrorCode } from "@satchel/shared";
-import type { FastifyError, FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
+import fp from "fastify-plugin";
 import { z } from "zod";
-import { ClientIdConflict } from "./store.js";
+import { ApiError } from "../lib/api-error.js";
+import { ClientIdConflict } from "../store.js";
 
 /**
  * Every error a route sends is the shared shape `{ error: { code, message } }`.
  * A route either throws `ApiError` or calls `sendError`; anything else that is
- * thrown goes through `registerErrorHandling` below.
+ * thrown goes through the error handler below.
  */
-
-/** Throw from a route or hook to answer `ERROR_STATUS[code]` with this message. */
-export class ApiError extends Error {
-  readonly code: ErrorCode;
-
-  constructor(code: ErrorCode, message: string) {
-    super(message);
-    this.code = code;
-    this.name = "ApiError";
-  }
-}
 
 /** Answer with a shared error. Returns the reply, so a hook can `return sendError(...)`. */
 export function sendError(reply: FastifyReply, code: ErrorCode, message: string): FastifyReply {
@@ -41,7 +32,8 @@ function statusOf(error: unknown): number | undefined {
 }
 
 /**
- * The error handler and the 404 handler, at the root so every route inherits them.
+ * The error handler and the 404 handler. Wrapped in fastify-plugin, so they are
+ * set on the root and every route inherits them.
  *
  * - `ApiError` → its code.
  * - A zod error (a route parsing with a shared schema) → 400 `invalid_request`
@@ -53,7 +45,7 @@ function statusOf(error: unknown): number | undefined {
  * - Anything else, `NotAMember` included → 500 `internal`. Logged; the
  *   message never carries the details.
  */
-export function registerErrorHandling(app: FastifyInstance): void {
+const errorHandling: FastifyPluginAsync = async (app) => {
   app.setErrorHandler((error: unknown, request, reply) => {
     if (error instanceof ApiError) return sendError(reply, error.code, error.message);
 
@@ -74,4 +66,6 @@ export function registerErrorHandling(app: FastifyInstance): void {
   });
 
   app.setNotFoundHandler((_request, reply) => sendError(reply, "not_found", "There is no such route."));
-}
+};
+
+export const errors = fp(errorHandling, { name: "satchel-errors" });

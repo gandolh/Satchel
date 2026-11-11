@@ -1,9 +1,9 @@
 import { LIVE_PATH } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
-import { sendError } from "../errors.js";
+import { sendError } from "../plugins/errors.js";
 import type { Hub } from "../live/hub.js";
 import { LIVE_RECHECK_MS, serveLiveSocket, type LiveConnection } from "../live/socket.js";
-import { signedIn } from "../auth/guard.js";
+import { signedIn } from "../plugins/auth/guard.js";
 
 export interface LiveRouteDeps {
   hub: Hub;

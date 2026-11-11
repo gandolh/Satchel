@@ -1,7 +1,7 @@
 import { CLAUDE_MEMBER, routes } from "@satchel/shared";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import type { RouteDeps } from "../app.js";
-import { sendError } from "../errors.js";
+import { sendError } from "../plugins/errors.js";
 import type { ResolvedClaudeToken } from "../store.js";
 
 /**

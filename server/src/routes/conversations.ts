@@ -1,9 +1,9 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
-import { ApiError } from "../errors.js";
+import { ApiError } from "../lib/api-error.js";
 import { InactiveAccount, UnknownAccount } from "../store.js";
-import { signedIn } from "../auth/guard.js";
+import { signedIn } from "../plugins/auth/guard.js";
 
 /**
  * The conversation routes. Behind the session guard. A

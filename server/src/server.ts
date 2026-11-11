@@ -1,8 +1,8 @@
 import closeWithGrace from "close-with-grace";
 import { createAccounts, createSqliteStore, createWardClient, type WardClient } from "../vendor/ward/ward-auth.js";
 import { buildApp } from "./app.js";
-import { linkExistingAccounts } from "./auth/migrate.js";
-import { systemClock } from "./clock.js";
+import { linkExistingAccounts } from "./plugins/auth/migrate.js";
+import { systemClock } from "./lib/clock.js";
 import {
   ConfigError,
   loadConfig,

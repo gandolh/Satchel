@@ -7,8 +7,8 @@ import {
   WardSubjectTakenError,
   createWardIdentities,
   type Accounts,
-} from "../../vendor/ward/ward-auth.js";
-import type { Db } from "../db/open.js";
+} from "../../../vendor/ward/ward-auth.js";
+import type { Db } from "../../db/open.js";
 import { OWNER_ROLE } from "./guard.js";
 
 /**

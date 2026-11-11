@@ -1,7 +1,7 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
-import { signedIn } from "../auth/guard.js";
+import { signedIn } from "../plugins/auth/guard.js";
 
 /** `GET /api/me`: who is signed in, and their Ideas inbox (null for a friend, who has none). Behind the session guard. */
 export const meRoutes: FastifyPluginAsync<RouteDeps> = async (app) => {

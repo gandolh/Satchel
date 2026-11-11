@@ -1,8 +1,8 @@
 import { routes } from "@satchel/shared";
 import type { FastifyPluginAsync } from "fastify";
 import type { RouteDeps } from "../app.js";
-import { ApiError } from "../errors.js";
-import { signedIn } from "../auth/guard.js";
+import { ApiError } from "../lib/api-error.js";
+import { signedIn } from "../plugins/auth/guard.js";
 
 /**
  * The push routes under `/api/push`. Behind the session guard, for
