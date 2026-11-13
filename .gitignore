@@ -153,3 +153,7 @@ dev-dist/
 data/
 *.local
 infrastructure/.env
+
+# Playwright
+playwright-report/
+test-results/

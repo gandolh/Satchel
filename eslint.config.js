@@ -9,6 +9,7 @@ export default [
   ...houseStyle({
     root: import.meta.dirname,
     web: "web/src",
+    playwright: ["web/e2e/**"],
     // better-tailwindcss reads the page's one stylesheet for its classes: an unknown or deprecated class is an error,
     // and so is a class string out of Tailwind's order.
     tailwind: { css: "web/src/styles/index.css", order: true },
