@@ -140,7 +140,7 @@ function ConnectClaudeCard() {
           <p>
             Put this line in <code>{TOKEN_FILE}</code>:
           </p>
-          <code className="rounded-sm bg-surface p-3 font-mono text-meta wrap-anywhere select-all" ref={line}>
+          <code className="rounded-sm bg-surface p-3 font-mono text-compact wrap-anywhere select-all" ref={line}>
             SATCHEL_TOKEN={shown.token}
           </code>
           <div className="flex flex-wrap gap-2">

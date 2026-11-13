@@ -70,10 +70,10 @@ export function NotificationsCard({
     <Card title="Notifications" titleId={titleId} aria-busy={view.kind === "loading" || busy}>
       {view.kind === "loading" && <p className="text-muted">Checking this device…</p>}
       {view.kind === "ios-home-screen" && (
-        <p className="rounded-md bg-accent-soft p-3 text-compact">{IOS_HOME_SCREEN_MESSAGE}</p>
+        <p className="rounded-md bg-accent-soft p-3 text-compact text-on-accent-soft">{IOS_HOME_SCREEN_MESSAGE}</p>
       )}
       {view.kind === "ios-update" && (
-        <p className="rounded-md bg-accent-soft p-3 text-compact">
+        <p className="rounded-md bg-accent-soft p-3 text-compact text-on-accent-soft">
           Notifications need iOS 16.4 or later. Update the iPhone, then turn this on here.
         </p>
       )}
@@ -91,7 +91,7 @@ export function NotificationsCard({
       )}
       {view.kind === "ready" && (
         <>
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
+          <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4">
             <span className="grid min-w-0 gap-0.5 text-compact">
               <span className="text-body font-semibold">{SWITCH_LABEL}</span>
               <span className="text-muted" id={hintId}>
@@ -106,7 +106,7 @@ export function NotificationsCard({
             />
           </label>
           {view.permission === "denied" && (
-            <p className="rounded-md bg-accent-soft p-3 text-compact">{deniedHelp(view.ios)}</p>
+            <p className="rounded-md bg-accent-soft p-3 text-compact text-on-accent-soft">{deniedHelp(view.ios)}</p>
           )}
         </>
       )}

@@ -14,7 +14,7 @@ export function Card({ title, titleId, className, children, ...props }: CardProp
     <section
       {...props}
       aria-labelledby={titleId}
-      className={cn("grid gap-4 rounded-lg border border-line bg-surface p-4", className)}
+      className={cn("grid gap-4 rounded-bubble border border-line bg-surface p-4", className)}
     >
       <h3 className="text-input font-semibold" id={titleId}>
         {title}

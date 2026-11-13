@@ -89,7 +89,7 @@ export function LoginView({
       </form>
       {wardEnabled && (
         <>
-          <p className="text-meta text-muted" aria-hidden="true">
+          <p className="text-compact text-muted" aria-hidden="true">
             or
           </p>
           <Button variant="quiet" className="w-full" onClick={onWard}>

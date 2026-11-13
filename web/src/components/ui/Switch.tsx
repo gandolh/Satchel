@@ -14,17 +14,17 @@ export function Switch({ className, ...props }: SwitchProps) {
   return (
     <BaseSwitch.Root
       className={cn(
-        "relative m-0 inline-block h-6.5 w-11 flex-none cursor-pointer rounded-pill border border-line bg-sunk",
+        "relative m-0 inline-block h-7 w-12 flex-none cursor-pointer rounded-pill border-2 border-outline bg-surface",
         "data-checked:border-accent data-checked:bg-accent data-disabled:cursor-default data-disabled:opacity-50",
-        "motion-safe:transition-[background-color,border-color] motion-safe:duration-150",
+        "motion-safe:transition-[background-color,border-color] motion-safe:duration-120",
         className,
       )}
       {...props}
     >
       <BaseSwitch.Thumb
         className={cn(
-          "absolute top-0.5 left-0.5 size-5 rounded-pill bg-surface shadow-thumb",
-          "data-checked:translate-x-4.5 motion-safe:transition-transform motion-safe:duration-150",
+          "absolute top-0.5 left-0.5 size-5 rounded-pill bg-outline",
+          "data-checked:translate-x-5 data-checked:bg-accent-ink motion-safe:transition-transform motion-safe:duration-120",
         )}
       />
     </BaseSwitch.Root>

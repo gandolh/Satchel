@@ -13,7 +13,7 @@ const FIXTURE = {
     "text-small",
     "text-hero",
     "rounded-pill",
-    "shadow-lift",
+    "shadow-float",
     "w-list",
     "font-title",
   ],

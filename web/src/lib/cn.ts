@@ -6,14 +6,14 @@ import { extendTailwindMerge } from "tailwind-merge";
  * colour, so `cn("text-body", "text-ink")` would drop one of the two. Keep the lists in step with @theme.
  *
  * A size sets its own line height in the theme, but an element may still take a `leading-*` of its own, so a size must
- * not remove one, which tailwind-merge does by default: `cn("leading-tight", "text-meta")` would lose the `leading-tight`.
+ * not remove one, which tailwind-merge does by default: `cn("leading-tight", "text-compact")` would lose the `leading-tight`.
  */
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
-      text: ["micro", "tiny", "small", "meta", "compact", "body", "input", "title", "heading", "display", "hero"],
-      radius: ["box", "bubble", "pill"],
-      shadow: ["thumb", "lift", "float"],
+      text: ["small", "compact", "body", "input", "heading", "hero"],
+      radius: ["bubble", "pill"],
+      shadow: ["float"],
       font: ["title", "body", "mono"],
     },
     classGroups: {

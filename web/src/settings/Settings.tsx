@@ -32,10 +32,10 @@ export function Settings() {
             <div className="flex min-w-0 items-center gap-3">
               <Avatar name={me.displayName} size="lg" />
               <div className="grid min-w-0 gap-0.5">
-                <p className="overflow-hidden font-title text-title font-semibold text-ellipsis whitespace-nowrap">
+                <p className="overflow-hidden text-input font-semibold text-ellipsis whitespace-nowrap">
                   {me.displayName}
                 </p>
-                <p className="text-muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
+                <p className="text-compact text-muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">

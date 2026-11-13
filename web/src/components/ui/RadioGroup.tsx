@@ -33,10 +33,10 @@ export function RadioGroup<Value extends string>({ label, options, value, onValu
         className="grid gap-1"
       >
         {options.map((option) => (
-          <label key={option.value} className="flex min-h-11 cursor-pointer items-center gap-3">
+          <label key={option.value} className="flex min-h-12 cursor-pointer items-center gap-3">
             <Radio.Root
               value={option.value}
-              className="grid size-5 flex-none place-items-center rounded-pill border-2 border-muted bg-surface data-checked:border-accent"
+              className="grid size-5 flex-none place-items-center rounded-pill border-2 border-outline bg-surface data-checked:border-accent"
             >
               <Radio.Indicator className="size-2.5 rounded-pill bg-accent" />
             </Radio.Root>

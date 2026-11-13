@@ -23,7 +23,7 @@ export function Gate({
     >
       <div className={cn("grid max-w-[360px] justify-items-center gap-4 text-center", className)}>
         <Mark />
-        <h1 className={title ? "text-display font-bold" : "sr-only"}>{title ?? "Satchel"}</h1>
+        <h1 className={title ? "text-heading" : "sr-only"}>{title ?? "Satchel"}</h1>
         {children}
       </div>
     </main>
