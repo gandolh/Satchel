@@ -423,3 +423,7 @@ step: `node cli.ts satchel deploy` from vps-deploy.
 ## [2026-11-13] decision | Redesign direction approved
 
 The owner approved the redesign direction "Clay on graphite" on the estate redesign board, with every question on the board standing as proposed: the side rail from 900 px and the New chat button wording, the clay accent with Rethink Sans, and the direction itself. Brief 05's build starts from that.
+
+## [2026-11-13] build | Brief 05: the redesign, Clay on graphite
+
+Built from the approved direction: the clay accent on graphite neutrals, Rethink Sans, a 72 px rail from 900 px with the tab bar kept on a phone, a 56 px New chat button, drawn ticks, labelled New group fields, restyled Switch, Checkbox and radios. Reopened and recorded in [wiki/decisions.md](wiki/decisions.md): the layout from 900 px, the sending bubble, the colour and type. Added Playwright (Floor specs in light, dark and system, the layout switch, the theme switch) and a contrast test over the tokens. Owner step: `node cli.ts satchel deploy` from vps-deploy.

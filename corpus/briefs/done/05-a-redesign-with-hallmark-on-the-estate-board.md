@@ -80,3 +80,15 @@ Answered 2026-11-10: Q39 (Hallmark, with taste-skill 2.5's useful parts; approva
 - Brief 03 owns the tokens, the type scale, the breakpoint and the theme switch; this brief changes their values and the layout on top. The 900 px test must keep passing.
 - Brief 02's `Switch` and `Checkbox` wrappers are restyled, not replaced.
 - Brief 01's formatter and lint run on every redesign commit.
+
+
+## Outcome (2026-11-13)
+
+Built from the approved direction "Clay on graphite" in eleven commits (approval, tokens, Playwright harness, shell, chat list, thread, New chat and group, Settings with sign-in and gate, Floor specs and contrast test, docs, a line-count fix). Board up: yes. Ready for deploy: `node cli.ts satchel deploy` (web client only).
+
+- **Tokens.** Values from the board's tokens file, every existing name kept, the new ones from its map. Rethink Sans 5.3.0 replaced the two faces. The browser bar's accent (`THEME_COLOR`, the boot script, the manifest) and the manifest's background took the new values. Dropped, with nothing left using them: sizes `micro`, `tiny`, `meta`, `title`, `display`, radius `lg` and `box`, shadows `thumb` and `lift`. `hero` stays at 28 px for the brand mark.
+- **Checks.** `npm run check` exit 0 (634 tests). Playwright, two workers: 126 Floor tests (focus ring on every Tab stop, reduced motion, 390 px overflow; 14 screens; light, dark, system), the 899/900/901 shell test and the theme tests, all passed. Contrast, measured over the tokens in both themes: text minimum 4.94 light and 5.13 dark (muted on control); icons, edges and rings minimum 3.75 and 3.67 (outline on accent-soft). On-sent 6.26 and 7.57, on-sent-meta 5.37 and 6.21.
+- **Compare with the comps.** The specs answer the API from stubs built on the board's comp data (alma, boris, cleo, dana; frozen clock), not the demo seed, so a build and its comp show the same text. Rendered comp against build, share of pixels differing: chat list 0.2% at 1280 and 0.3% at 390; thread 0.6% and 1.0%; new group 1.5% and 2.8% (dark 1.6% and 2.2%). What differs: the alma preview text (the comp's list and thread disagree; the build uses the thread's), the focused composer or field ring in the shots, a 1 px people-list edge drawn as a border instead of an inset shadow, a 4 px left padding on the list header in the comp's wide layout.
+- **Undrawn screens restyled** with the new tokens and patterns only: sign-in, the gate's loading and unreachable states, plain New chat and its no-one-else state, Settings (account, sign-in methods, Notifications, Appearance, Connect Claude), the Ideas inbox thread, the empty, loading and error chat list. The Share screen renders nothing and redirects, so it has nothing to style.
+- **Copy changed** (the approved three): the empty-list line, the pinned row's "Ideas inbox" label, and New group's visible "Search people" label.
+- **Not shot.** Settings' Notifications in each browser state (the stub's push key is off, so one state is drawn), and Connect Claude's show-once panel (never, by rule).
