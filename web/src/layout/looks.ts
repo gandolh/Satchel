@@ -8,9 +8,9 @@ export const safeX =
 export const screen = "flex min-h-0 min-w-0 flex-1 flex-col";
 export const screenBody = "min-h-0 flex-1 overflow-y-auto overscroll-contain";
 
-/** The round icon-only control in a bar: a button or a link around one 22 px icon. */
+/** The round icon-only control in a bar: a button or a link around one 24 px icon, 48 px on a phone and 40 from 900 px. */
 export const iconButton =
-  "-ml-2 inline-grid size-10 flex-none place-items-center rounded-pill border-0 bg-transparent p-0 text-ink hover:bg-sunk [&_svg]:size-5.5";
+  "-ml-2 inline-grid size-12 flex-none place-items-center rounded-pill border-0 bg-transparent p-0 text-ink hover:bg-control wide:size-10 [&_svg]:size-6";
 
 /** A line or two of loading, empty or error text inside a list column. */
 export const listNote = "grid justify-items-start gap-3 px-4 py-6 text-muted";

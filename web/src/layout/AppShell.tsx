@@ -7,12 +7,14 @@ import { Settings } from "../settings/Settings";
 import { ShareScreen } from "../share/ShareScreen";
 import { ThreadScreen } from "../thread/ThreadPlaceholder";
 import { Mark } from "./Mark";
+import { Rail } from "./Rail";
 import { TabBar } from "./TabBar";
 
 /**
  * The signed-in app. Phone: one view at a time, the tab bar under Chats and
- * Settings, a back arrow in the thread. From 900px: the chat list (with the
- * tab bar) in a 320px column and the thread, Settings or New chat beside it.
+ * Settings, a back arrow in the thread. From 900px: a 72px side rail (Chats,
+ * Settings), the chat list in a 340px column and the thread, Settings or New
+ * chat beside it.
  */
 export function AppShell() {
   const route = useRoute();
@@ -38,10 +40,10 @@ export function AppShell() {
 
   if (wide) {
     return (
-      <div className="grid h-dvh min-h-0 grid-cols-[var(--width-list)_minmax(0,1fr)] overflow-hidden">
+      <div className="grid h-dvh min-h-0 grid-cols-[72px_var(--width-list)_minmax(0,1fr)] overflow-hidden">
+        <Rail active={tab} />
         <div className="flex min-h-0 flex-col border-r border-line bg-surface">
           <ChatList selectedId={route.name === "thread" ? route.id : undefined} />
-          <TabBar active={tab} />
         </div>
         <main className={main}>{pane ?? <EmptyPane />}</main>
       </div>
@@ -61,9 +63,9 @@ const main = "flex min-h-0 min-w-0 flex-1 flex-col";
 
 function EmptyPane() {
   return (
-    <div className="grid flex-1 place-content-center justify-items-center gap-3 p-8 text-center text-muted">
-      <Mark className="opacity-90" />
-      <p>Pick a chat to read it here.</p>
+    <div className="grid flex-1 place-content-center justify-items-center gap-3 p-8 text-center text-ink-2">
+      <Mark />
+      <p className="text-compact">Pick a chat to read it here.</p>
     </div>
   );
 }

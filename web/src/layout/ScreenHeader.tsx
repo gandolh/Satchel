@@ -15,6 +15,7 @@ export interface ScreenHeaderProps {
   actions?: ReactNode;
   /** The chat list's "Chats" is the page's h1; panes beside it use h2. */
   level?: 1 | 2;
+  /** The large title: a screen's own name (Chats, Settings, New chat). The thread's name is the smaller one. */
   large?: boolean;
 }
 
@@ -32,7 +33,7 @@ export function ScreenHeader({
   return (
     <header
       className={cn(
-        "flex min-h-[calc(var(--height-bar)+env(safe-area-inset-top,0px))] flex-none items-center gap-3 border-b border-line bg-surface pt-[env(safe-area-inset-top,0px)]",
+        "flex min-h-[calc(var(--height-bar)+env(safe-area-inset-top,0px))] flex-none items-center gap-3 border-b border-line bg-surface pt-[env(safe-area-inset-top,0px)] wide:min-h-16",
         safeX,
       )}
     >
@@ -42,12 +43,14 @@ export function ScreenHeader({
         <Heading
           className={cn(
             "overflow-hidden text-ellipsis whitespace-nowrap",
-            large ? "text-display font-bold tracking-[-0.01em]" : "text-title font-semibold",
+            large ? "text-heading tracking-[-0.005em]" : "text-input font-semibold",
           )}
         >
           {title}
         </Heading>
-        {subtitle && <p className="overflow-hidden text-meta text-ellipsis whitespace-nowrap text-muted">{subtitle}</p>}
+        {subtitle && (
+          <p className="overflow-hidden text-small text-ellipsis whitespace-nowrap text-muted">{subtitle}</p>
+        )}
       </div>
       {actions}
     </header>
