@@ -14,13 +14,13 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
   return (
     <BaseCheckbox.Root
       className={cn(
-        "inline-flex size-5.5 flex-none items-center justify-center rounded-box border-2 border-muted bg-surface text-surface",
+        "inline-flex size-6 flex-none items-center justify-center rounded-sm border-2 border-outline bg-surface text-accent-ink",
         "data-checked:border-accent data-checked:bg-accent data-disabled:opacity-50",
         className,
       )}
       {...props}
     >
-      <BaseCheckbox.Indicator className="flex [&_svg]:size-4.5">
+      <BaseCheckbox.Indicator className="flex [&_svg]:size-4">
         <CheckIcon />
       </BaseCheckbox.Indicator>
     </BaseCheckbox.Root>

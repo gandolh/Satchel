@@ -16,10 +16,10 @@ export const iconButton =
 export const listNote = "grid justify-items-start gap-3 px-4 py-6 text-compact text-ink-2";
 
 /** A labelled form field: the label above, the input beneath. */
-export const field = "grid gap-1";
-export const fieldLabel = "text-meta text-muted";
+export const field = "grid gap-2";
+export const fieldLabel = "text-compact font-semibold text-ink";
 export const fieldInput =
-  "block min-h-11 w-full rounded-lg border border-line bg-sunk px-4 text-input text-ink focus-visible:outline-offset-1";
+  "block min-h-12 w-full rounded-md border border-outline bg-sunk px-4 text-input text-ink focus-visible:outline-offset-1";
 
 /** A failure under a form or a list: the server's or the network's words, in the error colour. */
 export const errorLine = "text-compact text-pretty text-bad";

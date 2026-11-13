@@ -45,6 +45,16 @@ export function SettingsIcon() {
   );
 }
 
+/** A magnifier: the search field's mark. */
+export function SearchIcon() {
+  return (
+    <svg {...base}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+  );
+}
+
 /** A pencil: the New chat control. */
 export function NewChatIcon() {
   return (
