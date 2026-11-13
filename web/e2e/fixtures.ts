@@ -10,7 +10,7 @@ import type { Page } from "@playwright/test";
 export const NOW = Date.UTC(2026, 10, 13, 16, 51, 0);
 
 export type SessionState = "signed-in" | "signed-out" | "unreachable" | "loading";
-export type ListState = "full" | "empty" | "loading" | "error";
+type ListState = "full" | "empty" | "loading" | "error";
 export type Role = "owner" | "friend";
 
 const ME = "me";
