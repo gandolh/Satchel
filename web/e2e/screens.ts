@@ -20,7 +20,7 @@ export const SCREENS: Screen[] = [
     path: `${BASE}c/alma`,
     drawn: true,
     act: async (page) => {
-      await page.getByLabel("Message").fill("Bringing the big basket");
+      await page.getByRole("textbox", { name: "Message" }).fill("Bringing the big basket");
     },
   },
   {

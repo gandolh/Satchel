@@ -47,7 +47,7 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
 
   return (
     <form
-      className="flex flex-none items-end gap-2 border-t border-line bg-surface px-4 pt-2 pb-[max(--spacing(2),env(safe-area-inset-bottom,0px))]"
+      className="flex flex-none items-end gap-2 border-t border-line bg-surface px-4 pt-3 pb-[max(--spacing(3),env(safe-area-inset-bottom,0px))] wide:px-6"
       onSubmit={(event) => {
         event.preventDefault();
         send();
@@ -56,7 +56,7 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
       <div className="relative min-w-0 flex-1">
         <textarea
           ref={field}
-          className="block w-full resize-none rounded-lg border border-line bg-sunk px-4 py-2.5 text-input leading-5.5 text-ink"
+          className="block min-h-12 w-full resize-none rounded-[24px] border border-outline bg-sunk px-4 py-2.75 text-input text-ink focus-visible:outline-offset-1"
           rows={1}
           value={text}
           placeholder="Message"
@@ -68,7 +68,7 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
         {length >= COUNTER_FROM && (
           <span
             className={cn(
-              "absolute right-3 bottom-[calc(100%+2px)] text-tiny",
+              "absolute right-3 bottom-[calc(100%+2px)] text-small",
               length > MAX_TEXT_LENGTH ? "font-semibold text-bad" : "text-muted",
             )}
           >
@@ -76,7 +76,7 @@ export function Composer({ onSend, initialText = "" }: { onSend: (text: string) 
           </span>
         )}
       </div>
-      <Button type="submit" disabled={!sendable}>
+      <Button type="submit" className="min-h-12 px-6 text-input max-wide:px-5" disabled={!sendable}>
         Send
       </Button>
     </form>

@@ -235,18 +235,21 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
       />
       <div className={screenBody} ref={scroller} onScroll={onScroll}>
         {!state.loaded ? (
-          <p className="mx-auto my-8 px-4 text-center text-muted" role={loadError ? "alert" : "status"}>
+          <p className="mx-auto my-8 px-4 text-center text-compact text-ink-2" role={loadError ? "alert" : "status"}>
             {loadError ?? "Loading messages…"}
           </p>
         ) : (
-          <ol className={cn("flex min-h-full flex-col justify-end gap-1 py-3", safeX)} aria-label="Messages">
+          <ol
+            className={cn("flex min-h-full flex-col justify-end gap-0.5 py-3 wide:px-6 wide:py-4", safeX)}
+            aria-label="Messages"
+          >
             {conversation && conversation.kind !== "inbox" && (
               <li className="my-2 flex justify-center">
                 <span className={pill}>Claude has no access to this chat</span>
               </li>
             )}
             {state.messages.length === 0 && state.pending.length === 0 && (
-              <li className="mx-auto my-8 px-4 text-center text-muted">
+              <li className="mx-auto my-8 px-4 text-center text-compact text-ink-2">
                 {isInbox ? "Write down an idea. Claude reads it next time you ask." : "No messages yet."}
               </li>
             )}
@@ -267,16 +270,29 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
               // The name goes above the first bubble of a run from one person.
               const before = timeline[index - 1];
               const startsRun = !(before?.kind === "message" && before.message.sender === message.sender);
+              const after = timeline[index + 1];
+              const endsRun = !(after?.kind === "message" && after.message.sender === message.sender);
               return (
-                <li key={item.key} className={cn("flex flex-col", own ? "items-end" : "items-start")}>
-                  <div className={cn(bubbleClass, own && "border-transparent bg-accent text-accent-ink")}>
+                <li
+                  key={item.key}
+                  className={cn(
+                    "flex flex-col",
+                    own ? "items-end" : "items-start",
+                    startsRun && before?.kind === "message" && "mt-2",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      bubbleClass,
+                      own && "bg-sent text-on-sent shadow-none",
+                      joinedCorners(own, startsRun, endsRun),
+                    )}
+                  >
                     {isGroup && !own && startsRun && (
-                      <span className="mb-0.5 block font-title text-meta font-semibold text-accent">
-                        {senderName(message)}
-                      </span>
+                      <span className="block text-compact font-semibold text-accent">{senderName(message)}</span>
                     )}
                     <p className={bubbleText}>{message.text}</p>
-                    <span className={bubbleMeta}>
+                    <span className={cn(bubbleMeta, own && "text-on-sent-meta")}>
                       {clockTime(new Date(message.sentAt))}
                       {own && <Tick state={tickState(message, members, me.subject)} onAccent />}
                     </span>
@@ -291,12 +307,12 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
         )}
       </div>
       {offline && (
-        <p className="flex-none bg-sunk px-4 py-1 text-center text-small text-muted" role="status">
+        <p className="flex-none bg-control px-4 py-2 text-center text-compact text-ink-2" role="status">
           Can't reach Satchel. Trying again.
         </p>
       )}
       {newBelow && (
-        <Button className="absolute right-4 bottom-21 min-h-9 px-4 shadow-lift" onClick={jumpToBottom}>
+        <Button className="absolute right-4 bottom-21 shadow-float" onClick={jumpToBottom}>
           New messages
         </Button>
       )}
@@ -306,22 +322,28 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
 }
 
 /** A day or a notice, as a small pill in the middle of the thread. */
-const pill = "rounded-pill bg-sunk px-3 py-1 text-small font-medium text-muted";
-/** A message bubble: theirs by default, mine with the accent on top. */
+const pill = "rounded-pill bg-control px-3 py-1 text-small font-semibold text-muted";
+/** A message bubble: theirs by default (the bubble tone with a hairline edge), mine clay with light text. */
 const bubbleClass =
-  "block max-w-[min(78%,560px)] rounded-lg border border-line bg-surface px-3 py-2 text-left text-ink";
-const failedBubble = "border-dashed border-bad";
+  "block max-w-[min(78%,560px)] rounded-bubble bg-bubble-in px-3 py-2 text-left text-ink shadow-[inset_0_0_0_1px_var(--color-line)]";
+const failedBubble = "border-2 border-dashed border-bad bg-bg shadow-none";
 const bubbleText = "wrap-anywhere whitespace-pre-wrap";
-const bubbleMeta = "mt-0.5 flex items-center justify-end gap-1 text-tiny opacity-80";
-const seenClass = "mt-0.5 flex items-center gap-1 text-small text-muted";
+const bubbleMeta = "flex items-center justify-end gap-1 text-small tabular-nums text-muted";
+const seenClass = "mt-1 flex items-center gap-1 text-small text-muted";
+
+/** Joined bubbles: a 6 px corner on the joined side where a neighbour from the same sender sits above or below. */
+function joinedCorners(own: boolean, startsRun: boolean, endsRun: boolean): string {
+  if (own) return cn(!endsRun && "rounded-br-sm", !startsRun && "rounded-tr-sm");
+  return cn(!endsRun && "rounded-bl-sm", !startsRun && "rounded-tl-sm");
+}
 
 function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (bubble: PendingMessage) => void }) {
   if (bubble.status === "sending") {
     return (
       <li className="flex flex-col items-end">
-        <div className={cn(bubbleClass, "border-transparent bg-accent text-accent-ink opacity-70")}>
+        <div className={cn(bubbleClass, "bg-sent text-on-sent shadow-none")}>
           <p className={bubbleText}>{bubble.text}</p>
-          <span className={bubbleMeta}>Sending…</span>
+          <span className={cn(bubbleMeta, "text-on-sent-meta")}>Sending…</span>
         </div>
       </li>
     );
@@ -341,7 +363,7 @@ function PendingBubble({ bubble, onRetry }: { bubble: PendingMessage; onRetry: (
       ) : (
         <div className={cn(bubbleClass, failedBubble)}>{content}</div>
       )}
-      <p className="mt-0.5 text-small text-bad" role="alert">
+      <p className="mt-1 text-small font-semibold text-bad" role="alert">
         {failed ? "Not sent. Tap to retry" : (bubble.error ?? "Not sent.")}
       </p>
     </li>
