@@ -11,7 +11,7 @@ const KEY = "theme";
  * `--color-accent` in styles/index.css and the boot script in index.html; theme.test.ts keeps the three together. The
  * manifest's `theme_color` stays the light one, because a manifest has no dark variant.
  */
-export const THEME_COLOR = { light: "#2a45c4", dark: "#8da0ff" } as const;
+export const THEME_COLOR = { light: "#9e4502", dark: "#eb9c6a" } as const;
 
 function isTheme(value: unknown): value is Theme {
   return value === "light" || value === "dark" || value === "system";

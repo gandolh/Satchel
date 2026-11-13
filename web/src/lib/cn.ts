@@ -5,15 +5,15 @@ import { extendTailwindMerge } from "tailwind-merge";
  * tailwind-merge, told this app's @theme names (styles/index.css). Without the `text` list it reads `text-body` as a
  * colour, so `cn("text-body", "text-ink")` would drop one of the two. Keep the lists in step with @theme.
  *
- * The app's sizes carry no line height (each element inherits body's), so a size must not remove a `leading-*`, which
- * tailwind-merge does by default: `cn("leading-tight", "text-meta")` would lose the `leading-tight`.
+ * A size sets its own line height in the theme, but an element may still take a `leading-*` of its own, so a size must
+ * not remove one, which tailwind-merge does by default: `cn("leading-tight", "text-meta")` would lose the `leading-tight`.
  */
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: ["micro", "tiny", "small", "meta", "compact", "body", "input", "title", "heading", "display", "hero"],
-      radius: ["box", "pill"],
-      shadow: ["thumb", "lift"],
+      radius: ["box", "bubble", "pill"],
+      shadow: ["thumb", "lift", "float"],
       font: ["title", "body", "mono"],
     },
     classGroups: {

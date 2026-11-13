@@ -147,6 +147,6 @@ describe("the accent, written three times", () => {
   it("is the manifest's theme_color too, in its light value", () => {
     const config = read("../../vite.config.ts");
     const light = /theme_color:\s*"(#[0-9a-f]{6})"/i.exec(config)?.[1];
-    expect(light?.toLowerCase()).toBe("#2a45c4");
+    expect(light?.toLowerCase()).toBe("#9e4502");
   });
 });

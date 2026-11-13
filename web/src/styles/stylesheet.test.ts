@@ -46,8 +46,8 @@ describe("styles/index.css", () => {
     expect(WIDE_QUERY).toBe(`(min-width: ${px}px)`);
   });
 
-  it("keeps the 15px on body and leaves the root at the browser's size", () => {
-    expect(css).toMatch(/--text-body:\s*0\.9375rem/);
+  it("keeps the 16px on body and leaves the root at the browser's size", () => {
+    expect(css).toMatch(/--text-body:\s*1rem/);
     expect(css).toMatch(/body\s*\{[^}]*font-size:\s*var\(--text-body\)/);
     for (const body of rootRules()) expect(body).not.toMatch(/(^|;|\s)font-size:/);
   });

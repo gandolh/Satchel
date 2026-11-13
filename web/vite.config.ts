@@ -76,8 +76,8 @@ export default defineConfig(({ mode }) => {
           // Raw hex only here: the manifest can't read CSS tokens, and has no
           // dark variant. Keep in step with --color-accent and --color-bg
           // (their light values) in src/styles/index.css.
-          theme_color: "#2A45C4",
-          background_color: "#F2F5F4",
+          theme_color: "#9E4502",
+          background_color: "#F0F3F6",
           // Relative, so they resolve against the manifest under `base`.
           icons: [
             { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
