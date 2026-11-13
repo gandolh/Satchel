@@ -35,13 +35,24 @@ const CLAUDE_SIZES: Record<AvatarSize, string> = {
  * (design.md). Sizes: xs 20px (seen line), sm 40px (thread header, people), md 48px
  * (chat rows), lg 56px (Settings).
  */
-export function Avatar({ name, claude = false, size = "md" }: { name: string; claude?: boolean; size?: AvatarSize }) {
+export function Avatar({
+  name,
+  claude = false,
+  size = "md",
+  className,
+}: {
+  name: string;
+  claude?: boolean;
+  size?: AvatarSize;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
         "inline-grid flex-none place-items-center rounded-pill bg-control font-title leading-none font-bold tracking-[0.02em] text-ink select-none",
         SIZES[size],
         claude && ["bg-ok text-on-ok", CLAUDE_SIZES[size]],
+        className,
       )}
       aria-hidden="true"
     >

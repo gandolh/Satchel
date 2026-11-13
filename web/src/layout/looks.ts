@@ -13,7 +13,7 @@ export const iconButton =
   "-ml-2 inline-grid size-12 flex-none place-items-center rounded-pill border-0 bg-transparent p-0 text-ink hover:bg-control wide:size-10 [&_svg]:size-6";
 
 /** A line or two of loading, empty or error text inside a list column. */
-export const listNote = "grid justify-items-start gap-3 px-4 py-6 text-muted";
+export const listNote = "grid justify-items-start gap-3 px-4 py-6 text-compact text-ink-2";
 
 /** A labelled form field: the label above, the input beneath. */
 export const field = "grid gap-1";

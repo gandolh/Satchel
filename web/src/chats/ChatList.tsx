@@ -9,6 +9,7 @@ import { CHAT_LIST_POLL_MS, refreshConversations, useConversations, useLiveChats
 import { ChatRow } from "./ChatRow";
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/cn";
+import { NewChatIcon } from "../layout/icons";
 import { iconButton, listNote, screen, screenBody } from "../layout/looks";
 
 /** Why the list couldn't refresh, in plain words. */
@@ -31,29 +32,18 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
   usePolling(refreshConversations, { intervalMs: CHAT_LIST_POLL_MS, enabled: !connected });
 
   return (
-    <section className={screen}>
+    <section className={cn(screen, "relative")}>
       <ScreenHeader
         title="Chats"
         level={1}
         large
         actions={
-          <Link to={NEW_CHAT} className={cn(iconButton, "-mr-2 ml-auto")} aria-label="New chat">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M12 20h8M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
-            </svg>
+          <Link to={NEW_CHAT} className={cn(iconButton, "-mr-2 ml-auto max-wide:hidden")} aria-label="New chat">
+            <NewChatIcon />
           </Link>
         }
       />
-      <div className={screenBody}>
+      <div className={cn(screenBody, "max-wide:pb-22")}>
         {conversations === null ? (
           error ? (
             <ListError message={describe(error)} />
@@ -63,12 +53,15 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
         ) : (
           <>
             {error && (
-              <p className="border-b border-line bg-sunk px-4 py-2 text-meta text-muted" role="status">
+              <p
+                className="border-b border-line bg-control px-4 py-2 text-center text-compact text-ink-2"
+                role="status"
+              >
                 {describe(error)} Trying again.
               </p>
             )}
             {conversations.length === 0 ? (
-              <p className={listNote}>No chats yet. Start one with the pencil above.</p>
+              <p className={listNote}>No chats yet. Start one with the New chat button.</p>
             ) : (
               <ul className="bg-surface">
                 {conversations.map((conversation) => (
@@ -81,6 +74,13 @@ export function ChatList({ selectedId }: { selectedId?: string }) {
           </>
         )}
       </div>
+      <Link
+        to={NEW_CHAT}
+        className="absolute right-[max(--spacing(4),env(safe-area-inset-right,0px))] bottom-4 grid size-14 place-items-center rounded-bubble bg-accent text-accent-ink shadow-float hover:bg-accent-press motion-safe:transition-colors motion-safe:duration-120 wide:hidden [&_svg]:size-6"
+        aria-label="New chat"
+      >
+        <NewChatIcon />
+      </Link>
     </section>
   );
 }
@@ -89,11 +89,11 @@ function ListLoading() {
   return (
     <div aria-busy="true" aria-label="Loading chats">
       {[0, 1, 2].map((row) => (
-        <div className="flex min-h-18 items-center gap-3 border-b border-line px-4 py-3" key={row} aria-hidden="true">
-          <span className="size-12 flex-none rounded-pill bg-sunk" />
+        <div className="flex min-h-19 items-center gap-3 border-b border-line px-4 py-3" key={row} aria-hidden="true">
+          <span className="size-12 flex-none rounded-pill bg-control" />
           <span className="grid flex-1 gap-2">
-            <span className={cn("h-2.5 rounded-pill bg-sunk", row === 0 ? "w-2/5" : "w-[55%]")} />
-            <span className="h-2.5 w-3/4 rounded-pill bg-sunk" />
+            <span className={cn("h-2.5 rounded-pill bg-control", row === 0 ? "w-2/5" : "w-[55%]")} />
+            <span className="h-2.5 w-3/4 rounded-pill bg-control" />
           </span>
         </div>
       ))}

@@ -17,9 +17,13 @@ export interface ChatRowProps {
 }
 
 /** The last message under a name: one line, cut with an ellipsis. */
-const previewLine = "min-w-0 flex-1 overflow-hidden text-compact text-ellipsis whitespace-nowrap text-muted";
+const previewText = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap";
 
-/** Avatar, name, time; then the last message and either an unread badge or, when mine, its tick. */
+/**
+ * Avatar, name, time; then the last message and either an unread badge or, when mine, its tick. The open chat is the
+ * strongest row (the control tone, a surface avatar, a bold name and a clay bar); the pinned Ideas inbox keeps its green
+ * wash.
+ */
 export function ChatRow({ conversation, me, selected }: ChatRowProps) {
   const inbox = conversation.kind === "inbox";
   const title = conversationTitle(conversation, me);
@@ -31,25 +35,35 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
     <Link
       to={threadRoute(conversation.id)}
       className={cn(
-        "flex min-h-18 items-center gap-3 border-b border-line px-4 py-3 text-inherit no-underline focus-visible:-outline-offset-2",
+        "group flex min-h-19 items-center gap-3 border-b border-line px-4 py-3 text-inherit no-underline focus-visible:-outline-offset-3",
+        "motion-safe:transition-colors motion-safe:duration-120",
         safeX,
         inbox
-          ? "bg-accent-soft hover:not-aria-[current=page]:bg-row-pinned-hover aria-[current=page]:bg-row-pinned-current aria-[current=page]:shadow-[inset_3px_0_0_var(--color-accent)]"
-          : "hover:not-aria-[current=page]:bg-row-hover aria-[current=page]:bg-sunk aria-[current=page]:shadow-[inset_3px_0_0_var(--color-accent)]",
+          ? "bg-ok-soft hover:not-aria-[current=page]:bg-row-pinned-hover aria-[current=page]:bg-row-pinned-current aria-[current=page]:shadow-[inset_4px_0_0_var(--color-accent)]"
+          : "bg-surface hover:not-aria-[current=page]:bg-row-hover aria-[current=page]:bg-control aria-[current=page]:shadow-[inset_4px_0_0_var(--color-accent)]",
       )}
       aria-current={selected ? "page" : undefined}
     >
-      <Avatar name={title} claude={inbox} />
+      <Avatar name={title} claude={inbox} className={cn(!inbox && "group-aria-[current=page]:bg-surface")} />
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 items-baseline gap-2">
-          <span className="min-w-0 flex-1 overflow-hidden font-title text-input font-semibold text-ellipsis whitespace-nowrap">
+          <span
+            className={cn(
+              "min-w-0 flex-none overflow-hidden text-input font-semibold text-ellipsis whitespace-nowrap group-aria-[current=page]:font-bold",
+              inbox && "text-on-ok-soft",
+            )}
+          >
             {title}
-            {inbox && <span className="font-body text-meta font-medium text-muted"> · {INBOX_SUBTITLE}</span>}
           </span>
+          {inbox && (
+            <span className="min-w-0 flex-1 overflow-hidden text-small text-ellipsis whitespace-nowrap text-muted">
+              {INBOX_SUBTITLE}
+            </span>
+          )}
           {sentAt && (
             <time
               className={cn(
-                "flex-none text-small tabular-nums",
+                "ml-auto flex-none text-small tabular-nums",
                 unread > 0 ? "font-semibold text-accent" : "text-muted",
               )}
               dateTime={sentAt}
@@ -60,18 +74,20 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
         </span>
         <span className="flex min-w-0 items-center gap-2">
           {preview ? (
-            <span className={previewLine}>
+            <span className="flex min-w-0 flex-1 items-center gap-1 text-compact text-ink-2">
               {preview.tick && <Tick state={preview.tick} />}
-              {preview.sender && `${preview.sender}: `}
-              {preview.text}
+              <span className={previewText}>
+                {preview.sender && `${preview.sender}: `}
+                {preview.text}
+              </span>
             </span>
           ) : (
-            <span className={cn(previewLine, "italic")}>
+            <span className={cn(previewText, "flex-1 text-compact text-ink-2 italic")}>
               {conversation.kind === "group" ? conversationSubtitle(conversation, me) : "No messages yet"}
             </span>
           )}
           {unread > 0 && (
-            <span className="inline-grid h-5 min-w-5 flex-none place-items-center rounded-pill bg-accent px-1.5 text-small font-semibold text-accent-ink tabular-nums">
+            <span className="inline-grid h-6 min-w-6 flex-none place-items-center rounded-pill bg-accent px-2 text-small font-semibold text-accent-ink tabular-nums">
               <span aria-hidden="true">{unread > 99 ? "99+" : unread}</span>
               <span className="sr-only">{unread === 1 ? "1 unread message" : `${unread} unread messages`}</span>
             </span>
