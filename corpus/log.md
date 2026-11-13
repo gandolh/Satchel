@@ -419,3 +419,7 @@ The theme switch: `web/src/settings/theme.ts` (store, `localStorage` key `theme`
 a `RadioGroup` wrapper, an Appearance card on Settings, and a boot script in
 `index.html` that also sets the `color-scheme` and `theme-color` metas. Owner
 step: `node cli.ts satchel deploy` from vps-deploy.
+
+## [2026-11-13] decision | Redesign direction approved
+
+The owner approved the redesign direction "Clay on graphite" on the estate redesign board, with every question on the board standing as proposed: the side rail from 900 px and the New chat button wording, the clay accent with Rethink Sans, and the direction itself. Brief 05's build starts from that.
