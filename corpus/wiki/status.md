@@ -1,6 +1,6 @@
 ---
-summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. The server is in the estate's code structure (2026-11-11), waiting for a deploy. 608 tests. What waits on the owner and what is still open.
-updated: 2026-11-11
+summary: Snapshot as of 2026-11-02, per area. Satchel is built (Ideas inbox and friends 2026-10-09, local accounts 2026-10-13, its own host 2026-10-22, Base UI controls 2026-10-23, the Android share target and Claude's replies 2026-10-28) and pushed, not deployed; the Android and reply checks wait on a phone. The server is in the estate's code structure (2026-11-11), waiting for a deploy. The web app is redesigned, "Clay on graphite" (2026-11-13), waiting for a deploy. 608 tests. What waits on the owner and what is still open.
+updated: 2026-11-13
 ---
 
 # Status
@@ -14,6 +14,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 608 tests
 
 ## By area
 
+- **Redesign** (2026-11-13). "Clay on graphite", approved on the estate redesign board: a clay accent on graphite, Rethink Sans, a 72 px rail from 900 px, a New chat button on the phone, drawn ticks, labelled fields ([design.md](design.md), `web/DESIGN.md`, [decisions.md](decisions.md)). Playwright specs added. Ready for deploy: `node cli.ts satchel deploy` from vps-deploy (web client only).
 - **Tailwind and the theme switch** (2026-11-11). The web app is Tailwind 4 with one stylesheet (`web/src/styles/index.css`, the tokens in `@theme`); Settings has a Light / Dark / System choice kept on the device, light on a first visit ([design.md](design.md)). `check-base-ui` strict at 0, 23 new tests. Ready for deploy: `node cli.ts satchel deploy` from vps-deploy (web client only).
 - **Server structure** (2026-11-11). `server.ts`, `buildApp`, `config.ts` as the only reader of the environment, `plugins/`, `features/` and the store in `db/`; every route but the live socket declares its zod schemas; the live sockets close with 1001 at shutdown; `check-structure` strict at 0. Ready for deploy: `node cli.ts satchel server` from vps-deploy, which rebuilds the API container ([decisions-tooling.md](decisions-tooling.md)). 608 tests.
 - **House style and gate** (2026-11-11). Prettier at width 120, a vendored `house-style` 1.0.0, typed ESLint, knip, dependency-cruiser and the two convention checkers behind `npm run check`; `pretest` builds the workspaces; root `CLAUDE.md` and `.claude/rules/`. Not deployed ([decisions-tooling.md](decisions-tooling.md)).

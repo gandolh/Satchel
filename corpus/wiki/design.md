@@ -1,6 +1,6 @@
 ---
-summary: How the web app looks and behaves. A conventional messenger (chat list, thread, composer, settings) with no metaphor; the colour and type tokens for light and dark; the tick, "Seen" and failed-send states; phone-first layout and the PWA install. Read before any UI brief.
-updated: 2026-11-02
+summary: How the web app looks and behaves. A conventional messenger (chat list, thread, composer, settings) with no metaphor; the Clay on graphite colour and type tokens for light and dark; the tick, "Seen" and failed-send states; phone-first layout and the PWA install. Read before any UI brief.
+updated: 2026-11-13
 ---
 
 # Design
@@ -20,22 +20,26 @@ any messenger. The mockups are in the design artifact linked from
   "Yesterday", then dates). My bubbles on the right in the accent colour,
   others on the left on the surface colour, with the sender's name in groups.
   Composer at the bottom: a text field that grows to five lines and a Send
-  button. Enter sends on desktop; Shift+Enter is a new line.
+  button, 48 px tall, the thread's one filled primary (empty, it is a pale clay
+  wash with muted text). Enter sends on desktop; Shift+Enter is a new line.
 - **Settings.** Signed-in name and Sign out, then Notifications (everyone),
   then Connect Claude (the owner only).
 
 Phone first: the thread and the list are full-screen views on a phone, with
-a bottom tab bar (Chats, Settings) that hides inside a thread. From 900px up,
-the list sits left (320px) and the thread or Settings fills the rest; there
-is no back arrow and no tab bar.
+a bottom tab bar (Chats, Settings) that hides inside a thread. On the chat
+list a 56 px clay New chat button sits bottom right, 16 px above the tab bar.
+From 900px up, a 72px side rail (the clay S, Chats, Settings) sits left of a
+340px list, and the thread or Settings fills the rest; there is no back arrow
+and no tab bar, and the pencil is in the list header. See
+[decisions.md](decisions.md), "The redesign: Clay on graphite".
 
 ## Message states
 
 | State | Look |
 |---|---|
-| Sending | bubble at 70% opacity, no tick |
-| Sent, not seen by everyone | one tick `✓` in the bubble meta |
-| Seen by everyone else | two ticks `✓✓`, full opacity |
+| Sending | bubble at full colour; its meta line reads "Sending…", no tick |
+| Sent, not seen by everyone | one drawn tick, spoken "Sent" |
+| Seen by everyone else | two drawn ticks, spoken "Seen" |
 | Not sent | surface-coloured bubble with a dashed border in `--bad`, and "Not sent. Tap to retry" under it |
 | Seen line | small muted text under the last seen message: "Seen 21:40" (one other member) or "Seen by Maria, Andrei" (group) |
 
@@ -47,40 +51,50 @@ no access to this chat". The inbox doesn't.
 The tokens live in `@theme` in `web/src/styles/index.css`, the app's one
 stylesheet. A colour is `--color-<name>` (so `bg-surface`, `text-muted`) and holds
 both themes in one `light-dark()` value; `color-scheme` on `<html>` picks one.
-Light values first, dark in brackets. Neutrals lean slightly green.
+Graphite neutrals, one clay accent. Light values first, dark in brackets.
 
 ```
-bg        #F2F5F4  (#0E1412)    page and thread background
-surface   #FFFFFF  (#161F1C)    bars, list rows, other people's bubbles
-sunk      #E8EDEB  (#1C2723)    day separators, input fill
-ink       #14201C  (#E3EAE7)    text
-muted     #56645F  (#98A6A1)    secondary text, times
-line      #D3DCD8  (#2A3631)    borders, dividers
-accent    #2A45C4  (#8DA0FF)    my bubbles, links, badges, Send
-accent-ink #FFFFFF (#0E1412)    text on accent
-accent-soft #E6EAFB (#1D2547)   the pinned inbox row, soft highlights
-ok        #1D7650  (#62C796)    Claude's avatar
-bad       #B3261E  (#FF8A80)    not-sent state
+bg        #F0F3F6  (#101419)    the thread, the forms' page
+surface   #FCFEFF  (#1F2329)    the chat list, bars, composer, cards
+sunk      #EAEDF2  (#151A1F)    input fill
+control   #E1E5EA  (#2E333A)    secondary buttons, avatars, day pills
+row-hover #F2F5F8  (#262B31)    a chat row under the pointer
+line      #DBDEE3  (#363B41)    dividers, bar and bubble edges
+outline   #70757C  (#81878D)    edges that must be seen: fields, checkbox, switch
+ink       #181B1F  (#E6EAEE)    names and message text
+ink-2     #3F4348  (#C4C8CC)    previews, secondary text
+muted     #5C6167  (#A0A5AB)    times, hints, tab labels
+accent    #9E4502  (#EB9C6A)    unread, links, Send, the New chat button
+accent-ink #FFFDFC (#1E130E)    text on accent
+accent-soft #F9E3D6 (#412A1E)   the current tab, a picked person, an empty Send
+sent      #9E4502  (#7B3C17)    my bubbles (on-sent, on-sent-meta for text and ticks)
+bubble-in #FCFEFF  (#282D34)    other people's bubbles
+ok        #176E4A  (#66C093)    Claude's avatar (ok-soft, on-ok-soft: the Ideas inbox row)
+bad       #B02B27  (#F98F87)    not-sent state, Sign out
+rail, on-rail, rail-current, on-rail-current   the side rail
+focus, focus-rail                              every focus ring
 ```
 
-Four mixes of these (`row-hover`, `row-pinned-hover`, `row-pinned-current`,
-`accent-press`) and two shadows (`thumb`, `lift`) are tokens too. Spacing is
-Tailwind's own scale (4 px a step). Radii: `box` 3, `sm` 6, `md` 10, `lg` 14,
-`pill`. Sizes: `--width-list` (the 320 px column) and `--height-bar` (56 px). The type scale,
-each size in px, named for its role: `micro` 10, `tiny` 11, `small` 12, `meta` 13,
-`compact` 14, `body` 15 (the page), `input` 16, `title` 18, `heading` 20,
-`display` 22, `hero` 32. Tailwind's own colour, text, radius, shadow and
-breakpoint scales are cleared, so `text-sm` yields nothing.
+Also `control-hover`, `accent-press`, `on-accent-soft`, `on-ok`, two mixes
+(`row-pinned-hover`, `row-pinned-current`) and one shadow (`float`: soft in light, a
+hairline alone in dark, where the surface is lifted instead). Spacing is
+Tailwind's own scale (4 px a step). Radii: `sm` 6, `md` 10, `bubble` 18, `pill`.
+Sizes: `--width-list` (the 340 px column beside the 72 px rail) and
+`--height-bar` (56 px). The type scale: `small` 12/16, `compact` 14/20, `body` and
+`input` 16/24, `heading` 20/28 at 700, `hero` 28 (the large brand mark). Tailwind's
+own colour, text, radius, shadow and breakpoint scales are cleared, so `text-sm`
+yields nothing.
 
-Type: Familjen Grotesk (600, 700) for titles and names, Instrument Sans (400,
-500, 600) for everything else, IBM Plex Mono only in Settings for the token.
-Self-host the font files with the build; don't load Google Fonts at runtime.
+Type: Rethink Sans (400, 600, 700; latin and latin-ext) for everything, IBM Plex
+Mono only in Settings for the token. Self-host the font files with the build
+(`@fontsource/rethink-sans`, pinned); don't load Google Fonts at runtime. Motion
+is colour only, 120 ms, and none under reduced motion.
 
 Theme: a Light / Dark / System choice in Settings, kept on the device
 (`localStorage`), light on a first visit even when the system is dark. A script
 in `index.html` sets `data-theme` on `<html>` before the first paint, and the
-browser bar's colour follows it. A dark theme is the same tokens, not `dark:`
-classes. The two-pane layout starts at 900 px: the `wide:` variant, and
+browser bar's colour (the accent of each theme: `THEME_COLOR`, the boot script, the manifest) follows it. A dark theme is the same tokens, not `dark:`
+classes. The rail layout starts at 900 px: the `wide:` variant, and
 `WIDE_QUERY` in `web/src/polling.ts`, which a test keeps equal.
 
 ## PWA

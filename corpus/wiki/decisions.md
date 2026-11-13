@@ -196,3 +196,12 @@ whole web app moved to it (one stylesheet, `web/src/styles/index.css`). shadcn
 stays rejected for a reason of its own: Base UI is used directly, with no styled
 kit on top. The theme became a Light / Dark / System switch (Q18), kept on the
 device, light on a first visit.
+
+## The redesign: Clay on graphite
+_2026-11-13, owner_. The owner approved the redesign on the estate redesign board, with every question as proposed. It reopens three lines of [design.md](design.md); each old line is kept here as history.
+
+- **Layout from 900 px.** Was (2026-11-02): "From 900px up, the list sits left (320px) and the thread or Settings fills the rest; there is no back arrow and no tab bar." Now: a 72 px side rail (the clay S, Chats, Settings) sits left of a 340 px list, and the thread or Settings fills the rest. There is still no back arrow from 900 px, and the tab bar is gone there; under 900 px the tab bar stays and hides inside a thread, as before. On a phone New chat is a 56 px clay button, bottom right above the tab bar; from 900 px the pencil stays in the list header. The empty-list line reads "Start one with the New chat button". Why: the old layout showed a tab bar under the list at 1280 px, and the pencil was the farthest point on a phone.
+- **A sending message.** Was: "bubble at 70% opacity, no tick". Now: the bubble stays full colour and its meta line reads "Sending…" with no tick. Why: the text at 70% over the page measured 2.5:1 in light, under the 4.5 gate.
+- **Colour and type.** Was (2026-10-09): an indigo accent, Familjen Grotesk for titles and names, Instrument Sans for the rest, eleven sizes down to 10 px. Now: clay is the one accent (my bubbles, unread counts, the one primary action); Claude's green stays on its avatar and the Ideas inbox only; graphite neutrals; Rethink Sans alone at four sizes (12, 14, 16, 20, plus a 28 px brand mark); IBM Plex Mono stays for the token. A taste call, in the owner's ask.
+
+Stands: the familiar-UI rule, the pinned Ideas inbox, the ticks (now drawn icons, still spoken "Sent" and "Seen"), text only, Android first and the two Base UI wrappers.
