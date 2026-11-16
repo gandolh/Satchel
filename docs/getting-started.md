@@ -21,15 +21,27 @@ npm install
 
 ## Configure
 
-Copy `.env.example` to `.env`, which git ignores. The server reads it at
-start-up. The Vite dev server reads it too, for the API port.
+Copy `.env.example` to `.env`, which git ignores, and give it the dev
+server's origin. The server reads `.env` at start-up and refuses to start
+without `PUBLIC_ORIGIN` unless Ward is set up. The Vite dev server reads it
+too, for the API port.
+
+```bash
+cp .env.example .env
+echo 'PUBLIC_ORIGIN=http://localhost:5175' >> .env
+```
+
+`.env.example` has an empty `PUBLIC_ORIGIN=` line; the last value in the
+file wins, so the appended line is the one used.
 
 | Variable | Purpose | Where the value comes from |
 |---|---|---|
 | `HOST` | Address the API binds to | `127.0.0.1` |
 | `PORT` | API port; the dev proxy follows it | `8807` |
 | `DATA_DIR` | Folder for `satchel.db`. A relative path is taken from the repo root | `./data` |
-| `PUBLIC_ORIGIN` | Satchel's own origin as the browser sees it. Optional when `WARD_OIDC_REDIRECT_URI` is set (its origin is used) | `http://localhost:5175` |
+| `PUBLIC_ORIGIN` | Satchel's own origin as the browser sees it. Required, unless `WARD_OIDC_REDIRECT_URI` is set (its origin is used) | `http://localhost:5175` |
+| `SATCHEL_API_PREFIX`, `SATCHEL_BASE` | Optional. The API prefix and the web app's base path as the browser sees them | Defaults `/satchel-api` and `/satchel/`; the deploy serves the web app at `/` |
+| `AUTH_TRUSTED_PROXIES` | Optional. Proxies whose `X-Forwarded-For` the server believes, besides loopback | Empty locally; the deploy sets it |
 | `WARD_OIDC_ISSUER`, `WARD_OIDC_CLIENT_ID`, `WARD_OIDC_CLIENT_KEY`, `WARD_OIDC_REDIRECT_URI`, `WARD_OIDC_POST_LOGOUT_REDIRECT_URI` | Optional. "Sign in with Ward". The key is a secret | Ward's local seed |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional. Push notifications; without all three, push is off | [owner-setup.md](owner-setup.md#push-notifications) |
 
@@ -88,11 +100,29 @@ described in [corpus/wiki/claude-access.md](../corpus/wiki/claude-access.md).
 ## Test, typecheck, lint, build
 
 ```bash
-npm test            # vitest, every workspace
-npm run typecheck
+npm run check       # the whole gate: typecheck, lint, format check, conventions, tests
+npm test            # vitest, every workspace; pretest runs `tsc -b` first
+npx vitest run <file>
+npm run typecheck   # tsc -b, then tsc -p web --noEmit
 npm run lint
+npm run format      # Prettier writes every file it covers; Markdown stays out
 npm run build       # tsc for shared, server and cli, then the web app
 ```
+
+`npm run check:conventions` is the part of the gate that runs knip,
+dependency-cruiser and the two house-style checkers from `vendor/house-style/`.
+
+The web app also has Playwright specs in `web/e2e/` (focus rings, reduced
+motion, the 390 px layout, the 900 px switch, the theme). They answer the API
+from stubs, so no server or Ward runs, and they start their own Vite server on
+port 5190:
+
+```bash
+npm run test:e2e -w @satchel/web
+```
+
+They need Playwright's Chromium (`npx playwright install chromium`) or
+`CHROME` set to an installed Chrome.
 
 ## Run the API container
 
@@ -113,7 +143,10 @@ for the built app and `vite preview` on port 4175 are in
   `WARD_OIDC_` key.** Set `PUBLIC_ORIGIN`, or run Ward's local seed; it writes the
   values into `.env`.
 - **Port 5175 is in use.** The dev server won't pick another port. Stop
-  whatever holds it.
+  whatever holds it, or run the two halves yourself on other ports:
+  `npx tsc -b shared`, then `PORT=<api> PUBLIC_ORIGIN=http://localhost:<web> npm run dev -w @satchel/server`
+  and `PORT=<api> npm run dev -w @satchel/web -- --port <web>`. The web half
+  reads `PORT` to find the API.
 - **"Ward didn't let you in here" after Sign in with Ward.** The Ward account
   has no grant on `satchel`. Grant one in the local Ward console.
 - **Sign in with Ward is missing from the login page.** `WARD_OIDC_ISSUER` is

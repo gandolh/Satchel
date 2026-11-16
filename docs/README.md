@@ -14,3 +14,4 @@ Going deeper:
 - Project wiki: [corpus/](../corpus/index.md), with decisions, status, the
   design and the numbered briefs
 - The guide Claude follows: [cli/src/guide.md](../cli/src/guide.md)
+- The web app's design system: [web/DESIGN.md](../web/DESIGN.md)

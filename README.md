@@ -3,7 +3,7 @@
 Satchel is a small text messenger for its owner and a few friends. Its first chat, the Ideas inbox, is with Claude. The owner writes ideas there from a phone, and Claude Code reads them later at home through the `satchel` command.
 
 <p align="center">
-  <img src="docs/images/ideas-inbox.webp" width="300" alt="Phone screen of the Ideas inbox: five ideas in blue bubbles, the first three with double ticks and a 'Seen 21:10' line under the third, the two from today with single ticks">
+  <img src="docs/images/ideas-inbox.webp" width="300" alt="Phone screen of the Ideas inbox: five ideas in clay-coloured bubbles, the first three with double ticks and a 'Seen 21:10' line under the third, the two from today with single ticks">
 </p>
 
 At home, Claude runs the CLI and gets only what it hasn't read yet:
@@ -12,8 +12,8 @@ At home, Claude runs the CLI and gets only what it hasn't read yet:
 $ satchel unread
 Ideas inbox · 2 unread · seen up to #10
 
-#11  2026-10-09 08:31  About the backup script: compare file sizes first and only hash when two sizes match. Much faster.
-#12  2026-10-09 12:05  Small one: a "leave by" reminder that checks the tram times, not just the clock.
+#11  2026-11-16 08:31  About the backup script: compare file sizes first and only hash when two sizes match. Much faster.
+#12  2026-11-16 12:05  Small one: a "leave by" reminder that checks the tram times, not just the clock.
 
 Oldest first. Later messages can correct earlier ones. Gaps in numbers are normal.
 When you have read them all, run:  satchel seen 12
@@ -21,7 +21,7 @@ $ satchel seen 12
 Seen up to #12.
 ```
 
-**Status:** Personal project, built but not deployed yet. Built: the Ideas inbox, the `satchel` CLI, Ward sign-in, friend chats, live updates, push notifications, the Android share target and Claude's replies. Push was tried end to end in headless Chrome only; iPhone push, the share target and replies on a phone are untested.
+**Status:** Personal project, built but not deployed yet. Built: the Ideas inbox, the `satchel` CLI, local accounts with "Sign in with Ward" as an option, friend chats, live updates, push notifications, the Android share target and Claude's replies. The web app was redesigned on 2026-11-13 ("Clay on graphite"), and that is not deployed either. Push was tried end to end in headless Chrome only; iPhone push, the share target and replies on a phone are untested.
 
 ## What it does
 
@@ -38,17 +38,17 @@ A notes app would hold the ideas too. Satchel adds an exact read marker, so Clau
 
 | The chat list | A group with friends | Sending an idea |
 |---|---|---|
-| <img src="docs/images/chat-list.webp" width="250" alt="Chat list with the Ideas inbox pinned first, then Ana with two unread messages, the Weekend hike group and Theo"> | <img src="docs/images/group-chat.webp" width="250" alt="The Weekend hike group: messages from Maya, Theo and Ana, a note that Claude has no access to this chat, and 'Seen by Maya, Theo' under the last message"> | <img src="docs/images/send-and-seen.gif" width="250" alt="Typing an idea in the Ideas inbox and sending it: it gets one tick, then the Seen line moves under it once Claude marks it seen"> |
+| <img src="docs/images/chat-list.webp" width="250" alt="Chat list with the Ideas inbox pinned first, then Ana with two unread messages, the Weekend hike group and Theo"> | <img src="docs/images/group-chat.webp" width="250" alt="The Weekend hike group: messages from Maya, Theo and Ana over three days, and 'Seen by Maya, Theo' under the last message"> | <img src="docs/images/send-and-seen.gif" width="250" alt="Typing an idea in the Ideas inbox and sending it: it gets one tick, then the Seen line moves under it once Claude marks it seen"> |
 
 In the GIF, the owner sends an idea and it gets one tick. Claude then runs `satchel seen` at home, and the "Seen" line moves under the new idea without a reload.
 
 The owner creates the Claude token in Settings and can revoke it there:
 
-<img src="docs/images/connect-claude.webp" width="390" alt="The Connect Claude card: a token created on 9 Oct, when it was last used, a Revoke button and a Create token button">
+<img src="docs/images/connect-claude.webp" width="390" alt="The Connect Claude card: one token with the times it was created and last used, a Revoke button and a Create token button">
 
-On a laptop the chat list and the open chat sit side by side:
+From 900 px wide, a side rail, the chat list and the open chat sit side by side:
 
-<img src="docs/images/desktop.webp" width="100%" alt="Desktop layout: the chat list on the left, the Weekend hike group open on the right">
+<img src="docs/images/desktop.webp" width="100%" alt="Desktop layout: the side rail and the chat list on the left, the Weekend hike group open on the right under a note that Claude has no access to this chat">
 
 ## How it works
 
@@ -66,14 +66,17 @@ More in [docs/architecture.md](docs/architecture.md).
 
 ## Run it locally
 
-Requires Node 24 or later. Satchel runs on its own local accounts; make one with `npm run seed -w @satchel/server`. "Sign in with Ward" is optional: it needs the local Ward container from `wzd_auth/infrastructure/local` on <http://localhost:8792>, whose seed registers Satchel as a client and fills the five `WARD_OIDC_` values in this repo's `.env`, so copy `.env.example` to `.env` before you run it.
+Requires Node 24 or later. Satchel signs people in with its own local accounts, so nothing else has to run.
 
 ```bash
 npm install
+cp .env.example .env
+echo 'PUBLIC_ORIGIN=http://localhost:5175' >> .env
+SEED_USERNAME=owner SEED_ROLE=admin npm run seed -w @satchel/server
 npm run dev
 ```
 
-Then open <http://localhost:5175/satchel/> and sign in with your local account or with Ward. The API listens on port 8807. Env vars, tests, push and the CLI against a local server are in [docs/getting-started.md](docs/getting-started.md).
+The seed asks for a password and makes the owner's account. Then open <http://localhost:5175/satchel/> and sign in as `owner`. The API listens on port 8807. Env vars, "Sign in with Ward", tests, push and the CLI against a local server are in [docs/getting-started.md](docs/getting-started.md).
 
 ## Deploy and setup
 
@@ -92,11 +95,13 @@ Deploying is a hand-run owner step through vps-deploy. These live in [docs/owner
 | `web/` | React PWA, at the root of `satchel.<domain>` in production and under `/satchel/` in local dev |
 | `cli/` | the `satchel` command and its guide |
 | `infrastructure/` | Dockerfile and compose file for the API container |
+| `vendor/` | a generated copy of the house style (lint, format and convention rules); `npm run house-style:sync` refreshes it |
 | `corpus/` | design wiki, decisions and the numbered briefs |
 
 ## Docs
 
 - [docs/](docs/README.md): setup, architecture, the owner's steps, and the images used here
+- [web/DESIGN.md](web/DESIGN.md): the look, "Clay on graphite": tokens, layout and the checks that hold them
 - [corpus/](corpus/index.md): the project wiki, with decisions, status and the briefs
 
 ## License
