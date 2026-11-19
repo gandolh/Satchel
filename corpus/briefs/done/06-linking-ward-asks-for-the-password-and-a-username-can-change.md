@@ -50,3 +50,18 @@ What the update changes here:
 - [ ] Both vendored copies at the new version; the tests above pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] The outcome note lists each CHANGELOG entry this app crossed and what it needed, and the username check's finding.
 - [ ] End move `ready_for_deploy` with the app's deploy step (server and web both change).
+
+## Outcome (2026-11-19)
+
+Done. `ward-auth` 1.1.0 is vendored in `server/vendor/ward` and `web/vendor/ward` (six files each, `SHA256SUMS` checked). Crossed from 0.3.1:
+
+- **0.4.0** rename route: kept on and used. Settings has a Change username field (`useRenameUser`), with words for `username_taken`, `invalid_username` and `too_many_attempts`.
+- **0.5.0** `usernameFor`: not used; first Ward sign-ins keep the library's name handling.
+- **0.6.0** migration 4 (`disabled_at`): ran by itself. No `disableUser` call yet.
+- **0.7.0** `returnTo`: unused; nothing changes on the login page.
+- **1.0.0**: link and unlink take `currentPassword`. The password field sits next to Link Ward and inside the Unlink confirm; a refusal shows beside it and the field keeps focus. Server tests send the password and cover missing (400), wrong (401) and right.
+- **1.1.0** migration 5 (`username_skeleton`): ran on a fresh dev database (all five migrations applied, `owner` got its key); no shared-key warning, since there was one user. A look-alike (`AIice` against `alice`) answers `username_taken`, tested.
+
+Username check: nothing is keyed by the name. Messages, conversations, members, seen marks, push subscriptions and Claude tokens hang on the account's subject, and `accounts.display_name` is rewritten from the session on every `/api/*` request. So the screen was built. After a rename everyone sees the new name everywhere, old messages included. Recorded in `wiki/decisions-accounts.md` (the decisions page was at its 200-line cap). Settings' Account card reads the name from the session, so it updates at once; other screens pick it up on their next fetch.
+
+Not done: a real Ward round trip. Shots of Settings (1280 light, 390 dark, error showing) were read; the Ward calls were stubbed. Owner step: `node cli.ts satchel all` from vps-deploy; no step back to an older copy once migration 5 has run.

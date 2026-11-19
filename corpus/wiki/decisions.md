@@ -105,7 +105,7 @@ useful on day one and has no other users to support.
 ## Satchel has its own accounts; Ward is a linked second way in
 _2026-10-13; the estate's call is in `wzd_auth` `decisions-oidc.md`_.
 Satchel signs people in itself: a users table in its own database
-(`auth_users`, from the vendored `ward-auth` 0.2.0 library), scrypt passwords,
+(`auth_users`, from the vendored `ward-auth` library, 1.1.0 since 2026-11-19), scrypt passwords,
 opaque sessions in the `satchel_session` cookie (`Path=/satchel-api`), and a
 login page in Satchel's own design. "Sign in with Ward" is a button on that
 page. The role lives in that row: `admin` is the owner, `member` a friend. There

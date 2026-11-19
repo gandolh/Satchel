@@ -61,13 +61,13 @@ app is the same build, made with `SATCHEL_BASE=/`.
 Two doors, never mixed:
 
 - **`/api/*` (except `/api/health`) and `/auth/*`**: the vendored `ward-auth`
-  plugin ([server/vendor/ward/](../../server/vendor/ward/), version 0.2.0,
+  plugin ([server/vendor/ward/](../../server/vendor/ward/), version 1.1.0,
   never edited), registered by
   [server/src/plugins/auth/index.ts](../../server/src/plugins/auth/index.ts)
   as the root guard. It owns
   local sign-in (`POST /auth/login`, `/auth/logout`, `GET /auth/session`,
-  password change), the Ward routes (`POST /auth/ward/start`, `GET
-  /auth/ward/callback`, link, unlink, set a password, "sign out of Ward too")
+  password change, `POST /auth/username` to rename oneself), the Ward routes (`POST /auth/ward/start`, `GET
+  /auth/ward/callback`, link and unlink (each takes the typed local password), set a password, "sign out of Ward too")
   and the opaque session in the `satchel_session` cookie
   (`Path=/satchel-api`, so it rides the WebSocket upgrade too). A request
   without a live session is `401 { error: "unauthorized" }`, the plugin's
@@ -91,7 +91,8 @@ finishes (`WARD_OIDC_ISSUER`, `WARD_OIDC_CLIENT_ID`, `WARD_OIDC_CLIENT_KEY`,
 means local accounts only, and the button is hidden). The callback is
 `<API prefix>/auth/ward/callback`, so the dev server and Caddy need no new
 rule. A first Ward sign-in makes a local user (role from Ward's grant); a user
-with an account links Ward in Settings; nothing is matched by username. A
+with an account links Ward in Settings; nothing is matched by username. Linking
+and unlinking ask for the local password again (ward-auth 1.0.0). A
 session that began with Ward is checked against Ward at most every 30 seconds;
 Ward not answering refuses it (`ward_unavailable`) and a local session is
 never checked.
