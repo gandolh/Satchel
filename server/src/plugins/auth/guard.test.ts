@@ -360,19 +360,29 @@ describe("the Ward routes are wired", () => {
     const session = await t.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } });
     expect(session.json()).toMatchObject({ user: { hasPassword: false }, ward: { enabled: true, linked: true } });
 
-    const refused = await post("/auth/ward/unlink", { cookie });
+    const refused = await post("/auth/ward/unlink", { cookie, payload: { currentPassword: "anything" } });
     expect(refused.statusCode).toBe(409);
     expect(refused.json()).toMatchObject({ error: "no_local_password" });
 
     // Setting a password ends every other session; sign in again.
     await t.accounts.setPassword(user.id, TEST_PASSWORD);
     cookie = await startSession();
-    const unlinked = await post("/auth/ward/unlink", { cookie });
+    // Unlinking asks for the local password again.
+    expect((await post("/auth/ward/unlink", { cookie })).statusCode).toBe(400);
+    const wrong = await post("/auth/ward/unlink", { cookie, payload: { currentPassword: "not the password" } });
+    expect(wrong.statusCode).toBe(401);
+    expect(wrong.json()).toMatchObject({ error: "invalid_credentials" });
+    expect(await identities.findUserBySubject("ward-subject-1")).toBeDefined();
+    const unlinked = await post("/auth/ward/unlink", { cookie, payload: { currentPassword: TEST_PASSWORD } });
     expect(unlinked.statusCode).toBe(200);
     expect(await identities.findUserBySubject("ward-subject-1")).toBeUndefined();
 
     // Not linked any more: Settings offers "Link Ward", which starts a round trip.
-    const start = await post("/auth/ward/link", { cookie });
+    expect((await post("/auth/ward/link", { cookie })).statusCode).toBe(400);
+    const refusedLink = await post("/auth/ward/link", { cookie, payload: { currentPassword: "not the password" } });
+    expect(refusedLink.statusCode).toBe(401);
+    expect(refusedLink.json()).toMatchObject({ error: "invalid_credentials" });
+    const start = await post("/auth/ward/link", { cookie, payload: { currentPassword: TEST_PASSWORD } });
     expect(start.statusCode).toBe(200);
     expect(start.json<{ url: string }>().url.startsWith(`${FAKE_ISSUER}/auth?`)).toBe(true);
   });
@@ -386,5 +396,34 @@ describe("the Ward routes are wired", () => {
     expect(changed.statusCode).toBe(204);
     const login = await post("/auth/login", { payload: { username: A.username, password: "a different passphrase" } });
     expect(login.statusCode).toBe(200);
+  });
+
+  it("a user renames themselves; the account keeps its messages and signs in under the new name", async () => {
+    const cookie = await t.signIn(A);
+    expect((await me(cookie)).statusCode).toBe(200);
+    const renamed = await post("/auth/username", { cookie, payload: { username: "anamaria" } });
+    expect(renamed.statusCode).toBe(200);
+    // The same account (same subject), shown under the new name from the next request on.
+    const after = await me(cookie);
+    expect(after.json()).toMatchObject({ subject: A.subject, displayName: "anamaria" });
+    expect(displayName(A.subject)).toBe("anamaria");
+    const login = await post("/auth/login", { payload: { username: "anamaria", password: TEST_PASSWORD } });
+    expect(login.statusCode).toBe(200);
+    const old = await post("/auth/login", { payload: { username: A.username, password: TEST_PASSWORD } });
+    expect(old.statusCode).toBe(401);
+  });
+
+  it("a taken name and a look-alike are refused as username_taken", async () => {
+    await t.signIn(B);
+    const cookie = await t.signIn(A);
+    const taken = await post("/auth/username", { cookie, payload: { username: "Bogdan" } });
+    expect(taken.statusCode).toBe(409);
+    expect(taken.json()).toMatchObject({ error: "username_taken" });
+    // A capital I in place of the l.
+    await t.signIn({ subject: "subject-c", username: "alice", role: "member" });
+    const lookAlike = await post("/auth/username", { cookie, payload: { username: "AIice" } });
+    expect(lookAlike.statusCode).toBe(409);
+    expect(lookAlike.json()).toMatchObject({ error: "username_taken" });
+    expect((await t.accounts.findUserByUsername("ana"))?.id).toBe(A.subject);
   });
 });

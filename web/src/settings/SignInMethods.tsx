@@ -1,6 +1,7 @@
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
   useChangePassword,
+  useRenameUser,
   useSession,
   useSetLocalPassword,
   useWardLink,
@@ -31,6 +32,7 @@ export function SignInMethods() {
   const { user, ward } = session;
   return (
     <Card title="Sign in" titleId={titleId} className="gap-3">
+      <ChangeUsername username={user.username} />
       {user.hasPassword ? <ChangePassword /> : <SetPassword />}
       {ward.enabled && (
         <WardAccount linked={ward.linked} hasPassword={user.hasPassword} fromWard={session.session.origin === "ward"} />
@@ -52,13 +54,20 @@ function PasswordField({
   value,
   onChange,
   autoComplete,
+  focusOn,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: "current-password" | "new-password";
+  /** A refusal (any new object) puts the focus back in the field. */
+  focusOn?: unknown;
 }) {
   const id = useId();
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (focusOn !== undefined && focusOn !== null) input.current?.focus();
+  }, [focusOn]);
   return (
     <div className={field}>
       <label className={fieldLabel} htmlFor={id}>
@@ -66,6 +75,7 @@ function PasswordField({
       </label>
       <input
         id={id}
+        ref={input}
         className={fieldInput}
         type="password"
         autoComplete={autoComplete}
@@ -94,7 +104,7 @@ function ChangePassword() {
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit} onChange={reset}>
+    <form className="grid gap-3 border-t border-line pt-4" onSubmit={submit} onChange={reset}>
       <p className="text-muted">Your password signs you in even when Ward is down.</p>
       <PasswordField label="Current password" value={current} onChange={setCurrent} autoComplete="current-password" />
       <PasswordField label="New password" value={next} onChange={setNext} autoComplete="new-password" />
@@ -127,7 +137,7 @@ function SetPassword() {
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit} onChange={reset}>
+    <form className="grid gap-3 border-t border-line pt-4" onSubmit={submit} onChange={reset}>
       <p className="text-muted">
         You sign in with Ward. Set a password too, so you can still get in when Ward isn&rsquo;t reachable.
       </p>
@@ -152,51 +162,139 @@ function SetPassword() {
   );
 }
 
-/** Link or unlink the Ward account, and sign out of Ward too when this session began there. */
+/** A user changes their own username. Past messages show the new name too: they hang on the account, not the name. */
+function ChangeUsername({ username }: { username: string }) {
+  const [next, setNext] = useState(username);
+  const id = useId();
+  const { renameUser, pending, error, done, reset } = useRenameUser();
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const name = next.trim();
+    if (pending || name === "" || name === username) return;
+    void renameUser(name).then((ok) => {
+      if (ok) setNext(name);
+    });
+  };
+
+  return (
+    <form className="grid gap-3" onSubmit={submit} onChange={reset}>
+      <p className="text-muted">Everyone you chat with sees the new name, on old messages too.</p>
+      <div className={field}>
+        <label className={fieldLabel} htmlFor={id}>
+          Username
+        </label>
+        <input
+          id={id}
+          className={fieldInput}
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          value={next}
+          onChange={(event) => setNext(event.target.value)}
+        />
+      </div>
+      <ErrorLine error={error} />
+      {done && error === null && (
+        <p className="text-muted" role="status">
+          Username changed.
+        </p>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <Button variant="quiet" type="submit" disabled={pending || next.trim() === username}>
+          {pending ? "Saving…" : "Change username"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Link or unlink the Ward account (each asks for the password again), and sign out of Ward too when this session began there. */
 function WardAccount({ linked, hasPassword, fromWard }: { linked: boolean; hasPassword: boolean; fromWard: boolean }) {
   const link = useWardLink();
   const unlink = useWardUnlink();
   const out = useWardSignOut();
   const [confirming, setConfirming] = useState(false);
+  const [password, setPassword] = useState("");
+
+  const submitLink = (event: FormEvent) => {
+    event.preventDefault();
+    if (link.pending || password === "") return;
+    void link.link(password);
+  };
+  const submitUnlink = (event: FormEvent) => {
+    event.preventDefault();
+    if (unlink.pending || password === "") return;
+    void unlink.unlink(password).then((ok) => {
+      if (ok) {
+        setConfirming(false);
+        setPassword("");
+      }
+    });
+  };
+  const cancel = () => {
+    setConfirming(false);
+    setPassword("");
+    unlink.reset();
+  };
 
   return (
-    <div className="grid gap-1">
+    <div className="grid gap-3 border-t border-line pt-4">
       <p className="text-muted">{linked ? "A Ward account is linked to this one." : "No Ward account is linked."}</p>
       {linked && !hasPassword && <p className="text-muted">Set a password above before you unlink Ward.</p>}
-      <ErrorLine error={link.error ?? unlink.error ?? out.error} />
-      <div className="flex flex-wrap gap-3">
-        {!linked && (
-          <Button variant="quiet" disabled={link.pending} onClick={() => void link.link()}>
-            {link.pending ? "Going to Ward…" : "Link Ward"}
-          </Button>
-        )}
-        {linked && !confirming && (
+      {!linked && (
+        <form className="grid gap-3" onSubmit={submitLink} onChange={link.reset}>
+          <PasswordField
+            label="Current password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            focusOn={link.error}
+          />
+          <ErrorLine error={link.error} />
+          <div className="flex flex-wrap gap-3">
+            <Button variant="quiet" type="submit" disabled={link.pending}>
+              {link.pending ? "Going to Ward…" : "Link Ward"}
+            </Button>
+          </div>
+        </form>
+      )}
+      {linked && !confirming && (
+        <div className="flex flex-wrap gap-3">
           <Button variant="quiet" disabled={!hasPassword} onClick={() => setConfirming(true)}>
             Unlink Ward
           </Button>
-        )}
-        {linked && confirming && (
-          <>
-            <Button
-              variant="danger"
-              disabled={unlink.pending}
-              onClick={() => {
-                void unlink.unlink().then(() => setConfirming(false));
-              }}
-            >
+        </div>
+      )}
+      {linked && confirming && (
+        <form className="grid gap-3" onSubmit={submitUnlink} onChange={unlink.reset}>
+          <PasswordField
+            label="Current password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            focusOn={unlink.error}
+          />
+          <ErrorLine error={unlink.error} />
+          <div className="flex flex-wrap gap-3">
+            <Button variant="danger" type="submit" disabled={unlink.pending}>
               {unlink.pending ? "Unlinking…" : "Unlink Ward"}
             </Button>
-            <Button variant="quiet" onClick={() => setConfirming(false)}>
+            <Button variant="quiet" onClick={cancel}>
               Cancel
             </Button>
-          </>
-        )}
-        {fromWard && (
+          </div>
+        </form>
+      )}
+      <ErrorLine error={out.error} />
+      {fromWard && (
+        <div className="flex flex-wrap gap-3">
           <Button variant="quiet" disabled={out.pending} onClick={() => void out.signOut()}>
             Sign out of Ward too
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

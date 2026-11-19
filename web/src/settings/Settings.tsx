@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { SignOutButton } from "../auth/AuthGate";
+import { useSession } from "../../vendor/ward/ward-auth-react.js";
 import { useMe } from "../auth/session";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
@@ -23,6 +24,9 @@ const ConnectClaude = Object.values(slot)[0]?.ConnectClaude;
 /** Settings: who is signed in, Sign out, how this account signs in, Notifications, and Connect Claude (the owner only). */
 export function Settings() {
   const me = useMe();
+  const session = useSession();
+  // The session carries the name a rename just set; `me` was read before it.
+  const name = session.status === "signed_in" ? session.user.username : me.displayName;
   return (
     <section className={screen}>
       <ScreenHeader title="Settings" large />
@@ -30,11 +34,9 @@ export function Settings() {
         <div className={cn("mx-auto grid w-full max-w-160 content-start gap-4 p-4 wide:px-6 wide:py-8", safeX)}>
           <Card title="Account" titleId="settings-account">
             <div className="flex min-w-0 items-center gap-3">
-              <Avatar name={me.displayName} size="lg" />
+              <Avatar name={name} size="lg" />
               <div className="grid min-w-0 gap-0.5">
-                <p className="overflow-hidden text-input font-semibold text-ellipsis whitespace-nowrap">
-                  {me.displayName}
-                </p>
+                <p className="overflow-hidden text-input font-semibold text-ellipsis whitespace-nowrap">{name}</p>
                 <p className="text-compact text-muted">{me.inboxId === null ? "Friend" : "Owner"}</p>
               </div>
             </div>

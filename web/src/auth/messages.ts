@@ -81,6 +81,10 @@ export function settingsMessage(error: AuthError): string {
       return "Sign in to Ward again to confirm it’s you, then set the password.";
     case "invalid_credentials":
       return "That isn’t your current password.";
+    case "username_taken":
+      return "That username is taken, or looks too much like one that is.";
+    case "invalid_username":
+      return "That username can’t be used. Keep it short, with no line breaks.";
     case "password_too_short":
       return "Use at least 8 characters.";
     case "password_too_long":
