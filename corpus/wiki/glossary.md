@@ -75,3 +75,9 @@ _Avoid_: instructions, prompt, help text
 A message Claude posts in the Ideas inbox with `satchel reply <n>`. It starts
 `Re #n:`, since messages have no reply field.
 _Avoid_: answer, response, comment
+
+**AI tag**:
+The small "AI" pill after the real Claude's name (chat list row, thread header,
+a sender name). Decided by the member id `CLAUDE_MEMBER`, never by the name, so
+a person who renamed themselves "Claude" gets none.
+_Avoid_: bot tag, badge

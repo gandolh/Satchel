@@ -7,6 +7,8 @@ import { iconButton, safeX } from "./looks";
 export interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
+  /** Right after the title, inside the heading: the AI tag on Claude. */
+  tag?: ReactNode;
   /** Show the back arrow. It is hidden from 900px up, where the list is always beside. */
   back?: boolean;
   /** Before the titles, after the back arrow: an avatar, usually. */
@@ -23,6 +25,7 @@ export interface ScreenHeaderProps {
 export function ScreenHeader({
   title,
   subtitle,
+  tag,
   back = false,
   leading,
   actions,
@@ -47,6 +50,7 @@ export function ScreenHeader({
           )}
         >
           {title}
+          {tag}
         </Heading>
         {subtitle && (
           <p className="overflow-hidden text-small text-ellipsis whitespace-nowrap text-muted">{subtitle}</p>

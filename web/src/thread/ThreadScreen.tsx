@@ -2,10 +2,11 @@ import { CLAUDE_MEMBER, seenLine, tickState, type Message } from "@satchel/share
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { listMessages, markSeen, sendMessage, SignedOut, ApiError } from "../api";
 import { useMe } from "../auth/session";
-import { conversationSubtitle, conversationTitle, withNewerMarkers } from "../chats/conversation";
+import { conversationSubtitle, conversationTitle, hasClaude, withNewerMarkers } from "../chats/conversation";
 import { refreshConversations, useConversationSummary, useLiveChats } from "../chats/conversations";
 import { clearDraft, draftFor } from "../share/share";
 import { clockTime } from "../chats/time";
+import { AiTag } from "../layout/AiTag";
 import { Avatar } from "../layout/Avatar";
 import { ScreenHeader } from "../layout/ScreenHeader";
 import { Tick } from "../layout/Tick";
@@ -231,6 +232,7 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
         back
         title={title}
         subtitle={subtitle || undefined}
+        tag={conversation && hasClaude(conversation) && <AiTag />}
         leading={conversation && <Avatar name={title} claude={isInbox} size="sm" />}
       />
       <div className={screenBody} ref={scroller} onScroll={onScroll}>
@@ -289,7 +291,10 @@ export function ThreadScreen({ conversationId }: ThreadScreenProps) {
                     )}
                   >
                     {isGroup && !own && startsRun && (
-                      <span className="block text-compact font-semibold text-accent">{senderName(message)}</span>
+                      <span className="block text-compact font-semibold text-accent">
+                        {senderName(message)}
+                        {claude && <AiTag />}
+                      </span>
                     )}
                     <p className={bubbleText}>{message.text}</p>
                     <span className={cn(bubbleMeta, own && "text-on-sent-meta")}>

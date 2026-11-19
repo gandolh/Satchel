@@ -1,5 +1,6 @@
 import {
   CLAUDE_DISPLAY_NAME,
+  CLAUDE_MEMBER,
   tickState,
   type ConversationSummary,
   type LiveEvent,
@@ -11,6 +12,11 @@ import {
  * How a conversation is named and previewed. The list and the thread header
  * both read these, so a chat is called the same thing everywhere.
  */
+
+/** The conversation has the real Claude in it, by member id. Never by name: a person can be called "Claude". */
+export function hasClaude(conversation: ConversationSummary): boolean {
+  return conversation.members.some((member) => member.id === CLAUDE_MEMBER);
+}
 
 /** The inbox's subtitle, everywhere it has one. */
 export const INBOX_SUBTITLE = "Ideas inbox";

@@ -1,11 +1,12 @@
 import type { ConversationSummary } from "@satchel/shared";
+import { AiTag } from "../layout/AiTag";
 import { Avatar } from "../layout/Avatar";
 import { Link } from "../layout/Link";
 import { safeX } from "../layout/looks";
 import { cn } from "../lib/cn";
 import { Tick } from "../layout/Tick";
 import { threadRoute } from "../router";
-import { conversationSubtitle, conversationTitle, INBOX_SUBTITLE, lastMessagePreview } from "./conversation";
+import { conversationSubtitle, conversationTitle, hasClaude, INBOX_SUBTITLE, lastMessagePreview } from "./conversation";
 import { listTime } from "./time";
 
 export interface ChatRowProps {
@@ -54,6 +55,7 @@ export function ChatRow({ conversation, me, selected }: ChatRowProps) {
             )}
           >
             {title}
+            {hasClaude(conversation) && <AiTag />}
           </span>
           {inbox && (
             <span className="min-w-0 flex-1 overflow-hidden text-small text-ellipsis whitespace-nowrap text-muted">
