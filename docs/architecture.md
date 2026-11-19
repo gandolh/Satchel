@@ -75,6 +75,9 @@ them stays unread for next time instead of being skipped.
   the token and the guide
 - [corpus/wiki/decisions.md](../corpus/wiki/decisions.md): what was decided
   and what was rejected
+- [web/DESIGN.md](../web/DESIGN.md) and
+  [corpus/wiki/design.md](../corpus/wiki/design.md): how the web app looks
+  ("Clay on graphite", 2026-11-13) and behaves
 - Code: [server/src/db/store.ts](../server/src/db/store.ts),
   [server/src/plugins/auth/guard.ts](../server/src/plugins/auth/guard.ts),
   [server/src/features/](../server/src/features/),
