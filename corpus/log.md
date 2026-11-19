@@ -431,3 +431,7 @@ Built from the approved direction: the clay accent on graphite neutrals, Rethink
 ## [2026-11-19] build | Brief 06: ward-auth 1.1.0, password to link, Change username
 
 Re-vendored `ward-auth` from 0.3.1 to 1.1.0 (server and web copies). Crossed: 0.4.0 (rename route, now used: Settings has a Change username field), 0.5.0 (`usernameFor`, not used), 0.6.0 (migration 4, ran by itself; no `disableUser` call yet), 0.7.0 (`returnTo`, unused), 1.0.0 (link and unlink take `currentPassword`; the Settings page has the field, in the unlink confirm too), 1.1.0 (migration 5, look-alike usernames refused). What is keyed by the name: nothing; every table hangs on the account's subject, and the display name is refreshed from the session on each request, so a rename shows everywhere, old messages too. `allowRename` stays on. Owner step: `node cli.ts satchel all` from vps-deploy.
+
+## [2026-11-19] build | Brief 07: Claude's name carries an AI tag
+
+An "AI" pill after the real Claude's name in the chat list row and the thread header, decided by the member id so a person renamed "Claude" gets none. Glossary: AI tag. Owner step: `node cli.ts satchel all` from vps-deploy.

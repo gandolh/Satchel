@@ -14,6 +14,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md)). 608 tests
 
 ## By area
 
+- **AI tag** (2026-11-19). Claude's name carries an "AI" pill in the chat list and thread header, by member id, so a person renamed Claude is told apart. Ready for deploy with Ward 1.1.0: `node cli.ts satchel all` from vps-deploy.
 - **Ward 1.1.0** (2026-11-19). `ward-auth` re-vendored from 0.3.1 (both copies). Linking and unlinking Ward ask for the password; a person can change their username in Settings (nothing is keyed by the name); look-alike names are refused. Ready for deploy: `node cli.ts satchel all` from vps-deploy.
 - **Redesign** (2026-11-13). "Clay on graphite", approved on the estate redesign board: a clay accent on graphite, Rethink Sans, a 72 px rail from 900 px, a New chat button on the phone, drawn ticks, labelled fields ([design.md](design.md), `web/DESIGN.md`, [decisions.md](decisions.md)). Playwright specs added. Ready for deploy: `node cli.ts satchel deploy` from vps-deploy (web client only).
 - **Tailwind and the theme switch** (2026-11-11). The web app is Tailwind 4 with one stylesheet (`web/src/styles/index.css`, the tokens in `@theme`); Settings has a Light / Dark / System choice kept on the device, light on a first visit ([design.md](design.md)). `check-base-ui` strict at 0, 23 new tests. Ready for deploy: `node cli.ts satchel deploy` from vps-deploy (web client only).

@@ -35,3 +35,7 @@ Claude's member shows the display name "Claude" (`CLAUDE_DISPLAY_NAME`, `shared/
 
 - [ ] The tests above pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step: the web deploy for the `satchel` stack (`node cli.ts satchel deploy` from vps-deploy; with brief 06, `all`).
+
+## Outcome
+
+Built 2026-11-19 in commit f518642. `AiTag` (`web/src/layout/AiTag.tsx`) is an "AI" pill in the thread's pill style, read by screen readers as "(AI)". `hasClaude(conversation)` in `web/src/chats/conversation.ts` decides by `CLAUDE_MEMBER` among the members, never by name. The tag shows after the name in the chat list's Ideas inbox row, in the thread header (`ScreenHeader` takes a `tag`), and after a sender name above a bubble when the sender is `CLAUDE_MEMBER` (that name only shows in groups, which Claude is not in, so it is wiring for later). No member list shows Claude today. Tests in `web/src/chats/AiTag.test.ts`: Claude's row and header carry the tag, a person called "Claude" gets none. Shots of the chat list and inbox at 1280 light and 390 dark were read, no clipping. Owner step: `node cli.ts satchel all` from vps-deploy (brief 06 still waits on the server part).
