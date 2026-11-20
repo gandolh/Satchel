@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Satchel direction, Clay on graphite</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+/* Hallmark · shape: app screen · genre: playful · theme: brand · redesign: full
+ * ground: oklch(96.2% 0.006 255) · accent: oklch(50% 0.135 48) · display: Rethink Sans · body: Rethink Sans
+ * nav: kept (chat list, thread, bottom tab bar on a phone, two panes from 900 px); the 900 px layout swaps the list's tab bar for a side rail · signature: the clay bubble, the only warm colour on a graphite page, and Claude's green kept for the Ideas inbox · states: loading, empty, error
+ * axes: cool graphite/one grotesk/one clay accent · posture: restrained · modes: light+dark · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, the three screens share one shell, which is the point of a messenger */
+/* Hallmark · waive 72 · every chat row is padded 16px and its preview is cut by text-overflow: ellipsis inside it, checked by the 1280, 1024 and 390 overflow script · the lint measures the clipped text's full width, which runs past the box */
+/* Hallmark · dismissed F25 · the list, thread and form are drawn twice (wide and phone layouts, one shown at a time), so the lint counts the hidden copy as lost words */
+/* Hallmark · dismissed F7 · the avatars, the switch track, the tab pill and the skeleton bars are circles or pills by shape, not by a radius default */
+/* Hallmark · answered F4 · one filled primary per screen: Send in the thread, Create group in the form */
+/* Hallmark · waive 72 · the sheet is a fixed 1440 artboard, never shown on a phone · a direction specimen drawn at one width */
+/* Hallmark · dismissed F25 · the palette table belongs to a fixed 1440 specimen sheet and is never read at 375 */
+.theme-light{color-scheme:light;--color-ground:#f0f3f6;--color-surface:#fcfeff;--color-field:#eaedf2;--color-control:#e1e5ea;--color-control-hover:#d5d9df;--color-row-hover:#f2f5f8;--color-rule:#dbdee3;--color-outline:#70757c;--color-ink:#181b1f;--color-ink-2:#3f4348;--color-muted:#5c6167;--color-accent:#9e4502;--color-accent-hover:#823600;--color-on-accent:#fffdfc;--color-accent-wash:#f9e3d6;--color-on-accent-wash:#6b2e04;--color-sent:#9e4502;--color-on-sent:#fffdfc;--color-on-sent-meta:#fce8df;--color-bubble-in:#fcfeff;--color-claude:#176e4a;--color-on-claude:#fcfefd;--color-claude-wash:#def5e8;--color-on-claude-wash:#034a2e;--color-bad:#b02b27;--color-rail:#e1e5ea;--color-on-rail:#3f4348;--color-rail-current:#fcfeff;--color-on-rail-current:#181b1f;--color-focus:#1654a9;--color-focus-rail:#1654a9;--color-callout:#8c0888;--color-on-callout:#fcfeff;--font-ui:'Rethink Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--color-accent-ink:var(--color-on-accent);--radius-tight:6px;--radius-control:10px;--radius-bubble:18px;--radius-full:999px;--shadow-float:0 8px 24px rgb(20 28 40 / 0.14),0 0 0 1px var(--color-rule);}
+.theme-dark{color-scheme:dark;--color-ground:#101419;--color-surface:#1f2329;--color-field:#151a1f;--color-control:#2e333a;--color-control-hover:#3a3f46;--color-row-hover:#262b31;--color-rule:#363b41;--color-outline:#81878d;--color-ink:#e6eaee;--color-ink-2:#c4c8cc;--color-muted:#a0a5ab;--color-accent:#eb9c6a;--color-accent-hover:#fcb58b;--color-on-accent:#1e130e;--color-accent-wash:#412a1e;--color-on-accent-wash:#f9cdb4;--color-sent:#7b3c17;--color-on-sent:#f8f2ef;--color-on-sent-meta:#eddad0;--color-bubble-in:#282d34;--color-claude:#66c093;--color-on-claude:#0b1a12;--color-claude-wash:#192e23;--color-on-claude-wash:#a9e0c1;--color-bad:#f98f87;--color-rail:#101419;--color-on-rail:#b2b8bf;--color-rail-current:#31363d;--color-on-rail-current:#eff2f6;--color-focus:#77b5fb;--color-focus-rail:#77b5fb;--color-callout:#d773d0;--color-on-callout:#170e16;--font-ui:'Rethink Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--color-accent-ink:var(--color-on-accent);--radius-tight:6px;--radius-control:10px;--radius-bubble:18px;--radius-full:999px;--shadow-float:0 0 0 1px var(--color-rule);}
+html, body { overflow-x: clip; }
+body { margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.sm { container: app / inline-size; background: var(--color-ground); color: var(--color-ink); font-family: var(--font-ui); font-size: 16px; line-height: 24px; font-synthesis: none; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); scrollbar-color: var(--color-outline) var(--color-ground); }
+.sm ::selection { background: var(--color-accent-wash); color: var(--color-ink); }
+:where(.sm) :where(h1, h2, h3) { text-wrap: balance; }
+:where(.sm) :where(h1, h2, h3, p, ul, ol, dl, dd, fieldset, legend, figure) { margin: 0; padding: 0; }
+:where(.sm) :where(ul, ol) { list-style: none; }
+:where(.sm) fieldset { border: 0; min-width: 0; }
+:where(.sm) :where(button, input) { font: inherit; color: inherit; }
+:where(.sm) a { color: inherit; text-decoration: none; }
+.sm svg { display: block; flex-shrink: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Type: four sizes in the app. 20 titles, 16 names and messages, 14 previews and fields' helpers, 12 times and labels. */
+.t-title { font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.005em; }
+.t-name { font-size: 16px; line-height: 24px; font-weight: 600; }
+.t-body { font-size: 16px; line-height: 24px; }
+.t-meta { font-size: 14px; line-height: 20px; }
+.t-label { font-size: 12px; line-height: 16px; font-weight: 600; }
+.ink-2 { color: var(--color-ink-2); }
+.muted { color: var(--color-muted); }
+
+/* Buttons: one filled primary per screen. */
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-5); border: 0; border-radius: var(--radius-full); font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1), color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.btn::after { content: ""; position: absolute; inset: -4px 0; }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover, .btn-primary:active, .btn-primary.is-hover { background: var(--color-accent-hover); }
+.btn-secondary { background: var(--color-control); color: var(--color-ink); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--color-control-hover); }
+.btn-quiet { background: transparent; color: var(--color-ink); padding: 0 var(--space-4); }
+.btn-quiet:hover, .btn-quiet.is-hover { background: var(--color-row-hover); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--color-accent-wash); color: var(--color-muted); cursor: not-allowed; }
+.is-focus { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-ink); cursor: pointer; }
+.icon-btn:hover, .icon-btn.is-hover { background: var(--color-control); }
+
+/* Fields: a visible 3:1 edge that never changes width; the label sits above. */
+.fld { min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.fld > .t-meta { font-weight: 600; color: var(--color-ink); }
+.field { display: flex; align-items: center; gap: var(--space-2); height: 48px; padding: 0 var(--space-4); border: 1px solid var(--color-outline); border-radius: var(--radius-control); background: var(--color-field); color: var(--color-ink); }
+.field input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: 0; font-size: 16px; line-height: 24px; }
+.field input::placeholder { color: var(--color-muted); }
+.field svg { color: var(--color-muted); }
+.field:focus-within { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.field-error { border-color: var(--color-bad); box-shadow: inset 0 0 0 1px var(--color-bad); }
+.err { display: flex; align-items: flex-start; gap: var(--space-2); color: var(--color-bad); font-weight: 600; }
+
+/* Checkbox and switch (the two Base UI wrappers, restyled). */
+.hit { position: relative; display: inline-grid; place-items: center; width: 48px; height: 48px; flex: none; }
+.check { appearance: none; margin: 0; width: 24px; height: 24px; border: 2px solid var(--color-outline); border-radius: var(--radius-tight); background: var(--color-surface); display: inline-grid; place-content: center; cursor: pointer; }
+.check:checked, .check.is-on { background: var(--color-accent); border-color: var(--color-accent); }
+.check:checked::after, .check.is-on::after { content: ""; width: 11px; height: 6px; border: solid var(--color-on-accent); border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
+.switch { display: inline-flex; align-items: center; gap: var(--space-3); min-height: 48px; }
+.track { position: relative; width: 48px; height: 28px; border: 2px solid var(--color-outline); border-radius: var(--radius-full); background: var(--color-surface); }
+.track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--color-outline); }
+.track.is-on { background: var(--color-accent); border-color: var(--color-accent); }
+.track.is-on::after { left: 22px; background: var(--color-on-accent); }
+
+/* Avatars: initials on a graphite disc; Claude's is the one green. */
+.av { display: inline-grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: var(--radius-full); background: var(--color-control); color: var(--color-ink); font-size: 16px; line-height: 1; font-weight: 700; letter-spacing: 0.02em; user-select: none; }
+.av-sm { width: 40px; height: 40px; font-size: 14px; }
+.av-xs { width: 20px; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.av-claude { background: var(--color-claude); color: var(--color-on-claude); font-size: 20px; }
+.av-sm.av-claude { font-size: 16px; }
+.mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-control); background: var(--color-accent); color: var(--color-on-accent); font-size: 20px; line-height: 1; font-weight: 700; }
+.mark-lg { width: 56px; height: 56px; font-size: 28px; border-radius: var(--radius-bubble); }
+
+/* Chat rows: a list on the surface, ruled by one hairline. */
+.rows { background: var(--color-surface); }
+.row { position: relative; display: flex; align-items: center; gap: var(--space-3); min-height: 76px; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule); background: var(--color-surface); transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.row:hover { background: var(--color-row-hover); }
+.row:focus-visible { outline-offset: -3px; }
+.row-pinned { background: var(--color-claude-wash); }
+.row-pinned:hover { background: var(--color-claude-wash); }
+.row[aria-current="page"], .row.is-current { background: var(--color-control); box-shadow: inset 4px 0 0 var(--color-accent); }
+.row[aria-current="page"]:hover, .row.is-current:hover { background: var(--color-control); }
+.row[aria-current="page"] .av, .row.is-current .av { background: var(--color-surface); }
+.row[aria-current="page"] .row-name, .row.is-current .row-name { font-weight: 700; }
+.row-body { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.row-top, .row-bottom { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+.row-bottom { align-items: center; }
+.row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.row-pinned .row-name { color: var(--color-on-claude-wash); }
+.row-sub { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-muted); font-size: 12px; line-height: 16px; }
+.row-time { margin-left: auto; flex: none; font-size: 12px; line-height: 16px; color: var(--color-muted); }
+.row-time.is-unread { color: var(--color-accent); font-weight: 600; }
+.row-preview { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-1); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.row-preview > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-preview svg { color: var(--color-muted); }
+.row-preview .is-seen { color: var(--color-ink-2); }
+.badge { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 var(--space-2); border-radius: var(--radius-full); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; line-height: 16px; font-weight: 600; flex: none; }
+
+/* Screen bars. */
+.bar { display: flex; align-items: center; gap: var(--space-3); height: 56px; padding: 0 var(--space-3) 0 var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-rule); flex: none; }
+.bar-title { min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.bar .back { margin-left: calc(var(--space-2) * -1); }
+
+/* Thread: day pills, bubbles grouped by sender, seen line, composer pinned by the flex column. */
+.thread { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--color-ground); }
+.scroll { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.msgs { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4); }
+.msgs > li { display: flex; flex-direction: column; align-items: flex-start; }
+.msgs > li.out { align-items: flex-end; }
+.msgs > li.sep { align-items: center; padding: var(--space-2) 0; }
+.msgs > li.gap { margin-top: var(--space-2); }
+.pill { display: inline-block; padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); background: var(--color-control); color: var(--color-muted); font-size: 12px; line-height: 16px; font-weight: 600; }
+.bub { display: block; max-width: min(78%, 560px); padding: var(--space-2) var(--space-3); border-radius: var(--radius-bubble); background: var(--color-bubble-in); color: var(--color-ink); box-shadow: inset 0 0 0 1px var(--color-rule); text-align: left; }
+.bub p { overflow-wrap: anywhere; }
+.bub-out { background: var(--color-sent); color: var(--color-on-sent); box-shadow: none; }
+li.in .bub:not(.last) { border-bottom-left-radius: var(--radius-tight); }
+li.in .bub:not(.first) { border-top-left-radius: var(--radius-tight); }
+li.out .bub:not(.last) { border-bottom-right-radius: var(--radius-tight); }
+li.out .bub:not(.first) { border-top-right-radius: var(--radius-tight); }
+.bub-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); font-size: 12px; line-height: 16px; color: var(--color-muted); }
+.bub-out .bub-meta { color: var(--color-on-sent-meta); }
+.who { display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-accent); }
+.bub-fail { background: var(--color-ground); color: var(--color-ink); box-shadow: none; border: 2px dashed var(--color-bad); cursor: pointer; }
+.fail-note { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); color: var(--color-bad); font-size: 12px; line-height: 16px; font-weight: 600; }
+.seen { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); color: var(--color-muted); font-size: 12px; line-height: 16px; }
+.composer { display: flex; align-items: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; }
+.composer .field { flex: 1; min-width: 0; border-radius: 24px; }
+.composer .btn { height: 48px; padding: 0 var(--space-6); font-size: 16px; }
+.banner { padding: var(--space-2) var(--space-4); background: var(--color-control); color: var(--color-ink-2); font-size: 14px; line-height: 20px; text-align: center; display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.toast { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); background: var(--color-surface); box-shadow: var(--shadow-float); color: var(--color-ink); font-size: 14px; line-height: 20px; }
+.float-btn { box-shadow: var(--shadow-float); }
+
+/* The form: group name, search, people, a picked count, two actions. */
+.form { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); flex: 1; min-height: 0; }
+.form-bar { padding: 0; gap: 0; }
+.form-bar .formscroll { padding: var(--space-4); }
+.people { background: var(--color-surface); border-radius: var(--radius-bubble); box-shadow: inset 0 0 0 1px var(--color-rule); overflow: hidden; }
+.person { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; padding: 0 var(--space-1) 0 var(--space-3); border-bottom: 1px solid var(--color-rule); cursor: pointer; }
+.person:last-child { border-bottom: 0; }
+.person:hover { background: var(--color-row-hover); }
+.person.is-picked { background: var(--color-accent-wash); color: var(--color-ink); }
+.person.is-picked:hover { background: var(--color-accent-wash); }
+.person:has(:focus-visible) { outline: 2px solid var(--color-focus); outline-offset: -3px; }
+.person .t-name { flex: 1; min-width: 0; }
+.actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.actions .count { flex: 1 0 100%; color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+
+/* Empty, loading, error: drawn on the Direction sheet and in the screens. */
+.note { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) var(--space-4); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.skel { display: block; border-radius: var(--radius-full); background: var(--color-control); }
+
+/* The shell. Phone: a column; a tab bar under the list and the form. From 900 px of artboard: a side rail, the list, the pane. */
+.stage { position: relative; }
+.frame { position: relative; display: flex; flex-direction: column; height: 844px; min-height: 100dvh; background: var(--color-ground); overflow: hidden; }
+.phone-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.tabbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; padding: var(--space-2) 0 var(--space-3); }
+.tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; color: var(--color-muted); font-size: 12px; line-height: 16px; font-weight: 600; }
+.tabbar a .tab-ico { display: grid; place-items: center; width: 56px; height: 32px; border-radius: var(--radius-full); }
+.tabbar a[aria-current="page"] { color: var(--color-ink); }
+.tabbar a[aria-current="page"] .tab-ico { background: var(--color-accent-wash); color: var(--color-on-accent-wash); }
+.wide-only { display: none; }
+.rail { border-right: 1px solid var(--color-rule); flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-4) 0; background: var(--color-rail); color: var(--color-on-rail); }
+.rail .mark { margin-bottom: var(--space-4); }
+.rail a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 56px; height: 56px; border-radius: var(--radius-control); font-size: 12px; line-height: 16px; font-weight: 600; transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.rail a:hover { background: var(--color-control-hover); }
+.rail a[aria-current="page"] { background: var(--color-rail-current); color: var(--color-on-rail-current); box-shadow: 0 0 0 1px var(--color-rule); }
+.rail :focus-visible { outline-color: var(--color-focus-rail); }
+.listpane { flex-direction: column; background: var(--color-surface); border-right: 1px solid var(--color-rule); min-height: 0; }
+.listpane .bar { height: 64px; border-bottom: 1px solid var(--color-rule); padding-left: var(--space-5); }
+.listpane .rows { flex: 1; overflow: hidden; }
+.pane { flex-direction: column; min-width: 0; min-height: 0; background: var(--color-ground); }
+.pane .bar { height: 64px; }
+.pane-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.pane-form { flex: 1; overflow: hidden; }
+.pane-form .form { max-width: 600px; padding: var(--space-6); }
+@container app (min-width: 900px) {
+  .stage { padding: 0 44px; }
+  .frame { display: grid; grid-template-columns: 72px 340px minmax(0, 1fr); height: 800px; min-height: 100dvh; overflow: visible; box-shadow: 0 0 0 1px var(--color-rule); }
+  .wide-only { display: flex; }
+  .phone-only { display: none !important; }
+  .msgs { padding: var(--space-4) var(--space-6); }
+  .composer { padding: var(--space-3) var(--space-6); }
+}
+
+.fab { position: absolute; right: var(--space-4); bottom: var(--space-4); display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: var(--radius-bubble); background: var(--color-accent); color: var(--color-on-accent); box-shadow: var(--shadow-float); transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.fab:hover { background: var(--color-accent-hover); }
+.listwrap { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.formscroll { display: flex; flex-direction: column; gap: var(--space-4); flex: 1; min-height: 0; overflow: hidden; }
+.actionbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; }
+.actionbar .count { flex: 1; min-width: 0; color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.actionbar .btn { padding: 0 var(--space-4); }
+@container app (max-width: 899px) { .icon-btn { width: 48px; height: 48px; } .head-new { display: none; } .composer .btn { padding: 0 var(--space-5); } }
+
+/* The board's numbered callouts: in the gutter beside the frame, never over the app. */
+.co { display: none; }
+@container app (min-width: 900px) {
+  .co { position: absolute; z-index: 20; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--color-callout); color: var(--color-on-callout); font: 700 12px/1 var(--font-ui); pointer-events: none; }
+  .co-l { left: -34px; }
+  .co-r { right: -34px; }
+}
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; } }
+
+.dir { display: flex; flex-direction: column; gap: var(--space-12); padding: var(--space-16); }
+.block { display: flex; flex-direction: column; gap: var(--space-5); padding-top: var(--space-8); border-top: 1px solid var(--color-rule); }
+.pal { width: 100%; border-collapse: collapse; }
+.pal th, .pal td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-rule); text-align: left; vertical-align: middle; }
+.pal thead th { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--color-muted); }
+.pal td.pal-cell { background: var(--color-ground); color: var(--color-ink); }
+.sw { display: flex; align-items: center; gap: var(--space-3); }
+.sw-chip { display: block; width: 44px; height: 28px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--color-outline); }
+.spec { display: flex; flex-direction: column; gap: var(--space-1); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-rule); }
+.panel { color: var(--color-ink); font-family: var(--font-ui); font-size: 16px; line-height: 24px; display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-6); border-radius: var(--radius-bubble); background: var(--color-ground); box-shadow: inset 0 0 0 1px var(--color-rule); }
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.st { display: flex; flex-direction: column; gap: var(--space-2); }
+.st-box { background: var(--color-surface); border-radius: var(--radius-control); box-shadow: inset 0 0 0 1px var(--color-rule); overflow: hidden; }
+.st-box > .note, .st-box > div.note { padding: var(--space-4); }
+.ct { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; }
+.ct th { text-align: left; font-size: 12px; line-height: 16px; color: var(--color-muted); padding: var(--space-2); border-bottom: 1px solid var(--color-rule); }
+.ct td { padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--color-rule); }
+.ct td.num { text-align: right; }
+.panel .bub { max-width: 100%; }
+</style>
+</helmet>
+<div class="theme-light sm" style="width: 1440px">
+<div class="dir">
+<header style="display: flex; flex-direction: column; gap: var(--space-2); max-width: 900px">
+<h1 class="t-title" style="font-size: 48px; line-height: 56px">Clay on graphite</h1>
+<p class="t-body ink-2" style="font-size: 20px; line-height: 28px; max-width: 60ch">Satchel as a quiet graphite messenger with one accent: clay, for my bubbles, unread counts and the one primary action. Green belongs only to Claude’s Ideas inbox.</p>
+</header>
+
+<section class="block"><h2 class="t-title">Colour by role</h2>
+<div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-10); align-items: start">
+<table class="pal"><thead><tr><th scope="col">Role</th><th scope="col">Light</th><th scope="col">Dark</th></tr></thead><tbody>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">ground</span><span class="t-label muted" style="font-weight: 400; display: block">the thread, the form's page</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-ground)"></span><span class="num t-meta">#f0f3f6</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-ground)"></span><span class="num t-meta">#101419</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">surface</span><span class="t-label muted" style="font-weight: 400; display: block">the chat list, the bars, the composer, cards</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-surface)"></span><span class="num t-meta">#fcfeff</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-surface)"></span><span class="num t-meta">#1f2329</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">field</span><span class="t-label muted" style="font-weight: 400; display: block">inputs</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-field)"></span><span class="num t-meta">#eaedf2</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-field)"></span><span class="num t-meta">#151a1f</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">control</span><span class="t-label muted" style="font-weight: 400; display: block">secondary buttons, avatars, day pills</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-control)"></span><span class="num t-meta">#e1e5ea</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-control)"></span><span class="num t-meta">#2e333a</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">control-hover</span><span class="t-label muted" style="font-weight: 400; display: block">a control under the pointer</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-control-hover)"></span><span class="num t-meta">#d5d9df</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-control-hover)"></span><span class="num t-meta">#3a3f46</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">row-hover</span><span class="t-label muted" style="font-weight: 400; display: block">a chat row under the pointer</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-row-hover)"></span><span class="num t-meta">#f2f5f8</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-row-hover)"></span><span class="num t-meta">#262b31</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">rule</span><span class="t-label muted" style="font-weight: 400; display: block">the one hairline: dividers, bar edges, bubble edges</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-rule)"></span><span class="num t-meta">#dbdee3</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-rule)"></span><span class="num t-meta">#363b41</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">outline</span><span class="t-label muted" style="font-weight: 400; display: block">edges that must be seen: fields, checkboxes, the switch</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-outline)"></span><span class="num t-meta">#70757c</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-outline)"></span><span class="num t-meta">#81878d</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">ink</span><span class="t-label muted" style="font-weight: 400; display: block">names and message text</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-ink)"></span><span class="num t-meta">#181b1f</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-ink)"></span><span class="num t-meta">#e6eaee</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">ink-2</span><span class="t-label muted" style="font-weight: 400; display: block">previews, secondary text</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-ink-2)"></span><span class="num t-meta">#3f4348</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-ink-2)"></span><span class="num t-meta">#c4c8cc</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">muted</span><span class="t-label muted" style="font-weight: 400; display: block">times, hints, day pills, tab labels</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-muted)"></span><span class="num t-meta">#5c6167</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-muted)"></span><span class="num t-meta">#a0a5ab</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">accent</span><span class="t-label muted" style="font-weight: 400; display: block">the one colour that means act: Send, badges, links</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-accent)"></span><span class="num t-meta">#9e4502</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-accent)"></span><span class="num t-meta">#eb9c6a</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">accent-hover</span><span class="t-label muted" style="font-weight: 400; display: block">the accent under the pointer and pressed</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-accent-hover)"></span><span class="num t-meta">#823600</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-accent-hover)"></span><span class="num t-meta">#fcb58b</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-accent</span><span class="t-label muted" style="font-weight: 400; display: block">text and icons on the accent</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-accent)"></span><span class="num t-meta">#fffdfc</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-accent)"></span><span class="num t-meta">#1e130e</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">accent-wash</span><span class="t-label muted" style="font-weight: 400; display: block">the current tab, a picked person</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-accent-wash)"></span><span class="num t-meta">#f9e3d6</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-accent-wash)"></span><span class="num t-meta">#412a1e</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-accent-wash</span><span class="t-label muted" style="font-weight: 400; display: block">text on the wash</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-accent-wash)"></span><span class="num t-meta">#6b2e04</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-accent-wash)"></span><span class="num t-meta">#f9cdb4</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">sent</span><span class="t-label muted" style="font-weight: 400; display: block">my bubbles</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-sent)"></span><span class="num t-meta">#9e4502</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-sent)"></span><span class="num t-meta">#7b3c17</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-sent</span><span class="t-label muted" style="font-weight: 400; display: block">text on my bubble</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-sent)"></span><span class="num t-meta">#fffdfc</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-sent)"></span><span class="num t-meta">#f8f2ef</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-sent-meta</span><span class="t-label muted" style="font-weight: 400; display: block">time and ticks on my bubble</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-sent-meta)"></span><span class="num t-meta">#fce8df</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-sent-meta)"></span><span class="num t-meta">#eddad0</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">bubble-in</span><span class="t-label muted" style="font-weight: 400; display: block">other people's bubbles</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-bubble-in)"></span><span class="num t-meta">#fcfeff</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-bubble-in)"></span><span class="num t-meta">#282d34</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">claude</span><span class="t-label muted" style="font-weight: 400; display: block">Claude's avatar and the Ideas inbox mark</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-claude)"></span><span class="num t-meta">#176e4a</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-claude)"></span><span class="num t-meta">#66c093</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-claude</span><span class="t-label muted" style="font-weight: 400; display: block">the letter on Claude's avatar</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-claude)"></span><span class="num t-meta">#fcfefd</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-claude)"></span><span class="num t-meta">#0b1a12</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">claude-wash</span><span class="t-label muted" style="font-weight: 400; display: block">the pinned Ideas inbox row</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-claude-wash)"></span><span class="num t-meta">#def5e8</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-claude-wash)"></span><span class="num t-meta">#192e23</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-claude-wash</span><span class="t-label muted" style="font-weight: 400; display: block">the Ideas inbox name on its wash</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-claude-wash)"></span><span class="num t-meta">#034a2e</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-claude-wash)"></span><span class="num t-meta">#a9e0c1</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">bad</span><span class="t-label muted" style="font-weight: 400; display: block">not-sent text and edge, Sign out</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-bad)"></span><span class="num t-meta">#b02b27</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-bad)"></span><span class="num t-meta">#f98f87</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">rail</span><span class="t-label muted" style="font-weight: 400; display: block">the wide screen's side rail: the control tone in light, the ground in dark</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-rail)"></span><span class="num t-meta">#e1e5ea</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-rail)"></span><span class="num t-meta">#101419</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-rail</span><span class="t-label muted" style="font-weight: 400; display: block">rail icons and labels</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-rail)"></span><span class="num t-meta">#3f4348</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-rail)"></span><span class="num t-meta">#b2b8bf</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">rail-current</span><span class="t-label muted" style="font-weight: 400; display: block">the current place on the rail: a surface pill</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-rail-current)"></span><span class="num t-meta">#fcfeff</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-rail-current)"></span><span class="num t-meta">#31363d</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">on-rail-current</span><span class="t-label muted" style="font-weight: 400; display: block">text and icon of the current place</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-on-rail-current)"></span><span class="num t-meta">#181b1f</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-on-rail-current)"></span><span class="num t-meta">#eff2f6</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">focus</span><span class="t-label muted" style="font-weight: 400; display: block">the focus ring</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-focus)"></span><span class="num t-meta">#1654a9</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-focus)"></span><span class="num t-meta">#77b5fb</span></div></td></tr>
+<tr><th scope="row"><span class="t-meta" style="font-weight: 600">focus-rail</span><span class="t-label muted" style="font-weight: 400; display: block">the focus ring on the rail</span></th><td class="pal-cell theme-light"><div class="sw"><span class="sw-chip" style="background: var(--color-focus-rail)"></span><span class="num t-meta">#1654a9</span></div></td><td class="pal-cell theme-dark"><div class="sw"><span class="sw-chip" style="background: var(--color-focus-rail)"></span><span class="num t-meta">#77b5fb</span></div></td></tr>
+</tbody></table>
+<div style="display: flex; flex-direction: column; gap: var(--space-6)">
+<div style="display: flex; flex-direction: column; gap: var(--space-3)"><h3 class="t-name">Type: Rethink Sans, four sizes in the app</h3>
+<div class="spec"><span class="t-title">Weekend trip</span><span class="t-label muted" style="font-weight: 400">700, 20/28: screen titles</span></div>
+<div class="spec"><span class="t-name">alma</span><span class="t-label muted" style="font-weight: 400">600, 16/24: names, the sender in a group</span></div>
+<div class="spec"><span class="t-body">Yes, around ten at the market.</span><span class="t-label muted" style="font-weight: 400">400, 16/24: messages and fields</span></div>
+<div class="spec"><span class="t-meta">Lunch tomorrow? There is a new place near the station.</span><span class="t-label muted" style="font-weight: 400">400, 14/20: previews, helper and error text, buttons at 600</span></div>
+<div class="spec"><span class="t-label">Seen 16:14 <span class="num">16:51</span></span><span class="t-label muted" style="font-weight: 400">600 and 400, 12/16: times, ticks, day pills, tab labels; sentence case, untracked, tabular figures</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: var(--space-3)"><h3 class="t-name">Space, shape, depth</h3>
+<div style="display: flex; align-items: flex-end; gap: var(--space-3)"><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 4px; height: 4px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">4</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 8px; height: 8px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">8</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 12px; height: 12px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">12</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 16px; height: 16px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">16</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 20px; height: 20px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">20</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 24px; height: 24px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">24</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 32px; height: 32px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">32</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 40px; height: 40px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">40</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 48px; height: 48px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">48</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1)"><span style="display: block; width: 64px; height: 64px; background: var(--color-accent-wash); box-shadow: inset 0 0 0 1px var(--color-accent)"></span><span class="t-label muted num" style="font-weight: 400">64</span></div></div>
+<div style="display: flex; gap: var(--space-4); align-items: center"><div style="display: flex; flex-direction: column; gap: var(--space-1); align-items: center"><span style="display: block; width: 64px; height: 44px; box-shadow: inset 0 0 0 1.5px var(--color-outline); border-radius: var(--radius-tight)"></span><span class="t-label muted" style="font-weight: 400">tight 6</span></div><div style="display: flex; flex-direction: column; gap: var(--space-1); align-items: center"><span style="display: block; width: 64px; height: 44px; box-shadow: inset 0 0 0 1.5px var(--color-outline); border-radius: var(--radius-control)"></span><span class="t-label muted" style="font-weight: 400">control 10</span></div><div style="display: flex; flex-direction: column; gap: var(--space-1); align-items: center"><span style="display: block; width: 64px; height: 44px; box-shadow: inset 0 0 0 1.5px var(--color-outline); border-radius: var(--radius-bubble)"></span><span class="t-label muted" style="font-weight: 400">bubble 18</span></div><div style="display: flex; flex-direction: column; gap: var(--space-1); align-items: center"><span style="display: block; width: 64px; height: 44px; box-shadow: inset 0 0 0 1.5px var(--color-outline); border-radius: var(--radius-full)"></span><span class="t-label muted" style="font-weight: 400">full 999</span></div></div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4)">
+<div class="theme-light" style="display: flex; gap: var(--space-5); align-items: center; padding: var(--space-5); border-radius: var(--radius-bubble); background: var(--color-ground)"><div class="toast" style="width: 96px; height: 48px" aria-hidden="true"></div><span class="t-label ink-2" style="font-weight: 400">Light: a float casts a soft shadow and a hairline</span></div>
+<div class="theme-dark" style="display: flex; gap: var(--space-5); align-items: center; padding: var(--space-5); border-radius: var(--radius-bubble); background: var(--color-ground)"><div class="toast" style="width: 96px; height: 48px" aria-hidden="true"></div><span class="t-label ink-2" style="font-weight: 400">Dark: a lighter surface and a hairline, no shadow</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="block"><h2 class="t-title">Components, both themes</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6)"><div class="theme-light panel">
+<h3 class="t-name">Light</h3>
+<div class="strip">
+<button type="button" class="btn btn-primary">Create group</button>
+<button type="button" class="btn btn-primary is-hover">Hover</button>
+<button type="button" class="btn btn-primary is-focus">Focus</button>
+<button type="button" class="btn" aria-disabled="true">Send</button>
+</div>
+<div class="strip">
+<button type="button" class="btn btn-secondary">Try again</button>
+<button type="button" class="btn btn-secondary is-hover">Hover</button>
+<button type="button" class="btn btn-secondary">Cancel</button>
+<button type="button" class="icon-btn" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button><a href="#" class="fab" style="position: static" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a>
+<button type="button" class="icon-btn is-hover" aria-label="Back to chats"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></button>
+</div>
+<div class="strip" style="align-items: flex-start; gap: var(--space-6)">
+<div style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 220px; min-width: 0">
+<label class="fld"><span class="t-meta">Group name</span><span class="field field-error"><input type="text" value="" aria-invalid="true" aria-describedby="g-err-theme-light"></span></label>
+<p class="err t-meta" id="g-err-theme-light"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>Give the group a name.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: var(--space-1)">
+<label class="person is-picked" style="border-radius: var(--radius-control); width: 200px"><span class="av av-sm" aria-hidden="true">AL</span><span class="t-name">alma</span><span class="hit"><input type="checkbox" class="check" checked aria-label="alma"></span></label>
+<label class="person" style="border-radius: var(--radius-control); width: 200px"><span class="av av-sm" aria-hidden="true">CL</span><span class="t-name">cleo</span><span class="hit"><input type="checkbox" class="check" aria-label="cleo"></span></label>
+<div class="switch"><span class="track is-on" aria-hidden="true"></span><span class="t-meta">Notifications on</span></div>
+<div class="switch"><span class="track" aria-hidden="true"></span><span class="t-meta">Notifications off</span></div>
+</div>
+</div>
+<ul class="rows" style="border-radius: var(--radius-bubble); overflow: hidden; box-shadow: inset 0 0 0 1px var(--color-rule)">
+<li><a href="#" class="row row-pinned">
+<span class="av av-claude" aria-hidden="true">C</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Claude</span><span class="row-sub">Ideas inbox</span><time class="row-time num">15:30</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>You: Idea: a shared packing list for the trip</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">CL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">cleo</span><time class="row-time num is-unread">16:51</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Lunch tomorrow? There is a new place near the station.</span></span><span class="badge num"><span aria-hidden="true">1</span><span class="vh">1 unread message</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row" aria-current="page">
+<span class="av" aria-hidden="true">AL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">alma</span><time class="row-time num">16:12</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span><span>You: Great, see you there.</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">BO</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">boris</span><time class="row-time num">Yesterday</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Can you send the rest tonight?</span></span></span>
+</span>
+</a></li>
+</ul>
+<div class="msgs" style="padding: 0; background: var(--color-ground); border-radius: var(--radius-bubble); padding: var(--space-3); gap: var(--space-2)">
+<div class="in" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px"><div class="bub first"><span class="who">cleo</span><p>Thanks Alma! Sending the map now.</p><span class="bub-meta num"><time>16:40</time></span></div><div class="bub last"><p>It is the green one.</p><span class="bub-meta num"><time>16:41</time></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Yes, around ten at the market.</p><span class="bub-meta num"><time>Sending…</time></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Sent, not seen by everyone.</p><span class="bub-meta num"><time>16:12</time><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Seen by everyone else.</p><span class="bub-meta num"><time>16:12</time><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span></span></div><p class="seen"><span class="av av-xs" aria-hidden="true">AL</span><span>Seen 16:14</span></p></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><button type="button" class="bub bub-fail"><p>See you at ten?</p></button><p class="fail-note" role="alert"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>Not sent. Tap to retry</p></div>
+</div>
+<div class="strip" style="align-items: flex-start">
+<div class="toast" role="status"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M8.5 8.8A11 11 0 0 0 3 12M16 11.5A8 8 0 0 0 12 10M5.5 15.5A8 8 0 0 1 9 13.2M9 18.5a4 4 0 0 1 6 0"></path><path d="M12 21v.01"></path></svg>Can’t reach Satchel. Trying again.</div>
+<button type="button" class="btn btn-primary float-btn" style="height: 40px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M6 13l6 6 6-6"></path></svg>New messages</button>
+</div>
+</div><div class="theme-dark panel">
+<h3 class="t-name">Dark</h3>
+<div class="strip">
+<button type="button" class="btn btn-primary">Create group</button>
+<button type="button" class="btn btn-primary is-hover">Hover</button>
+<button type="button" class="btn btn-primary is-focus">Focus</button>
+<button type="button" class="btn" aria-disabled="true">Send</button>
+</div>
+<div class="strip">
+<button type="button" class="btn btn-secondary">Try again</button>
+<button type="button" class="btn btn-secondary is-hover">Hover</button>
+<button type="button" class="btn btn-secondary">Cancel</button>
+<button type="button" class="icon-btn" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button><a href="#" class="fab" style="position: static" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a>
+<button type="button" class="icon-btn is-hover" aria-label="Back to chats"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></button>
+</div>
+<div class="strip" style="align-items: flex-start; gap: var(--space-6)">
+<div style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 220px; min-width: 0">
+<label class="fld"><span class="t-meta">Group name</span><span class="field field-error"><input type="text" value="" aria-invalid="true" aria-describedby="g-err-theme-dark"></span></label>
+<p class="err t-meta" id="g-err-theme-dark"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>Give the group a name.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: var(--space-1)">
+<label class="person is-picked" style="border-radius: var(--radius-control); width: 200px"><span class="av av-sm" aria-hidden="true">AL</span><span class="t-name">alma</span><span class="hit"><input type="checkbox" class="check" checked aria-label="alma"></span></label>
+<label class="person" style="border-radius: var(--radius-control); width: 200px"><span class="av av-sm" aria-hidden="true">CL</span><span class="t-name">cleo</span><span class="hit"><input type="checkbox" class="check" aria-label="cleo"></span></label>
+<div class="switch"><span class="track is-on" aria-hidden="true"></span><span class="t-meta">Notifications on</span></div>
+<div class="switch"><span class="track" aria-hidden="true"></span><span class="t-meta">Notifications off</span></div>
+</div>
+</div>
+<ul class="rows" style="border-radius: var(--radius-bubble); overflow: hidden; box-shadow: inset 0 0 0 1px var(--color-rule)">
+<li><a href="#" class="row row-pinned">
+<span class="av av-claude" aria-hidden="true">C</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Claude</span><span class="row-sub">Ideas inbox</span><time class="row-time num">15:30</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>You: Idea: a shared packing list for the trip</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">CL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">cleo</span><time class="row-time num is-unread">16:51</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Lunch tomorrow? There is a new place near the station.</span></span><span class="badge num"><span aria-hidden="true">1</span><span class="vh">1 unread message</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row" aria-current="page">
+<span class="av" aria-hidden="true">AL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">alma</span><time class="row-time num">16:12</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span><span>You: Great, see you there.</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">BO</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">boris</span><time class="row-time num">Yesterday</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Can you send the rest tonight?</span></span></span>
+</span>
+</a></li>
+</ul>
+<div class="msgs" style="padding: 0; background: var(--color-ground); border-radius: var(--radius-bubble); padding: var(--space-3); gap: var(--space-2)">
+<div class="in" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px"><div class="bub first"><span class="who">cleo</span><p>Thanks Alma! Sending the map now.</p><span class="bub-meta num"><time>16:40</time></span></div><div class="bub last"><p>It is the green one.</p><span class="bub-meta num"><time>16:41</time></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Yes, around ten at the market.</p><span class="bub-meta num"><time>Sending…</time></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Sent, not seen by everyone.</p><span class="bub-meta num"><time>16:12</time><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></span></div></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><div class="bub bub-out first last"><p>Seen by everyone else.</p><span class="bub-meta num"><time>16:12</time><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span></span></div><p class="seen"><span class="av av-xs" aria-hidden="true">AL</span><span>Seen 16:14</span></p></div>
+<div class="out" style="display: flex; flex-direction: column; align-items: flex-end"><button type="button" class="bub bub-fail"><p>See you at ten?</p></button><p class="fail-note" role="alert"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>Not sent. Tap to retry</p></div>
+</div>
+<div class="strip" style="align-items: flex-start">
+<div class="toast" role="status"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M8.5 8.8A11 11 0 0 0 3 12M16 11.5A8 8 0 0 0 12 10M5.5 15.5A8 8 0 0 1 9 13.2M9 18.5a4 4 0 0 1 6 0"></path><path d="M12 21v.01"></path></svg>Can’t reach Satchel. Trying again.</div>
+<button type="button" class="btn btn-primary float-btn" style="height: 40px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M6 13l6 6 6-6"></path></svg>New messages</button>
+</div>
+</div></div>
+</section>
+
+<section class="block"><h2 class="t-title">States: loading, empty and error, as the app words them</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6)"><div class="theme-light panel" style="gap: var(--space-5)">
+<h3 class="t-name">Light</h3>
+<div class="st"><p class="t-label muted">Chat list, loading</p><div class="rows st-box" aria-hidden="true"><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div></div><p class="t-label muted" style="font-weight: 400">A still skeleton in the shape of the rows, after a beat; no shimmer.</p></div>
+<div class="st"><p class="t-label muted">Chat list, empty</p><div class="st-box"><p class="note">No chats yet. Start one with the pencil above.</p><p class="note" style="padding-top: 0">Under 900 px the pencil is the New chat button, bottom right. The line would read “Start one with the New chat button.” (an owner question).</p></div></div>
+<div class="st"><p class="t-label muted">Chat list, error</p><div class="st-box"><p class="banner" role="status"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M8.5 8.8A11 11 0 0 0 3 12M16 11.5A8 8 0 0 0 12 10M5.5 15.5A8 8 0 0 1 9 13.2M9 18.5a4 4 0 0 1 6 0"></path><path d="M12 21v.01"></path></svg>You’re offline, or Satchel can’t be reached. Trying again.</p><div class="note" role="alert"><p>Satchel couldn’t load your chats.</p><button type="button" class="btn btn-quiet" style="padding: 0">Try again</button></div></div></div>
+<div class="st"><p class="t-label muted">Thread, loading</p><div class="st-box"><p class="note" role="status" style="align-items: center">Loading messages…</p></div></div>
+<div class="st"><p class="t-label muted">Thread, empty (Ideas inbox, then a chat)</p><div class="st-box"><p class="note" style="align-items: center; text-align: center">Write down an idea. Claude reads it next time you ask.</p><p class="note" style="align-items: center; padding-top: 0">No messages yet.</p></div></div>
+<div class="st"><p class="t-label muted">Thread, error</p><div class="st-box"><p class="note" role="alert" style="align-items: center">Couldn't load this chat. Retrying.</p></div></div>
+<div class="st"><p class="t-label muted">New group, loading and empty</p><div class="st-box"><p class="note" role="status">Loading people…</p><p class="note" style="padding-top: 0">No one else is on Satchel yet. Friends appear here after they sign in for the first time.</p></div></div>
+<div class="st"><p class="t-label muted">New group, no match, error, the most a group can have</p><div class="st-box"><p class="note">No one matches “zed”.</p><div class="note" role="alert" style="padding-top: 0">Satchel couldn’t load people.<button type="button" class="btn btn-quiet" style="padding: 0">Try again</button></div><p class="note num" style="padding-top: 0" role="status">20 picked. That’s the most a group can have (20).</p></div></div>
+</div><div class="theme-dark panel" style="gap: var(--space-5)">
+<h3 class="t-name">Dark</h3>
+<div class="st"><p class="t-label muted">Chat list, loading</p><div class="rows st-box" aria-hidden="true"><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div><div style="display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule)"><span class="skel" style="width: 48px; height: 48px"></span><span style="display: flex; flex-direction: column; gap: var(--space-2); flex: 1"><span class="skel" style="width: 45%; height: 14px"></span><span class="skel" style="width: 75%; height: 12px"></span></span></div></div><p class="t-label muted" style="font-weight: 400">A still skeleton in the shape of the rows, after a beat; no shimmer.</p></div>
+<div class="st"><p class="t-label muted">Chat list, empty</p><div class="st-box"><p class="note">No chats yet. Start one with the pencil above.</p><p class="note" style="padding-top: 0">Under 900 px the pencil is the New chat button, bottom right. The line would read “Start one with the New chat button.” (an owner question).</p></div></div>
+<div class="st"><p class="t-label muted">Chat list, error</p><div class="st-box"><p class="banner" role="status"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M8.5 8.8A11 11 0 0 0 3 12M16 11.5A8 8 0 0 0 12 10M5.5 15.5A8 8 0 0 1 9 13.2M9 18.5a4 4 0 0 1 6 0"></path><path d="M12 21v.01"></path></svg>You’re offline, or Satchel can’t be reached. Trying again.</p><div class="note" role="alert"><p>Satchel couldn’t load your chats.</p><button type="button" class="btn btn-quiet" style="padding: 0">Try again</button></div></div></div>
+<div class="st"><p class="t-label muted">Thread, loading</p><div class="st-box"><p class="note" role="status" style="align-items: center">Loading messages…</p></div></div>
+<div class="st"><p class="t-label muted">Thread, empty (Ideas inbox, then a chat)</p><div class="st-box"><p class="note" style="align-items: center; text-align: center">Write down an idea. Claude reads it next time you ask.</p><p class="note" style="align-items: center; padding-top: 0">No messages yet.</p></div></div>
+<div class="st"><p class="t-label muted">Thread, error</p><div class="st-box"><p class="note" role="alert" style="align-items: center">Couldn't load this chat. Retrying.</p></div></div>
+<div class="st"><p class="t-label muted">New group, loading and empty</p><div class="st-box"><p class="note" role="status">Loading people…</p><p class="note" style="padding-top: 0">No one else is on Satchel yet. Friends appear here after they sign in for the first time.</p></div></div>
+<div class="st"><p class="t-label muted">New group, no match, error, the most a group can have</p><div class="st-box"><p class="note">No one matches “zed”.</p><div class="note" role="alert" style="padding-top: 0">Satchel couldn’t load people.<button type="button" class="btn btn-quiet" style="padding: 0">Try again</button></div><p class="note num" style="padding-top: 0" role="status">20 picked. That’s the most a group can have (20).</p></div></div>
+</div></div>
+</section>
+
+<section class="block"><h2 class="t-title">Contrast, every pair, WCAG 2.2</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); align-items: start"><table class="ct"><thead><tr><th scope="col">Pair</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col">Needs</th></tr></thead><tbody>
+<tr><td>ink on ground</td><td class="num">15.51</td><td class="num">15.29</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on surface</td><td class="num">17.08</td><td class="num">13.05</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on field</td><td class="num">14.72</td><td class="num">14.48</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on control-hover</td><td class="num">12.19</td><td class="num">8.77</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on row-hover</td><td class="num">15.79</td><td class="num">11.80</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on control</td><td class="num">13.66</td><td class="num">10.52</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on bubble-in</td><td class="num">17.08</td><td class="num">11.46</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on claude-wash (Ideas inbox row)</td><td class="num">15.08</td><td class="num">11.93</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink-2 on surface (preview)</td><td class="num">9.85</td><td class="num">9.38</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink-2 on row-hover</td><td class="num">9.11</td><td class="num">8.48</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink-2 on control</td><td class="num">7.87</td><td class="num">7.56</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink-2 on claude-wash</td><td class="num">8.70</td><td class="num">8.57</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on ground (day pill, seen line)</td><td class="num">5.61</td><td class="num">7.45</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on control (day pill, avatar)</td><td class="num">4.94</td><td class="num">5.13</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on surface (time, tab label)</td><td class="num">6.18</td><td class="num">6.36</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on field (placeholder)</td><td class="num">5.32</td><td class="num">7.06</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on row-hover (time)</td><td class="num">5.71</td><td class="num">5.75</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on claude-wash (time)</td><td class="num">5.45</td><td class="num">5.81</td><td class="num muted">4.5 text</td></tr>
+<tr><td>muted on bubble-in (time)</td><td class="num">6.18</td><td class="num">5.59</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on surface (unread time, link)</td><td class="num">6.28</td><td class="num">7.14</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on ground</td><td class="num">5.70</td><td class="num">8.36</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on row-hover (unread time)</td><td class="num">5.81</td><td class="num">6.45</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on control (unread time)</td><td class="num">5.02</td><td class="num">5.75</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on claude-wash (unread time)</td><td class="num">5.55</td><td class="num">6.52</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent on bubble-in (sender name in a group)</td><td class="num">6.28</td><td class="num">6.27</td><td class="num muted">4.5 text</td></tr>
+<tr><td>accent-hover on surface</td><td class="num">8.38</td><td class="num">9.11</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-accent on accent (Send, badge)</td><td class="num">6.26</td><td class="num">8.22</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-accent on accent-hover</td><td class="num">8.36</td><td class="num">10.50</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-accent-wash on accent-wash</td><td class="num">8.42</td><td class="num">9.16</td><td class="num muted">4.5 text</td></tr>
+<tr><td>ink on accent-wash (picked person)</td><td class="num">13.98</td><td class="num">11.03</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-sent on sent (message text)</td><td class="num">6.26</td><td class="num">7.57</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-sent-meta on sent (time, ticks)</td><td class="num">5.37</td><td class="num">6.21</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-claude on claude (the C)</td><td class="num">6.16</td><td class="num">8.14</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-claude-wash on claude-wash (inbox name)</td><td class="num">9.06</td><td class="num">9.69</td><td class="num muted">4.5 text</td></tr>
+</tbody></table><table class="ct"><thead><tr><th scope="col">Pair</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col">Needs</th></tr></thead><tbody>
+<tr><td>bad on ground (not-sent text)</td><td class="num">5.85</td><td class="num">8.19</td><td class="num muted">4.5 text</td></tr>
+<tr><td>bad on surface (Sign out)</td><td class="num">6.45</td><td class="num">6.99</td><td class="num muted">4.5 text</td></tr>
+<tr><td>bad on field (error text)</td><td class="num">5.56</td><td class="num">7.76</td><td class="num muted">4.5 text</td></tr>
+<tr><td>bad dashed edge on ground</td><td class="num">5.85</td><td class="num">8.19</td><td class="num muted">3 UI</td></tr>
+<tr><td>on-rail on rail (icons, labels)</td><td class="num">7.87</td><td class="num">9.24</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-rail-current on rail-current</td><td class="num">17.08</td><td class="num">10.84</td><td class="num muted">4.5 text</td></tr>
+<tr><td>rail-current pill (surface) on rail</td><td class="num">1.25</td><td class="num">1.52</td><td class="num muted">seen</td></tr>
+<tr><td>surface on ground (list against thread; needs 1.09 light, 1.15 dark)</td><td class="num">1.10</td><td class="num">1.17</td><td class="num muted">seen</td></tr>
+<tr><td>rule edge on ground (the 1px edge that carries a surface in dark)</td><td class="num">1.21</td><td class="num">1.64</td><td class="num muted">seen</td></tr>
+<tr><td>bubble-in on ground (also a 1px rule edge)</td><td class="num">1.10</td><td class="num">1.33</td><td class="num muted">seen</td></tr>
+<tr><td>rail on ground (also a 1px rule edge)</td><td class="num">1.14</td><td class="num">1.00</td><td class="num muted">seen</td></tr>
+<tr><td>surface (open chat's avatar disc) on control</td><td class="num">1.25</td><td class="num">1.24</td><td class="num muted">seen</td></tr>
+<tr><td>accent-wash (disabled Send) on surface</td><td class="num">1.22</td><td class="num">1.18</td><td class="num muted">seen</td></tr>
+<tr><td>muted on accent-wash (disabled Send label)</td><td class="num">5.05</td><td class="num">5.38</td><td class="num muted">4.5 text</td></tr>
+<tr><td>on-accent on accent (New chat button icon)</td><td class="num">6.26</td><td class="num">8.22</td><td class="num muted">3 UI</td></tr>
+<tr><td>accent (New chat button) on ground</td><td class="num">5.70</td><td class="num">8.36</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (field edge) on field</td><td class="num">3.95</td><td class="num">4.82</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (field edge) on surface</td><td class="num">4.59</td><td class="num">4.35</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (field edge) on ground</td><td class="num">4.17</td><td class="num">5.09</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (checkbox edge) on surface</td><td class="num">4.59</td><td class="num">4.35</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (checkbox edge) on accent-wash</td><td class="num">3.75</td><td class="num">3.67</td><td class="num muted">3 UI</td></tr>
+<tr><td>outline (switch track, off) on surface</td><td class="num">4.59</td><td class="num">4.35</td><td class="num muted">3 UI</td></tr>
+<tr><td>accent (checked box, switch on) on surface</td><td class="num">6.28</td><td class="num">7.14</td><td class="num muted">3 UI</td></tr>
+<tr><td>on-accent (check mark) on accent</td><td class="num">6.26</td><td class="num">8.22</td><td class="num muted">3 UI</td></tr>
+<tr><td>claude (avatar fill) on surface</td><td class="num">6.17</td><td class="num">7.16</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on ground</td><td class="num">6.56</td><td class="num">8.61</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on surface</td><td class="num">7.22</td><td class="num">7.35</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on field</td><td class="num">6.22</td><td class="num">8.16</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on control</td><td class="num">5.77</td><td class="num">5.93</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on claude-wash</td><td class="num">6.38</td><td class="num">6.72</td><td class="num muted">3 UI</td></tr>
+<tr><td>focus ring on rail</td><td class="num">5.77</td><td class="num">8.61</td><td class="num muted">3 UI</td></tr>
+<tr><td>rule on surface (hairline, Lc 15 target)</td><td class="num">1.33</td><td class="num">1.40</td><td class="num muted">seen</td></tr>
+<tr><td>on-callout on callout (board marker)</td><td class="num">8.29</td><td class="num">6.53</td><td class="num muted">4.5 text</td></tr>
+</tbody></table></div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":6300}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

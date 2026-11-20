@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Satchel chat list, proposed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+/* Hallmark · shape: app screen · genre: playful · theme: brand · redesign: full
+ * ground: oklch(96.2% 0.006 255) · accent: oklch(50% 0.135 48) · display: Rethink Sans · body: Rethink Sans
+ * nav: kept (chat list, thread, bottom tab bar on a phone, two panes from 900 px); the 900 px layout swaps the list's tab bar for a side rail · signature: the clay bubble, the only warm colour on a graphite page, and Claude's green kept for the Ideas inbox · states: loading, empty, error
+ * axes: cool graphite/one grotesk/one clay accent · posture: restrained · modes: light+dark · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, the three screens share one shell, which is the point of a messenger */
+/* Hallmark · waive 72 · every chat row is padded 16px and its preview is cut by text-overflow: ellipsis inside it, checked by the 1280, 1024 and 390 overflow script · the lint measures the clipped text's full width, which runs past the box */
+/* Hallmark · dismissed F25 · the list, thread and form are drawn twice (wide and phone layouts, one shown at a time), so the lint counts the hidden copy as lost words */
+/* Hallmark · dismissed F7 · the avatars, the switch track, the tab pill and the skeleton bars are circles or pills by shape, not by a radius default */
+/* Hallmark · answered F4 · one filled primary per screen: Send in the thread, Create group in the form */
+.theme-light{color-scheme:light;--color-ground:#f0f3f6;--color-surface:#fcfeff;--color-field:#eaedf2;--color-control:#e1e5ea;--color-control-hover:#d5d9df;--color-row-hover:#f2f5f8;--color-rule:#dbdee3;--color-outline:#70757c;--color-ink:#181b1f;--color-ink-2:#3f4348;--color-muted:#5c6167;--color-accent:#9e4502;--color-accent-hover:#823600;--color-on-accent:#fffdfc;--color-accent-wash:#f9e3d6;--color-on-accent-wash:#6b2e04;--color-sent:#9e4502;--color-on-sent:#fffdfc;--color-on-sent-meta:#fce8df;--color-bubble-in:#fcfeff;--color-claude:#176e4a;--color-on-claude:#fcfefd;--color-claude-wash:#def5e8;--color-on-claude-wash:#034a2e;--color-bad:#b02b27;--color-rail:#e1e5ea;--color-on-rail:#3f4348;--color-rail-current:#fcfeff;--color-on-rail-current:#181b1f;--color-focus:#1654a9;--color-focus-rail:#1654a9;--color-callout:#8c0888;--color-on-callout:#fcfeff;--font-ui:'Rethink Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--color-accent-ink:var(--color-on-accent);--radius-tight:6px;--radius-control:10px;--radius-bubble:18px;--radius-full:999px;--shadow-float:0 8px 24px rgb(20 28 40 / 0.14),0 0 0 1px var(--color-rule);}
+.theme-dark{color-scheme:dark;--color-ground:#101419;--color-surface:#1f2329;--color-field:#151a1f;--color-control:#2e333a;--color-control-hover:#3a3f46;--color-row-hover:#262b31;--color-rule:#363b41;--color-outline:#81878d;--color-ink:#e6eaee;--color-ink-2:#c4c8cc;--color-muted:#a0a5ab;--color-accent:#eb9c6a;--color-accent-hover:#fcb58b;--color-on-accent:#1e130e;--color-accent-wash:#412a1e;--color-on-accent-wash:#f9cdb4;--color-sent:#7b3c17;--color-on-sent:#f8f2ef;--color-on-sent-meta:#eddad0;--color-bubble-in:#282d34;--color-claude:#66c093;--color-on-claude:#0b1a12;--color-claude-wash:#192e23;--color-on-claude-wash:#a9e0c1;--color-bad:#f98f87;--color-rail:#101419;--color-on-rail:#b2b8bf;--color-rail-current:#31363d;--color-on-rail-current:#eff2f6;--color-focus:#77b5fb;--color-focus-rail:#77b5fb;--color-callout:#d773d0;--color-on-callout:#170e16;--font-ui:'Rethink Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--color-accent-ink:var(--color-on-accent);--radius-tight:6px;--radius-control:10px;--radius-bubble:18px;--radius-full:999px;--shadow-float:0 0 0 1px var(--color-rule);}
+html, body { overflow-x: clip; }
+body { margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.sm { container: app / inline-size; background: var(--color-ground); color: var(--color-ink); font-family: var(--font-ui); font-size: 16px; line-height: 24px; font-synthesis: none; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); scrollbar-color: var(--color-outline) var(--color-ground); }
+.sm ::selection { background: var(--color-accent-wash); color: var(--color-ink); }
+:where(.sm) :where(h1, h2, h3) { text-wrap: balance; }
+:where(.sm) :where(h1, h2, h3, p, ul, ol, dl, dd, fieldset, legend, figure) { margin: 0; padding: 0; }
+:where(.sm) :where(ul, ol) { list-style: none; }
+:where(.sm) fieldset { border: 0; min-width: 0; }
+:where(.sm) :where(button, input) { font: inherit; color: inherit; }
+:where(.sm) a { color: inherit; text-decoration: none; }
+.sm svg { display: block; flex-shrink: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Type: four sizes in the app. 20 titles, 16 names and messages, 14 previews and fields' helpers, 12 times and labels. */
+.t-title { font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.005em; }
+.t-name { font-size: 16px; line-height: 24px; font-weight: 600; }
+.t-body { font-size: 16px; line-height: 24px; }
+.t-meta { font-size: 14px; line-height: 20px; }
+.t-label { font-size: 12px; line-height: 16px; font-weight: 600; }
+.ink-2 { color: var(--color-ink-2); }
+.muted { color: var(--color-muted); }
+
+/* Buttons: one filled primary per screen. */
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-5); border: 0; border-radius: var(--radius-full); font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1), color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.btn::after { content: ""; position: absolute; inset: -4px 0; }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover, .btn-primary:active, .btn-primary.is-hover { background: var(--color-accent-hover); }
+.btn-secondary { background: var(--color-control); color: var(--color-ink); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--color-control-hover); }
+.btn-quiet { background: transparent; color: var(--color-ink); padding: 0 var(--space-4); }
+.btn-quiet:hover, .btn-quiet.is-hover { background: var(--color-row-hover); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--color-accent-wash); color: var(--color-muted); cursor: not-allowed; }
+.is-focus { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-ink); cursor: pointer; }
+.icon-btn:hover, .icon-btn.is-hover { background: var(--color-control); }
+
+/* Fields: a visible 3:1 edge that never changes width; the label sits above. */
+.fld { min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.fld > .t-meta { font-weight: 600; color: var(--color-ink); }
+.field { display: flex; align-items: center; gap: var(--space-2); height: 48px; padding: 0 var(--space-4); border: 1px solid var(--color-outline); border-radius: var(--radius-control); background: var(--color-field); color: var(--color-ink); }
+.field input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: 0; font-size: 16px; line-height: 24px; }
+.field input::placeholder { color: var(--color-muted); }
+.field svg { color: var(--color-muted); }
+.field:focus-within { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.field-error { border-color: var(--color-bad); box-shadow: inset 0 0 0 1px var(--color-bad); }
+.err { display: flex; align-items: flex-start; gap: var(--space-2); color: var(--color-bad); font-weight: 600; }
+
+/* Checkbox and switch (the two Base UI wrappers, restyled). */
+.hit { position: relative; display: inline-grid; place-items: center; width: 48px; height: 48px; flex: none; }
+.check { appearance: none; margin: 0; width: 24px; height: 24px; border: 2px solid var(--color-outline); border-radius: var(--radius-tight); background: var(--color-surface); display: inline-grid; place-content: center; cursor: pointer; }
+.check:checked, .check.is-on { background: var(--color-accent); border-color: var(--color-accent); }
+.check:checked::after, .check.is-on::after { content: ""; width: 11px; height: 6px; border: solid var(--color-on-accent); border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
+.switch { display: inline-flex; align-items: center; gap: var(--space-3); min-height: 48px; }
+.track { position: relative; width: 48px; height: 28px; border: 2px solid var(--color-outline); border-radius: var(--radius-full); background: var(--color-surface); }
+.track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--color-outline); }
+.track.is-on { background: var(--color-accent); border-color: var(--color-accent); }
+.track.is-on::after { left: 22px; background: var(--color-on-accent); }
+
+/* Avatars: initials on a graphite disc; Claude's is the one green. */
+.av { display: inline-grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: var(--radius-full); background: var(--color-control); color: var(--color-ink); font-size: 16px; line-height: 1; font-weight: 700; letter-spacing: 0.02em; user-select: none; }
+.av-sm { width: 40px; height: 40px; font-size: 14px; }
+.av-xs { width: 20px; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.av-claude { background: var(--color-claude); color: var(--color-on-claude); font-size: 20px; }
+.av-sm.av-claude { font-size: 16px; }
+.mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-control); background: var(--color-accent); color: var(--color-on-accent); font-size: 20px; line-height: 1; font-weight: 700; }
+.mark-lg { width: 56px; height: 56px; font-size: 28px; border-radius: var(--radius-bubble); }
+
+/* Chat rows: a list on the surface, ruled by one hairline. */
+.rows { background: var(--color-surface); }
+.row { position: relative; display: flex; align-items: center; gap: var(--space-3); min-height: 76px; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule); background: var(--color-surface); transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.row:hover { background: var(--color-row-hover); }
+.row:focus-visible { outline-offset: -3px; }
+.row-pinned { background: var(--color-claude-wash); }
+.row-pinned:hover { background: var(--color-claude-wash); }
+.row[aria-current="page"], .row.is-current { background: var(--color-control); box-shadow: inset 4px 0 0 var(--color-accent); }
+.row[aria-current="page"]:hover, .row.is-current:hover { background: var(--color-control); }
+.row[aria-current="page"] .av, .row.is-current .av { background: var(--color-surface); }
+.row[aria-current="page"] .row-name, .row.is-current .row-name { font-weight: 700; }
+.row-body { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.row-top, .row-bottom { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+.row-bottom { align-items: center; }
+.row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.row-pinned .row-name { color: var(--color-on-claude-wash); }
+.row-sub { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-muted); font-size: 12px; line-height: 16px; }
+.row-time { margin-left: auto; flex: none; font-size: 12px; line-height: 16px; color: var(--color-muted); }
+.row-time.is-unread { color: var(--color-accent); font-weight: 600; }
+.row-preview { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-1); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.row-preview > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-preview svg { color: var(--color-muted); }
+.row-preview .is-seen { color: var(--color-ink-2); }
+.badge { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 var(--space-2); border-radius: var(--radius-full); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; line-height: 16px; font-weight: 600; flex: none; }
+
+/* Screen bars. */
+.bar { display: flex; align-items: center; gap: var(--space-3); height: 56px; padding: 0 var(--space-3) 0 var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-rule); flex: none; }
+.bar-title { min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.bar .back { margin-left: calc(var(--space-2) * -1); }
+
+/* Thread: day pills, bubbles grouped by sender, seen line, composer pinned by the flex column. */
+.thread { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--color-ground); }
+.scroll { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.msgs { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4); }
+.msgs > li { display: flex; flex-direction: column; align-items: flex-start; }
+.msgs > li.out { align-items: flex-end; }
+.msgs > li.sep { align-items: center; padding: var(--space-2) 0; }
+.msgs > li.gap { margin-top: var(--space-2); }
+.pill { display: inline-block; padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); background: var(--color-control); color: var(--color-muted); font-size: 12px; line-height: 16px; font-weight: 600; }
+.bub { display: block; max-width: min(78%, 560px); padding: var(--space-2) var(--space-3); border-radius: var(--radius-bubble); background: var(--color-bubble-in); color: var(--color-ink); box-shadow: inset 0 0 0 1px var(--color-rule); text-align: left; }
+.bub p { overflow-wrap: anywhere; }
+.bub-out { background: var(--color-sent); color: var(--color-on-sent); box-shadow: none; }
+li.in .bub:not(.last) { border-bottom-left-radius: var(--radius-tight); }
+li.in .bub:not(.first) { border-top-left-radius: var(--radius-tight); }
+li.out .bub:not(.last) { border-bottom-right-radius: var(--radius-tight); }
+li.out .bub:not(.first) { border-top-right-radius: var(--radius-tight); }
+.bub-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); font-size: 12px; line-height: 16px; color: var(--color-muted); }
+.bub-out .bub-meta { color: var(--color-on-sent-meta); }
+.who { display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-accent); }
+.bub-fail { background: var(--color-ground); color: var(--color-ink); box-shadow: none; border: 2px dashed var(--color-bad); cursor: pointer; }
+.fail-note { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); color: var(--color-bad); font-size: 12px; line-height: 16px; font-weight: 600; }
+.seen { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); color: var(--color-muted); font-size: 12px; line-height: 16px; }
+.composer { display: flex; align-items: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; }
+.composer .field { flex: 1; min-width: 0; border-radius: 24px; }
+.composer .btn { height: 48px; padding: 0 var(--space-6); font-size: 16px; }
+.banner { padding: var(--space-2) var(--space-4); background: var(--color-control); color: var(--color-ink-2); font-size: 14px; line-height: 20px; text-align: center; display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.toast { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); background: var(--color-surface); box-shadow: var(--shadow-float); color: var(--color-ink); font-size: 14px; line-height: 20px; }
+.float-btn { box-shadow: var(--shadow-float); }
+
+/* The form: group name, search, people, a picked count, two actions. */
+.form { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); flex: 1; min-height: 0; }
+.form-bar { padding: 0; gap: 0; }
+.form-bar .formscroll { padding: var(--space-4); }
+.people { background: var(--color-surface); border-radius: var(--radius-bubble); box-shadow: inset 0 0 0 1px var(--color-rule); overflow: hidden; }
+.person { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; padding: 0 var(--space-1) 0 var(--space-3); border-bottom: 1px solid var(--color-rule); cursor: pointer; }
+.person:last-child { border-bottom: 0; }
+.person:hover { background: var(--color-row-hover); }
+.person.is-picked { background: var(--color-accent-wash); color: var(--color-ink); }
+.person.is-picked:hover { background: var(--color-accent-wash); }
+.person:has(:focus-visible) { outline: 2px solid var(--color-focus); outline-offset: -3px; }
+.person .t-name { flex: 1; min-width: 0; }
+.actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.actions .count { flex: 1 0 100%; color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+
+/* Empty, loading, error: drawn on the Direction sheet and in the screens. */
+.note { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) var(--space-4); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.skel { display: block; border-radius: var(--radius-full); background: var(--color-control); }
+
+/* The shell. Phone: a column; a tab bar under the list and the form. From 900 px of artboard: a side rail, the list, the pane. */
+.stage { position: relative; }
+.frame { position: relative; display: flex; flex-direction: column; height: 844px; min-height: 100dvh; background: var(--color-ground); overflow: hidden; }
+.phone-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.tabbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; padding: var(--space-2) 0 var(--space-3); }
+.tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; color: var(--color-muted); font-size: 12px; line-height: 16px; font-weight: 600; }
+.tabbar a .tab-ico { display: grid; place-items: center; width: 56px; height: 32px; border-radius: var(--radius-full); }
+.tabbar a[aria-current="page"] { color: var(--color-ink); }
+.tabbar a[aria-current="page"] .tab-ico { background: var(--color-accent-wash); color: var(--color-on-accent-wash); }
+.wide-only { display: none; }
+.rail { border-right: 1px solid var(--color-rule); flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-4) 0; background: var(--color-rail); color: var(--color-on-rail); }
+.rail .mark { margin-bottom: var(--space-4); }
+.rail a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 56px; height: 56px; border-radius: var(--radius-control); font-size: 12px; line-height: 16px; font-weight: 600; transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.rail a:hover { background: var(--color-control-hover); }
+.rail a[aria-current="page"] { background: var(--color-rail-current); color: var(--color-on-rail-current); box-shadow: 0 0 0 1px var(--color-rule); }
+.rail :focus-visible { outline-color: var(--color-focus-rail); }
+.listpane { flex-direction: column; background: var(--color-surface); border-right: 1px solid var(--color-rule); min-height: 0; }
+.listpane .bar { height: 64px; border-bottom: 1px solid var(--color-rule); padding-left: var(--space-5); }
+.listpane .rows { flex: 1; overflow: hidden; }
+.pane { flex-direction: column; min-width: 0; min-height: 0; background: var(--color-ground); }
+.pane .bar { height: 64px; }
+.pane-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.pane-form { flex: 1; overflow: hidden; }
+.pane-form .form { max-width: 600px; padding: var(--space-6); }
+@container app (min-width: 900px) {
+  .stage { padding: 0 44px; }
+  .frame { display: grid; grid-template-columns: 72px 340px minmax(0, 1fr); height: 800px; min-height: 100dvh; overflow: visible; box-shadow: 0 0 0 1px var(--color-rule); }
+  .wide-only { display: flex; }
+  .phone-only { display: none !important; }
+  .msgs { padding: var(--space-4) var(--space-6); }
+  .composer { padding: var(--space-3) var(--space-6); }
+}
+
+.fab { position: absolute; right: var(--space-4); bottom: var(--space-4); display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: var(--radius-bubble); background: var(--color-accent); color: var(--color-on-accent); box-shadow: var(--shadow-float); transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1); }
+.fab:hover { background: var(--color-accent-hover); }
+.listwrap { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.formscroll { display: flex; flex-direction: column; gap: var(--space-4); flex: 1; min-height: 0; overflow: hidden; }
+.actionbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border-top: 1px solid var(--color-rule); flex: none; }
+.actionbar .count { flex: 1; min-width: 0; color: var(--color-ink-2); font-size: 14px; line-height: 20px; }
+.actionbar .btn { padding: 0 var(--space-4); }
+@container app (max-width: 899px) { .icon-btn { width: 48px; height: 48px; } .head-new { display: none; } .composer .btn { padding: 0 var(--space-5); } }
+
+/* The board's numbered callouts: in the gutter beside the frame, never over the app. */
+.co { display: none; }
+@container app (min-width: 900px) {
+  .co { position: absolute; z-index: 20; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--color-callout); color: var(--color-on-callout); font: 700 12px/1 var(--font-ui); pointer-events: none; }
+  .co-l { left: -34px; }
+  .co-r { right: -34px; }
+}
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; } }
+</style>
+</helmet>
+<div class="{{themeClass}}" style="min-height: 800px">
+<div class="stage">
+<div class="frame">
+<nav class="rail wide-only" aria-label="Main">
+<span class="mark" aria-hidden="true">S</span>
+<a href="#" aria-current="page"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"></path></svg><span>Chats</span></a>
+<a href="#"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg><span>Settings</span></a>
+</nav>
+<aside class="listpane wide-only" aria-label="Chats">
+<div class="bar"><h1 class="t-title" style="flex:1">Chats</h1><a href="#" class="icon-btn head-new" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a></div>
+<ul class="rows" aria-label="Chats">
+<li><a href="#" class="row row-pinned">
+<span class="av av-claude" aria-hidden="true">C</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Claude</span><span class="row-sub">Ideas inbox</span><time class="row-time num">15:30</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>You: Idea: a shared packing list for the trip</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">CL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">cleo</span><time class="row-time num is-unread">16:51</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Lunch tomorrow? There is a new place near the station.</span></span><span class="badge num"><span aria-hidden="true">1</span><span class="vh">1 unread message</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">WT</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Weekend trip</span><time class="row-time num is-unread">16:40</time></span>
+<span class="row-bottom"><span class="row-preview"><span>cleo: Thanks Alma! Sending the map now.</span></span><span class="badge num"><span aria-hidden="true">4</span><span class="vh">4 unread messages</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">AL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">alma</span><time class="row-time num">16:12</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span><span>You: Great, see you there.</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">BO</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">boris</span><time class="row-time num is-unread">14:22</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Can you send the rest tonight?</span></span><span class="badge num"><span aria-hidden="true">2</span><span class="vh">2 unread messages</span></span></span>
+</span>
+</a></li>
+</ul>
+</aside>
+<main class="pane wide-only"><div class="pane-empty"><span class="mark mark-lg" aria-hidden="true">S</span><p>Pick a chat to read it here.</p></div></main>
+<div class="phone-screen phone-only">
+<div class="bar"><h1 class="t-title" style="flex:1">Chats</h1><a href="#" class="icon-btn head-new" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a></div>
+<div class="listwrap"><ul class="rows" aria-label="Chats">
+<li><a href="#" class="row row-pinned">
+<span class="av av-claude" aria-hidden="true">C</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Claude</span><span class="row-sub">Ideas inbox</span><time class="row-time num">15:30</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Sent" style="display:inline-flex"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>You: Idea: a shared packing list for the trip</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">CL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">cleo</span><time class="row-time num is-unread">16:51</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Lunch tomorrow? There is a new place near the station.</span></span><span class="badge num"><span aria-hidden="true">1</span><span class="vh">1 unread message</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">WT</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">Weekend trip</span><time class="row-time num is-unread">16:40</time></span>
+<span class="row-bottom"><span class="row-preview"><span>cleo: Thanks Alma! Sending the map now.</span></span><span class="badge num"><span aria-hidden="true">4</span><span class="vh">4 unread messages</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">AL</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">alma</span><time class="row-time num">16:12</time></span>
+<span class="row-bottom"><span class="row-preview"><span role="img" aria-label="Seen" style="display:inline-flex"><svg aria-hidden="true" width="18" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5l4.5 4.5L17 7.5M13.5 15.5l1.5 1.5L25 7.5"></path></svg></span><span>You: Great, see you there.</span></span></span>
+</span>
+</a></li>
+<li><a href="#" class="row">
+<span class="av" aria-hidden="true">BO</span>
+<span class="row-body">
+<span class="row-top"><span class="row-name t-name">boris</span><time class="row-time num is-unread">14:22</time></span>
+<span class="row-bottom"><span class="row-preview"><span>Can you send the rest tonight?</span></span><span class="badge num"><span aria-hidden="true">2</span><span class="vh">2 unread messages</span></span></span>
+</span>
+</a></li>
+</ul><a href="#" class="fab" aria-label="New chat"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a></div>
+<nav class="tabbar" aria-label="Main">
+<a href="#" aria-current="page"><span class="tab-ico"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"></path></svg></span>Chats</a>
+<a href="#"><span class="tab-ico"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg></span>Settings</a>
+</nav>
+</div>
+<span class="co co-l" style="top: 122px" aria-hidden="true">2</span><span class="co co-l" style="top: 89px" aria-hidden="true">1</span><span class="co co-l" style="top: 166px" aria-hidden="true">3</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const t = this.props.theme ?? 'light';
+return { themeClass: t === 'dark' ? 'theme-dark sm' : 'theme-light sm' };
+}
+}
+</script>
+</body>
+</html>
