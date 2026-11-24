@@ -28,8 +28,9 @@ Two things in `infrastructure/Dockerfile`, both build-side or base-side. The ima
 
 ## Decisions
 
-- `deps` runs `npm ci -w @satchel/server --include-workspace-root`, sports-app's pattern. Every manifest is still copied:
-  `npm ci` checks the lockfile against all of them.
+- `deps` runs `npm ci -w @satchel/server --include-workspace-root`: sports-app's build stage scopes
+  the same way, and the flag adds the root's dev dependencies, where `typescript` is. Every manifest is still
+  copied: `npm ci` checks the lockfile against all of them.
 - Every stage's base is `node:24.22.1-alpine`. The estate moves to a new patch in one sweep, not per repo.
 
 ## Files you OWN
