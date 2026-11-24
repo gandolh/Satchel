@@ -439,3 +439,9 @@ An "AI" pill after the real Claude's name in the chat list row and the thread he
 ## [2026-11-20] maintenance | The redesign's board page copied into the repo
 
 The estate redesign board is a private canvas, so `design/estate-redesign/` now holds a copy of this app's page on it and the build behind it: the directions, the judges' and the controller's rulings, the critique, the token hand-off, the board's notes, the owner's decisions, the proposed screens (as HTML with renders, or as the board's own artboard sources), and today's shots from before the redesign. It is the design record of brief 05, which built it; its README says what each file is. Prettier and the Docker build skip the folder.
+
+## [2026-11-24] todo | Brief 08 from the infra review of 2026-11-24
+
+Filed from the estate's infra review. The image's `deps` stage installs only the server's closure instead of
+every workspace (about 112 MB less build cache per cold build on the box), and every base is pinned to
+`node:24.22.1-alpine`. The image that runs doesn't change. Ships with `node cli.ts satchel server`.
