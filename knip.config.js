@@ -4,5 +4,7 @@ import preset from "./vendor/house-style/knip.json" with { type: "json" };
 // own: the docs capture helper and the check:fast script, both run by hand.
 export default {
   ...preset,
+  // design/ holds the redesign board's reference copy (tokens, sketches), never imported.
+  ignore: [...preset.ignore, "design/**"],
   workspaces: { ".": { entry: ["docs/images/*.mjs", "scripts/*.mjs"] } },
 };
