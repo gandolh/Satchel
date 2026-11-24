@@ -58,6 +58,9 @@ Each phase got a three-finder review followed by fix rounds; see `log.md`.
    signed in and signed out; the text lands in the inbox's composer once.
 4. With the inbox open on the phone, `satchel reply <n> "…"` from Claude
    Code shows at once; with the app closed, the push arrives titled "Claude".
+5. The image tidy (brief 08): `node cli.ts satchel server`. The build stage
+   installs only the server, on `node:24.22.1-alpine`; the image that runs is
+   the same within a megabyte.
 
 ## Known
 

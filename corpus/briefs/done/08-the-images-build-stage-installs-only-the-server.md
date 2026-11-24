@@ -70,3 +70,20 @@ the controller.
 ## Owner steps
 
 - `node cli.ts satchel server` from vps-deploy. The deploy builds the image on the box.
+
+## Outcome
+
+Built 2026-11-24 by the controller (8971a85). Ready for deploy: `node cli.ts satchel server`.
+
+- **Step 1**, in a `git archive` export: the full `npm ci` leaves 371 MB of `node_modules`; `npm ci -w
+  @satchel/server --include-workspace-root` leaves 261 MB (110 MB less), and `npx tsc -b server` compiles. No
+  extra workspace was needed: `shared` comes with the server.
+- **Step 2**: `deps` runs the scoped install with a comment saying why; the three `FROM` lines are
+  `node:24.22.1-alpine`. `wiki/architecture.md` names the pinned base.
+- **Step 3**, both built on the laptop the same hour: the `deps` stage image 953 MB before, 866 MB after; the
+  final image 202 MB before, 203 MB after. `docker history` differs only in three layer sizes by about 10 kB to
+  1 MB (the pinned Node patch).
+- **Step 4**: the new image on a scratch data folder, with `PUBLIC_ORIGIN` set (it refuses to start without
+  one), turned healthy; `/api/health` answered `{"ok":true}`; Node is v24.22.1. Test images and the container
+  were removed.
+- `npm run check` exits 0; `bash corpus/lint.sh` passes.
