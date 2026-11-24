@@ -23,9 +23,13 @@
 # service could not write its own database.
 
 # ---------------------------------------------------------------------------
-# deps — full workspace install, with the toolchain native modules may need
+# deps — the server's install, with the toolchain native modules may need
 # ---------------------------------------------------------------------------
-FROM node:24-alpine AS deps
+# Every stage uses one exact base. A floating `node:24-alpine` follows the tag on
+# the day of the build, so the box ends up holding several bases and every cache
+# entry keyed on the old one goes dead; the estate moves to a new patch in one
+# sweep instead.
+FROM node:24.22.1-alpine AS deps
 # better-sqlite3 13 ships Node-API prebuilds including linuxmusl-x64, so this is
 # a fallback rather than the normal path — but a version bump that drops the
 # musl prebuild would otherwise fail the build with a cryptic node-gyp error.
@@ -39,7 +43,11 @@ COPY shared/package.json ./shared/
 COPY server/package.json ./server/
 COPY web/package.json ./web/
 COPY cli/package.json ./cli/
-RUN npm ci
+# Scoped to the server (shared comes with it) plus the root's dev dependencies,
+# where typescript is: this stage only runs tsc, so the web app's tree would be
+# installed for nothing. Measured on 2026-11-24: 371 MB of node_modules
+# unscoped, 261 MB scoped.
+RUN npm ci -w @satchel/server --include-workspace-root
 
 # ---------------------------------------------------------------------------
 # builder — compile shared and the server (tsc -b → shared/dist, server/dist)
@@ -53,7 +61,7 @@ RUN npx tsc -b server
 # ---------------------------------------------------------------------------
 # proddeps — runtime dependencies only, native modules built here
 # ---------------------------------------------------------------------------
-FROM node:24-alpine AS proddeps
+FROM node:24.22.1-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
@@ -82,7 +90,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 # prod — slim runtime: no compiler, no test code, no TypeScript
 # ---------------------------------------------------------------------------
-FROM node:24-alpine AS prod
+FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="Satchel" \
       org.opencontainers.image.description="Satchel API: messages and the Ideas inbox"
 # wget, for the healthcheck below, ships in node:alpine's busybox.

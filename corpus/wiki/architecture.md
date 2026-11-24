@@ -194,7 +194,7 @@ against the repo root, so local data is `data/satchel.db`.
 
 ## Deploy
 
-The repo carries `infrastructure/Dockerfile` (multi-stage, node:24-alpine,
+The repo carries `infrastructure/Dockerfile` (multi-stage, node:24.22.1-alpine,
 modelled on Ward's because both build better-sqlite3) and
 `infrastructure/docker-compose.yml` (modelled on sports-app's: loopback port,
 `env_file: .env`, `/data` bind mount, healthcheck on `/api/health`). vps-deploy
